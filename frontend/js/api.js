@@ -128,6 +128,29 @@ export const bdApi = {
   deleteDesp: (id)      => api.delete(`/bd-despesas/${id}`),
 };
 
+export const clienteApi = {
+  list:   ()        => api.get('/clientes'),
+  get:    (id)      => api.get(`/clientes/${id}`),
+  create: (body)    => api.post('/clientes', body),
+  update: (id, b)   => api.put(`/clientes/${id}`, b),
+  delete: (id)      => api.delete(`/clientes/${id}`),
+};
+
+export const orcamentoApi = {
+  list:        ()        => api.get('/orcamentos'),
+  get:         (id)      => api.get(`/orcamentos/${id}`),
+  create:      (body)    => api.post('/orcamentos', body),
+  update:      (id, b)   => api.put(`/orcamentos/${id}`, b),
+  delete:      (id)      => api.delete(`/orcamentos/${id}`),
+  // Itens
+  listItens:   (id)      => api.get(`/orcamentos/${id}/itens`),
+  addItem:     (id, b)   => api.post(`/orcamentos/${id}/itens`, b),
+  updateItem:  (id, iid, b) => api.put(`/orcamentos/${id}/itens/${iid}`, b),
+  deleteItem:  (id, iid) => api.delete(`/orcamentos/${id}/itens/${iid}`),
+  // Cálculo
+  calcular:    (id)      => api.post(`/orcamentos/${id}/calcular`),
+};
+
 export const fichaApi = {
   // Equipes
   listEquipes:     ()        => api.get('/fichas-equipe'),

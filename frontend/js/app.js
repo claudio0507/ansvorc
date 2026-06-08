@@ -54,6 +54,7 @@ const ROUTES = {
   '/fichas/produtos':  { render: (el) => renderFichas(el, 'produtos'),  auth: true, title: 'Fichas de Produto'  },
   '/fichas/servicos':  { render: (el) => renderFichas(el, 'servicos'),  auth: true, title: 'Fichas de Serviço'  },
   '/orcamentos':  { render: renderOrcamentos, auth: true,  title: 'Orçamentos'       },
+  '/orcamentos/novo': { render: (el) => renderOrcamentos(el, 'novo'), auth: true, title: 'Novo Orçamento' },
 };
 
 function resolveRoute(hash) {

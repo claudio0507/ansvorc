@@ -789,6 +789,58 @@ table.data-table {
 .modal-body    { padding: 1.5rem; }
 .modal-footer  { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; gap: .75rem; justify-content: flex-end; }
 
+/* ═══════════════════════════════════════════════════════════════
+   TELA DE ORÇAMENTOS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Badge extra */
+.badge-info { background: rgba(6,182,212,.12); color: #06b6d4; }
+
+/* Grid de itens */
+.orc-grid td { vertical-align: middle; padding: .5rem .625rem; }
+.orc-grid thead th { white-space: nowrap; }
+
+/* Inputs inline no grid */
+.cell-input,
+.cell-select {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: .8125rem;
+  padding: .25rem .375rem;
+  outline: none;
+  transition: border-color var(--trans-fast);
+}
+.cell-input:focus,
+.cell-select:focus { border-color: var(--primary); }
+
+/* table-wrap para scroll horizontal no grid */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius);
+}
+
+/* Painel lateral de totais */
+.painel-lateral {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.125rem 1.25rem;
+  position: sticky;
+  top: 1rem;
+}
+.painel-row   { padding: .25rem 0; }
+.painel-label { font-size: .8125rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.painel-val   { font-size: 1.0625rem; font-weight: 600; color: var(--text); }
+.painel-val.painel-success { color: var(--success); }
+.painel-val.painel-danger  { color: var(--danger); }
+.painel-total { font-size: 1.375rem; font-weight: 700; color: var(--primary); padding-top: .25rem; }
+.painel-divider { height: 1px; background: var(--border); margin: .625rem 0; }
+
+/* Botão icon no header */
+.btn-icon svg { pointer-events: none; }
+
 /* ── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .sidebar {
