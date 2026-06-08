@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sinalys - Orçamento Consolidado Final</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #f8fafc; --bg-card: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
+            --primary: #2563eb; --primary-hover: #1d4ed8; --accent: #bef264; --border: #e2e8f0;
+            --danger: #dc2626; --warning: #f59e0b; --warning-bg: #fef3c7; --success: #16a34a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-main); color: var(--text-main); padding: 24px; line-height: 1.5; font-size: 12px; }
+        
+        .card { background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 2px rgb(0 0 0 / 0.05); overflow: hidden; }
+        .card-header { background-color: #f1f5f9; padding: 12px 20px; border-bottom: 1px solid var(--border); font-weight: 600; display: flex; justify-content: space-between; align-items: center; font-size: 14px;}
+        .card-body { padding: 20px; }
+        
+        .grid-launch { display: grid; grid-template-columns: 1fr 1fr 2fr 1fr 1fr; gap: 15px; align-items: end; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+        .form-control { padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-family: inherit; font-size: 12px; width: 100%; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-warning { background-color: var(--warning); color: #000; }
+        
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background-color: #fff; color: var(--text-muted); font-size: 10px; text-transform: uppercase; padding: 10px 8px; border-bottom: 2px solid var(--border); }
+        td { padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .input-tbl { width: 65px; padding: 4px; border: 1px solid var(--border); border-radius: 4px; text-align: right; font-size: 11px; }
+        .select-tbl { padding: 4px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; width: 95px;}
+        
+        .highlight-col { background-color: #f8fafc; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+        .final-col { background-color: #f0fdf4; border-left: 2px solid #bbf7d0; }
+        .badge-warning { background-color: var(--warning-bg); color: #92400e; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; border: 1px solid #fcd34d; }
+        
+        .footer-panel { background: #0f172a; color: white; padding: 25px; border-radius: 8px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; margin-top: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); }
+        .footer-box .lbl { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .footer-box .val { font-size: 22px; font-weight: 700; color: #fff; margin-top: 5px; }
+        .footer-box .val.highlight { color: var(--accent); font-size: 26px; }
+    </style>
+</head>
+<body>
+
+    <!-- PARAMETRIZAÇÃO GLOBAL -->
+    <div class="card">
+        <div class="card-body" style="display: flex; gap: 20px;">
+            <div class="form-group" style="flex: 1;"><label>Estado (Fator ICMS/ISS)</label><select id="gState" class="form-control" onchange="calc()"><option value="PR">Paraná (PR)</option><option value="SP">São Paulo (SP)</option></select></div>
+            <div class="form-group" style="flex: 1;"><label>Benefício REIDI</label><select id="gReidi" class="form-control" onchange="calc()"><option value="NAO">NÃO (Carga Cheia)</option><option value="SIM">SIM (Suspensão PIS/COFINS)</option></select></div>
+        </div>
+    </div>
+
+    <!-- SELETORES EM CASCATA ORGANIZADOS -->
+    <div class="card">
+        <div class="card-header">Inserção Modular de Itens de Catálogo</div>
+        <div class="card-body grid-launch">
+            <div class="form-group">
+                <label>Bloco</label>
+                <select id="sBlock" class="form-control" onchange="updateSegments()">
+                    <option value="servicos">1. Serviços</option>
+                    <option value="produtos">2. Produtos</option>
+                    <option value="operacional">3. Estrutura Operacional</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Seguimento</label>
+                <select id="sSegment" class="form-control" onchange="updateItems()"></select>
+            </div>
+            <div class="form-group">
+                <label>Item / Ficha Parametrizada</label>
+                <select id="sItem" class="form-control"></select>
+            </div>
+            <div class="form-group">
+                <label>Modalidade Faturamento (MOD FAT)</label>
+                <select id="sModFat" class="form-control">
+                    <option value="BDI-MO">BDI-MO</option>
+                    <option value="BDI-MAT+MO">BDI-MAT+MO</option>
+                    <option value="BDI+ICMS">BDI+ICMS</option>
+                    <option value="FAT DIR SIMP">FAT DIR SIMP</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="addCatalogItem()"><i class="fa-solid fa-plus"></i> Inserir Linha</button>
+        </div>
+    </div>
+
+    <!-- RECEPTÁCULO DAS TABELAS DO ORÇAMENTO -->
+    <div id="budget-container"></div>
+
+    <!-- BOTOEIRA DE AÇÕES ADICIONAIS -->
+    <div style="margin-bottom: 20px; text-align: right;">
+        <button class="btn btn-warning" onclick="addExceptionalItem()"><i class="fa-solid fa-triangle-exclamation"></i> Lançar Custo Excepcional / Verba Manual</button>
+    </div>
+
+    <!-- PAINEL CONSOLIDADO COM MARGEM LÍQUIDA REAL -->
+    <div class="footer-panel">
+        <div class="footer-box"><div class="lbl">Subtotal Faturável (CD)</div><div class="val" id="fFaturavel">R$ 0,00</div></div>
+        <div class="footer-box"><div class="lbl">Indiretos + Carga Tributária</div><div class="val" id="fDiluir" style="color:#f87171;">R$ 0,00</div></div>
+        <div class="footer-box"><div class="lbl">Fator de Rateio (K)</div><div class="val" id="fK">0.00%</div></div>
+        <div class="footer-box"><div class="lbl">Lucro Líquido Absoluto</div><div class="val" id="fLucroAbs" style="color:#4ade80;">R$ 0,00</div></div>
+        <div class="footer-box"><div class="lbl">TOTAL PROPOSTA (Mrg Real)</div><div class="val highlight" id="fPv">R$ 0,00</div></div>
+    </div>
+
+<script>
+    // DADOS ATÔMICOS DO PARAMETRIZADOR
+    const catalog = [
+        { id: 101, block: "servicos", segment: "VERTICAL", name: "Implantação de placas de Sinalização com suporte de madeira", unit: "un", cost: 409.32 },
+        { id: 102, block: "servicos", segment: "VERTICAL", name: "Deplantação de placas com suporte existente", unit: "un", cost: 158.90 },
+        { id: 103, block: "servicos", segment: "HORIZONTAL", name: "Pintura definitiva à base de água com aplicação mecânica", unit: "m²", cost: 38.50 },
+        { id: 201, block: "produtos", segment: "FORNECIMENTO", name: "Chapa de Aço Galvanizada para Placa R-1 0,60m", unit: "un", cost: 185.00 },
+        { id: 202, block: "produtos", segment: "FORNECIMENTO", name: "Película Refletiva Prismática Tipo I", unit: "m²", cost: 120.00 },
+        { id: 301, block: "operacional", segment: "LOGISTICA", name: "Alojamento e Infraestrutura Operacional Passo Fundo", unit: "Mês", cost: 57000.00 },
+        { id: 302, block: "operacional", segment: "MOBILIZACAO", name: "Mobilização de Equipamento Pesado (Prancha)", unit: "un", cost: 12500.00 }
+    ];
+
+    // ESTADO INICIAL DO ORÇAMENTO
+    let budget = [
+        { id: 1, type: "cat", catId: 101, block: "servicos", modFat: "BDI+ICMS", qty: 100, margin: 10 },
+        { id: 2, type: "cat", catId: 102, block: "servicos", modFat: "BDI-MAT+MO", qty: 45, margin: 12 },
+        { id: 3, type: "cat", catId: 301, block: "operacional", modFat: "-", qty: 1, margin: 0 }
+    ];
+    let uid = 4;
+
+    // SISTEMA DE NAVEGAÇÃO EM CASCATA DA INTERFACE
+    function updateSegments() {
+        const b = document.getElementById('sBlock').value;
+        const segs = [...new Set(catalog.filter(c => c.block === b).map(c => c.segment))];
+        const sel = document.getElementById('sSegment');
+        sel.innerHTML = segs.map(s => `<option value="${s}">${s}</option>`).join('');
+        updateItems();
+    }
+
+    function updateItems() {
+        const b = document.getElementById('sBlock').value;
+        const s = document.getElementById('sSegment').value;
+        const sel = document.getElementById('sItem');
+        sel.innerHTML = catalog.filter(c => c.block === b && c.segment === s)
+            .map(c => `<option value="${c.id}">${c.name} (Cst: R$ ${c.cost.toFixed(2)})</option>`).join('');
+    }
+
+    function addCatalogItem() {
+        const catId = parseInt(document.getElementById('sItem').value);
+        const block = document.getElementById('sBlock').value;
+        if (!catId) return;
+        
+        budget.push({
+            id: uid++, type: "cat", catId: catId, block: block,
+            modFat: document.getElementById('sModFat').value, qty: 1, margin: 10
+        });
+        calc();
+    }
+
+    function addExceptionalItem() {
+        budget.push({
+            id: uid++, type: "exc", block: "excepcionais", segment: "VERBA",
+            name: "Item Excepcional Adicionado Manualmente", unit: "vb", cost: 5000.00, qty: 1, modFat: "-", margin: 0
+        });
+        calc();
+    }
+
+    function updateRow(id, field, val) {
+        const item = budget.find(i => i.id === id);
+        if (item) { 
+            if (['name','unit','modFat'].includes(field)) {
+                item[field] = val;
+            } else {
+                item[field] = parseFloat(val) || 0; 
+            }
+            calc(); 
+        }
+    }
+
+    // MOTOR DE CÁLCULO FINANCEIRO AVANÇADO
+    function calc() {
+        const state = document.getElementById('gState').value;
+        const reidi = document.getElementById('gReidi').value;
+        const cargaAdm = 0.13; // Despesas administrativas fixadas em 13%
+
+        // Passo 1: Captura e aplicação do BDI Sombra nos itens Operacionais/Excepcionais
+        let rowsData = budget.map(row => {
+            let costObj = row.type === 'cat' ? catalog.find(c => c.id === row.catId) : row;
+            // Proteção extra caso o costObj não seja encontrado:
+            if(!costObj) costObj = { cost: 0, name: 'Desconhecido', segment: '', unit: '' };
+            
+            let cdbUnit = costObj.cost;
+            let cdbTotal = cdbUnit * row.qty;
+            let isFaturavel = ['servicos','produtos'].includes(row.block);
+            
+            // Regra do BDI Sombra (Tributação dos blocos de apoio)
+            let pisCofinsBase = reidi === 'SIM' ? 0 : 0.0365;
+            let issqnBase = (state === 'PR' ? 0.035 : 0.05);
+            let cargaRecuperacao = isFaturavel ? 0 : (cargaAdm + pisCofinsBase + issqnBase);
+            let cdbTotalComCarga = cdbTotal * (1 + cargaRecuperacao);
+
+            return { ...row, costObj, cdbUnit, cdbTotal, cdbTotalComCarga, isFaturavel };
+        });
+
+        // Passo 2: Processamento do BDI Completo e cálculo do Lucro Absoluto das linhas direta
+        let sumFaturavel = 0;
+        let sumNaoFaturavel = 0;
+        let totalLucroAbsoluto = 0;
+
+        rowsData.forEach(r => {
+            if(r.isFaturavel) {
+                let pisCofins = reidi === 'SIM' ? 0 : (['BDI+ICMS','FAT DIR SIMP'].includes(r.modFat) ? 0.0925 : 0.0365);
+                let issqn = (!['BDI+ICMS','FAT DIR SIMP'].includes(r.modFat)) ? (state === 'PR' ? 0.035 : 0.05) : 0;
+                let icms = r.modFat === 'BDI+ICMS' ? 0.12 : 0;
+                let impostos = pisCofins + issqn + icms;
+                
+                // Fórmula Oficial de BDI com a margem individualizada da linha
+                let num = (1 + 0.13) * (1 + 0.015) * (1 + (r.margin/100));
+                r.bdiTax = (num / (1 - impostos)) - 1;
+                if(r.modFat === 'FAT DIR SIMP') r.bdiTax = (r.margin/100); 
+                
+                r.pcoUnitBase = r.cdbUnit * (1 + r.bdiTax);
+                r.pcoTotalBase = r.pcoUnitBase * r.qty;
+                sumFaturavel += r.pcoTotalBase;
+
+                // Extração matemática do Lucro Líquido gerado por este item (R$)
+                r.lucroLinhaAbs = r.cdbTotal * (1 + 0.13) * (1 + 0.015) * (r.margin / 100);
+                totalLucroAbsoluto += r.lucroLinhaAbs;
+            } else {
+                r.bdiTax = 0; r.pcoUnitBase = r.cdbUnit;
+                r.pcoTotalBase = r.cdbTotalComCarga; // Blindagem ativada
+                sumNaoFaturavel += r.pcoTotalBase;
+                r.lucroLinhaAbs = 0;
+            }
+        });
+
+        let totalProposta = sumFaturavel + sumNaoFaturavel;
+        let fatorK = sumFaturavel > 0 ? (sumNaoFaturavel / sumFaturavel) : 0;
+        let margemLiquidaRealGlobal = totalProposta > 0 ? (totalLucroAbsoluto / totalProposta) * 100 : 0;
+
+        // Passo 3: Distribuição Top-Down proporcional ao peso de cada item faturável
+        rowsData.forEach(r => {
+            if(r.isFaturavel && sumFaturavel > 0) {
+                r.pesoPerc = r.pcoTotalBase / sumFaturavel; 
+                r.pcoTotalFinal = r.pesoPerc * totalProposta; 
+                r.pcoUnitFinal = r.pcoTotalFinal / r.qty;     
+            } else {
+                r.pesoPerc = 0; r.pcoTotalFinal = 0; r.pcoUnitFinal = 0;
+            }
+        });
+
+        // Passo 4: Renderização Dinâmica das Tabelas organizadas
+        const blocks = [ 
+            { id: 'servicos', title: '1. Bloco de Serviços Faturáveis' }, 
+            { id: 'produtos', title: '2. Bloco de Produtos Faturáveis' }, 
+            { id: 'operacional', title: '3. Estrutura Operacional (BDI Sombra Aplicado)' }, 
+            { id: 'excepcionais', title: '4. Considerações Excepcionais (Demanda Aprovação)' } 
+        ];
+        
+        let html = '';
+        blocks.forEach(b => {
+            let items = rowsData.filter(r => r.block === b.id);
+            if(items.length === 0) return;
+
+            let isFat = ['servicos','produtos'].includes(b.id);
+
+            html += `<div class="card"><div class="card-header">${b.title}</div>
+                <div class="card-body" style="padding:0; overflow-x:auto;"><table>
+                <thead><tr>
+                    <th>Seg</th><th>Descrição Ficha / Item</th><th>Und</th><th style="text-align:right;">Qtd</th>
+                    <th style="text-align:right;">Cst Unit</th><th style="text-align:right;">Cst Total</th>`;
+            
+            if(isFat) {
+                html += `<th>MOD FAT</th><th class="highlight-col" style="text-align:right;">Margem</th>
+                         <th style="text-align:right;">Pco Base Unit</th><th style="text-align:right;">Pco Base Total</th>
+                         <th style="text-align:right;">Peso %</th><th class="final-col" style="text-align:right;">PCO UNT FINAL</th>`;
+            } else {
+                html += `<th>MOD FAT</th><th style="text-align:right;">Lucro</th>
+                         <th style="text-align:right;">Cst Unit Ref</th><th style="text-align:right; color:var(--danger);">Cst Total Carregado</th>`;
+            }
+            html += `<th style="width:30px;"></th></tr></thead><tbody>`;
+
+            items.forEach(r => {
+                html += `<tr>
+                    <td><span style="font-size:10px; font-weight:600; color:var(--text-muted);">${r.type==='exc'?r.segment:r.costObj.segment}</span></td>
+                    <td>${r.type === 'exc' ? `<input type="text" value="${r.name}" onchange="updateRow(${r.id}, 'name', this.value)" style="width:220px;" class="input-tbl"> <span class="badge-warning">Aprovação</span>` : `<strong>${r.costObj.name}</strong>`}</td>
+                    <td>${r.type === 'exc' ? `<input type="text" value="${r.unit}" onchange="updateRow(${r.id}, 'unit', this.value)" style="width:35px;" class="input-tbl">` : r.costObj.unit}</td>
+                    <td style="text-align:right;"><input type="number" value="${r.qty}" onchange="updateRow(${r.id}, 'qty', this.value)" class="input-tbl"></td>
+                    <td style="text-align:right;">R$ ${r.cdbUnit.toFixed(2)}</td>
+                    <td style="text-align:right;">R$ ${r.cdbTotal.toFixed(2)}</td>`;
+
+                if(isFat) {
+                    html += `<td><select class="select-tbl" onchange="updateRow(${r.id}, 'modFat', this.value)">
+                                <option value="BDI-MO" ${r.modFat==='BDI-MO'?'selected':''}>BDI-MO</option>
+                                <option value="BDI-MAT+MO" ${r.modFat==='BDI-MAT+MO'?'selected':''}>BDI-MAT</option>
+                                <option value="BDI+ICMS" ${r.modFat==='BDI+ICMS'?'selected':''}>BDI+ICMS</option>
+                                <option value="FAT DIR SIMP" ${r.modFat==='FAT DIR SIMP'?'selected':''}>FAT DIR</option>
+                             </select></td>
+                             <td class="highlight-col" style="text-align:right;"><input type="number" step="0.5" value="${r.margin}" onchange="updateRow(${r.id}, 'margin', this.value)" class="input-tbl" style="width:45px; font-weight:bold; border-color:var(--primary);">%</td>
+                             <td style="text-align:right;">R$ ${r.pcoUnitBase.toFixed(2)}</td>
+                             <td style="text-align:right;">R$ ${r.pcoTotalBase.toFixed(2)}</td>
+                             <td style="text-align:right; font-weight:500; color:var(--text-muted);">${(r.pesoPerc*100).toFixed(1)}%</td>
+                             <td class="final-col" style="text-align:right; font-size:13px;">R$ ${r.pcoUnitFinal.toFixed(2)}</td>`;
+                } else {
+                    html += `<td>-</td><td style="text-align:right;">0.00%</td>
+                             <td style="text-align:right;">R$ ${r.cdbUnit.toFixed(2)}</td>
+                             <td style="text-align:right; font-weight:600; color:var(--danger);">R$ ${r.cdbTotalComCarga.toFixed(2)}</td>`;
+                }
+                html += `<td style="text-align:center;"><button style="background:none; border:none; cursor:pointer; color:var(--danger);" onclick="budget=budget.filter(i=>i.id!=${r.id}); calc();"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+            });
+            html += `</tbody></table></div></div>`;
+        });
+        
+        // Atualização da UI e dos painéis informativos
+        document.getElementById('budget-container').innerHTML = html;
+        document.getElementById('fFaturavel').innerText = `R$ ${sumFaturavel.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+        document.getElementById('fDiluir').innerText = `R$ ${sumNaoFaturavel.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+        document.getElementById('fK').innerText = `${(fatorK*100).toFixed(2)}%`;
+        document.getElementById('fLucroAbs').innerText = `R$ ${totalLucroAbsoluto.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+        document.getElementById('fPv').innerText = `R$ ${totalProposta.toLocaleString('pt-BR',{minimumFractionDigits:2})} (${margemLiquidaRealGlobal.toFixed(2)}%)`;
+    }
+
+    // Inicialização automática dos seletores em cascata e renderização inicial da tabela
+    updateSegments();
+    calc();
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+Esta é uma consolidação estratégica de todas as definições arquiteturais e funcionais que validámos para o seu sistema de orçamentação. Este documento servirá como a "Constituição" do seu projeto para garantir que a equipa de desenvolvimento (ou a próxima iteração da LLM) mantenha o alinhamento com a sua visão e a do seu *Sponsor*.
+
+---
+
+### 1. Arquitetura de Dados: O Modelo Relacional (BOM Recursivo)
+
+Definimos um banco de dados relacional baseado em árvores de produtos (Bill of Materials).
+
+* **Definição:** As tabelas são `insumos` (base), `composicoes` (cabeçalhos de fichas) e `composicao_itens` (relação autorreferenciada).
+* **Motivo:** A estrutura recursiva permite que um serviço complexo absorva uma "Ficha de Equipe" inteira como se fosse um único item. Isso garante que, se o custo de um salário mudar no BD de RH, o custo da equipe e de todos os serviços que a utilizam seja recalculado automaticamente, garantindo a integridade dos dados sem retrabalho.
+
+### 2. Governança e Papéis (Segregação Funcional)
+
+* **Definição:** Separação estrita entre o **Gestor de BD** (alimenta custos brutos), **Parametrizador** (cria fichas técnicas e modelos) e **Orçamentista** (consolida propostas).
+* **Motivo:** Evita o "caos operacional". Apenas o Parametrizador tem autoridade para alterar a estrutura de uma ficha, garantindo que o Orçamentista trabalhe apenas com módulos validados e prontos para uso, reduzindo a margem de erro comercial.
+
+### 3. Matriz de Faturamento (MOD FAT) e BDI Modular
+
+* **Definição:** Substituímos o BDI global por uma matriz tributária onde cada linha do orçamento (item) possui sua própria `MOD FAT` (Ex: `BDI-MO`, `BDI-MAT+MO`, `BDI+ICMS`, `FAT DIR SIMP`).
+* **Motivo:** O *Sponsor* exige precisão fiscal. O custo de uma placa (produto com ICMS) é tributariamente diferente de um serviço de pintura (ISSQN). Esta flexibilidade evita a bitributação e garante que o preço final seja competitivo em diferentes regimes fiscais.
+
+### 4. Setup Global e Gatilho REIDI
+
+* **Definição:** No cabeçalho do orçamento, define-se o **Estado (UF)** e o benefício **REIDI (Sim/Não)**.
+* **Motivo:** Elimina a complexidade de gerir impostos linha a linha. O sistema carrega a matriz estadual correta e, se o REIDI estiver ativo, aplica uma máscara de isenção sobre PIS/COFINS em cascata, garantindo que o benefício seja repassado ao preço final sem risco de erro humano.
+
+### 5. Motor de Cálculo: O Fator K (Diluição Top-Down)
+
+* **Definição:** A diluição dos "Custos Indiretos" (Estrutura Operacional e Excepcionais) é feita proporcionalmente ao peso do custo direto de cada item faturável.
+* **Motivo:** Para espelhar exatamente a sua planilha Excel original. O sistema calcula primeiro o total da proposta, encontra o peso (`%`) de cada item e redistribui o custo dos itens "invisíveis" (como alojamento e logística) sobre o preço final. Isso garante que todos os custos sejam cobertos, mesmo aqueles que não aparecem como um "serviço" para o cliente.
+
+### 6. Custos Excepcionais (Manual com Aprovação)
+
+* **Definição:** Módulo para inserção manual de custos que não constam no catálogo.
+* **Motivo:** Em obras de rodovias, imprevistos ocorrem. O sistema deve permitir essa flexibilidade, mas com uma "trava visual" (badge de aprovação), para que o *Sponsor* saiba exatamente quais valores foram injetados fora da padronização e demandem revisão.
+
+### 7. Congelamento de Preço (Snapshot)
+
+* **Definição:** Uma tabela de `orcamento_itens` que grava o valor histórico (PCO UNT FINAL) no momento em que o orçamento é salvo.
+* **Motivo:** Auditoria. Se um custo no BD de RH for alterado amanhã, as propostas enviadas hoje ao cliente Motiva Rodovias devem permanecer inalteradas. Isso blinda a empresa contra reajustes retroativos inesperados.
+
+---
+
+---
+
+### Resumo da Filosofia do Sistema
+
+Este não é apenas um sistema de "cálculo de materiais". É uma **ferramenta de engenharia de custos tributários**. A sua eficácia reside na **precisão da entrada** (atualização periódica dos BDs) e na **rigidez da saída** (o motor de cálculo que garante a aplicação do rateio e tributação conforme as regras do Sponsor).
+
+Estamos com o contexto 100% alinhado. Gostaria que eu registasse esta especificação num documento PDF formal de requisitos ou prefere avançar para o mapeamento técnico da persistência desses dados (o modelo de banco de dados finalizado)?

@@ -1,0 +1,314 @@
+import os
+from weasyprint import HTML
+
+html_content = """
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Modelagem do Banco de Dados - Sistema de Orçamentação Técnica</title>
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        @page {
+            size: A4;
+            margin: 20mm 15mm;
+            background-color: #ffffff;
+            @bottom-right {
+                content: "Página " counter(page);
+                font-size: 9pt;
+                color: #64748b;
+                font-family: Arial, sans-serif;
+            }
+            @bottom-left {
+                content: "Sinalys - Arquitetura de Banco de Dados V1.0";
+                font-size: 9pt;
+                color: #64748b;
+                font-family: Arial, sans-serif;
+            }
+        }
+        body {
+            font-family: Arial, sans-serif;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            font-size: 10pt;
+            line-height: 1.6;
+            background-color: #ffffff;
+        }
+        h1 {
+            font-size: 20pt;
+            color: #0f172a;
+            margin-top: 0;
+            margin-bottom: 5px;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 10px;
+        }
+        h2 {
+            font-size: 14pt;
+            color: #1e3a8a;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            border-left: 4px solid #2563eb;
+            padding-left: 8px;
+            page-break-after: avoid;
+        }
+        h3 {
+            font-size: 11pt;
+            color: #0f172a;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            page-break-after: avoid;
+        }
+        p {
+            margin-top: 0;
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+        .meta-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .meta-table {
+            display: table;
+            width: 100%;
+        }
+        .meta-row {
+            display: table-row;
+        }
+        .meta-cell {
+            display: table-cell;
+            padding: 4px 10px;
+            font-size: 9.5pt;
+        }
+        .meta-label {
+            font-weight: bold;
+            color: #475569;
+        }
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+        }
+        table.data-table th {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-weight: bold;
+            text-align: left;
+            padding: 8px 10px;
+            font-size: 9pt;
+            border: 1px solid #0f172a;
+        }
+        table.data-table td {
+            padding: 7px 10px;
+            font-size: 9pt;
+            border: 1px solid #e2e8f0;
+        }
+        table.data-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        pre {
+            background-color: #0f172a;
+            color: #38bdf8;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 8.5pt;
+            overflow: hidden;
+            margin-top: 8px;
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            font-size: 8pt;
+            font-weight: bold;
+            border-radius: 4px;
+            background-color: #e2e8f0;
+            color: #334155;
+        }
+        .badge-pk { background-color: #dbeafe; color: #1e40af; }
+        .badge-fk { background-color: #fef3c7; color: #92400e; }
+        .info-note {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 10px 15px;
+            margin: 15px 0;
+            font-size: 9.5pt;
+            border-radius: 0 6px 6px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Especificação Técnica: Modelo de Banco de Dados</h1>
+    
+    <div class="meta-box">
+        <div class="meta-table">
+            <div class="meta-row">
+                <div class="meta-cell"><span class="meta-label">Projeto:</span> Sistema de Orçamentação e Engenharia Viária</div>
+                <div class="meta-cell"><span class="meta-label">Versão:</span> 1.0 (Estrutura Homologada)</div>
+            </div>
+            <div class="meta-row">
+                <div class="meta-cell"><span class="meta-label">Perfil Autor:</span> Parametrizador / Engenharia de Custos</div>
+                <div class="meta-cell"><span class="meta-label">Banco Alvo:</span> PostgreSQL / SQLite</div>
+            </div>
+        </div>
+    </div>
+
+    <p>
+        Este documento apresenta o desenho conceitual e os scripts DDL (SQL) estruturados para atender à demanda de independência de bancos de dados setoriais e à composição recursiva de fichas técnicas (Árvore de Materiais/BOM), garantindo o congelamento histórico dos dados no fechamento de cada orçamento.
+    </p>
+
+    <h2>1. Arquitetura da Solução Relacional</h2>
+    <p>
+        Para permitir que múltiplos setores (Recursos Humanos, Frotas, suprimentos de Materiais) atualizem seus custos de forma independente, os itens base foram unificados em uma tabela de <code>insumos</code> controlada por categoria. A recursividade (Ficha dentro de Ficha) é resolvida por meio de uma tabela de relacionamento autorreferenciada, eliminando redundâncias.
+    </p>
+
+    <h2>2. DDL - Criação das Tabelas Base (Inputs dos Setores)</h2>
+    <p>
+        Estas tabelas recebem as atualizações periódicas das gerências administrativas e operacionais.
+    </p>
+
+    <h3>Tabela: Categorias de Insumos</h3>
+    <pre>CREATE TABLE categorias_insumo (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(50) NOT NULL UNIQUE -- 'MATERIAIS', 'RECURSOS HUMANOS', 'FROTAS', 'EPI', 'FERRAMENTAL'
+);</pre>
+
+    <h3>Tabela: Insumos (O Banco Unificado Vivo)</h3>
+    <pre>CREATE TABLE insumos (
+    id SERIAL PRIMARY KEY,
+    categoria_id INT REFERENCES categorias_insumo(id),
+    codigo_interno VARCHAR(30) UNIQUE,
+    descricao VARCHAR(255) NOT NULL,
+    unidade_medida VARCHAR(10) NOT NULL, -- 'm²', 'kg', 'un', 'dia', 'h', 'litro'
+    custo_base DECIMAL(12, 4) NOT NULL,
+    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</pre>
+
+    <h2>3. DDL - Estrutura de Fichas Técnicas (Camada do Parametrizador)</h2>
+    <p>
+        Esta camada permite ao Engenheiro/Parametrizador criar composições de qualquer natureza (uma equipe, um componente físico ou um serviço rodoviário completo).
+    </p>
+
+    <h3>Tabela: Composições (Cabeçalho da Ficha)</h3>
+    <pre>CREATE TABLE composicoes (
+    id SERIAL PRIMARY KEY,
+    codigo_composicao VARCHAR(30) UNIQUE,
+    nome_composicao VARCHAR(255) NOT NULL,
+    tipo_composicao VARCHAR(30) NOT NULL, -- 'EQUIPE', 'COMPONENTE', 'SERVICO_SH', 'SERVICO_VERTICAL'
+    unidade_medida VARCHAR(10) NOT NULL, -- 'm²', 'm', 'un', 'dia'
+    producao_diaria DECIMAL(12, 2) DEFAULT 1.00, -- Relevante para diluição de Equipe/Frota
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</pre>
+
+    <h3>Tabela: Itens da Composição (Estrutura Recursiva / BOM)</h3>
+    <p>
+        Esta tabela resolve o nó complexo do sistema: um item de composição pode apontar para um <code>insumo_id</code> bruto OU para uma outra sub-<code>composicao_id</code> (Ficha filha).
+    </p>
+    <pre>CREATE TABLE composicao_itens (
+    id SERIAL PRIMARY KEY,
+    composicao_pai_id INT REFERENCES composicoes(id) ON DELETE CASCADE,
+    
+    -- OBRIGATORIAMENTE um dos dois campos abaixo deve ser preenchido, nunca ambos:
+    insumo_id INT REFERENCES insumos(id), 
+    composicao_filha_id INT REFERENCES composicoes(id),
+    
+    coeficiente DECIMAL(12, 6) NOT NULL, -- Quantidade necessária ou taxa de rateio
+    
+    CONSTRAINT chk_exclusividade_item CHECK (
+        (insumo_id IS NOT NULL AND composicao_filha_id IS NULL) OR 
+        (insumo_id IS NULL AND composicao_filha_id IS NOT NULL)
+    )
+);</pre>
+
+    <div class="info-note">
+        <strong>Regra de Cálculo no Backend:</strong> Se o item for uma <code>composicao_filha_id</code> do tipo 'EQUIPE' ou 'FROTA' inserido dentro de um serviço, o sistema calcula o custo unitário dividindo o custo acumulado da filha pela <code>producao_diaria</code> da composição pai. Se for do tipo 'MATERIAL', a multiplicação é direta pelo coeficiente.
+    </div>
+
+    <h2>4. DDL - Camada do Orçamentista e Congelamento Histórico (Snapshots)</h2>
+    <p>
+        Para evitar que reajustes salariais ou de fornecedores alterem propostas comerciais já enviadas ou aprovadas no passado, a estrutura abaixo realiza uma quebra de vínculo ("congelamento") dos valores no ato de salvamento do orçamento.
+    </p>
+
+    <h3>Tabela: Orçamentos (Cabeçalho)</h3>
+    <pre>CREATE TABLE orcamentos (
+    id SERIAL PRIMARY KEY,
+    numero_proposta VARCHAR(30) UNIQUE,
+    cliente VARCHAR(150) NOT NULL,
+    bdi_percentual DECIMAL(5, 2) NOT NULL DEFAULT 0.00,
+    status VARCHAR(20) DEFAULT 'EM_ELABORACAO', -- 'ENVIADO', 'APROVADO', 'REJEITADO'
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</pre>
+
+    <h3>Tabela: Itens do Orçamento (Valores Gravados / Foto da Ficha)</h3>
+    <pre>CREATE TABLE orcamento_itens (
+    id SERIAL PRIMARY KEY,
+    orcamento_id INT REFERENCES orcamentos(id) ON DELETE CASCADE,
+    composicao_id INT REFERENCES composicoes(id), -- Referência histórica da ficha utilizada
+    quantidade_projeto DECIMAL(12, 3) NOT NULL,
+    
+    -- VALORES CONGELADOS NO MOMENTO DA EMISSÃO (Garante a auditoria do Sponsor):
+    custo_direto_unitario_gravado DECIMAL(12, 4) NOT NULL, 
+    bdi_aplicado_unitario_gravado DECIMAL(12, 4) NOT NULL,
+    preco_venda_unitario_gravado DECIMAL(12, 4) NOT NULL
+);</pre>
+
+    <h2>5. Dicionário de Dados Resumido</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Tabela</th>
+                <th>Campo Chave</th>
+                <th>Relacionamento</th>
+                <th>Objetivo de Negócio</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>insumos</code></td>
+                <td><code>id</code> <span class="badge badge-pk">PK</span></td>
+                <td>Muitos para 1 com Categorias</td>
+                <td>Alimentado de forma independente pelos setores (RH, Frotas, Materiais).</td>
+            </tr>
+            <tr>
+                <td><code>composicoes</code></td>
+                <td><code>id</code> <span class="badge badge-pk">PK</span></td>
+                <td>Isolado</td>
+                <td>Define o cabeçalho de Fichas Técnicas (Equipes, SH, Componentes).</td>
+            </tr>
+            <tr>
+                <td><code>composicao_itens</code></td>
+                <td><code>id</code> <span class="badge badge-pk">PK</span></td>
+                <td>Muitos para Muitos Autorelacional</td>
+                <td>Permite aninhar Ficha dentro de Ficha (ex: por uma Equipe dentro do Serviço).</td>
+            </tr>
+            <tr>
+                <td><code>orcamento_itens</code></td>
+                <td><code>id</code> <span class="badge badge-pk">PK</span></td>
+                <td>1 para Muitos com Orçamentos</td>
+                <td>Desconecta o cálculo das tabelas vivas, imobilizando o preço histórico.</td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+</html>
+"""
+
+# Salvar o arquivo HTML temporariamente
+with open("modelo_banco_dados.html", "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+# Converter para PDF usando o WeasyPrint
+HTML("modelo_banco_dados.html").write_pdf("modelo_banco_dados_orcamento.pdf")
+
+print("PDF Gerado com sucesso.")
