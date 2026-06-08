@@ -5,6 +5,7 @@ from backend.config import settings
 from backend.database import Base, engine
 from backend.routers.bd_routers import router as bd_router
 from backend.routers.ficha_routers import router as ficha_router
+from backend.routers.orcamento_routers import router as orcamento_router
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -21,6 +22,7 @@ app.add_middleware(
 
 app.include_router(bd_router, prefix="/api/v1")
 app.include_router(ficha_router, prefix="/api/v1")
+app.include_router(orcamento_router, prefix="/api/v1")
 
 
 @app.get("/", tags=["health"])
