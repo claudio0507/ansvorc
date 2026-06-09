@@ -27,6 +27,7 @@ from backend.services.motor_bdi import (
     ICMS_PADRAO,
     ISSQN_PR,
     ISSQN_SP,
+    ItemFaturavel,
     PIS_COFINS_REGIME_CUMULATIVO,
     PIS_COFINS_REGIME_NORMAL,
     PIS_PADRAO,
@@ -43,8 +44,8 @@ router = APIRouter()
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 
-def _get_or_404(db: Session, model, id: int):
-    obj = db.get(model, id)
+def _get_or_404(db: Session, model, pk: int):
+    obj = db.get(model, pk)
     if not obj:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Não encontrado"
@@ -59,6 +60,25 @@ def _guard_rascunho(orc: Orcamento) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Orçamento com status '{orc.status}' não pode ser editado. "
             "Apenas orçamentos em 'rascunho' permitem alterações.",
+        )
+
+
+# Transições de status permitidas: {status_atual: {status_destino_valido}}
+_TRANSICOES_STATUS: dict[str, frozenset[str]] = {
+    "rascunho": frozenset({"enviado"}),
+    "enviado": frozenset({"aprovado", "rejeitado"}),
+    "aprovado": frozenset(),
+    "rejeitado": frozenset({"rascunho"}),
+}
+
+
+def _guard_transicao_status(atual: str, novo: str) -> None:
+    permitidos = _TRANSICOES_STATUS.get(atual, frozenset())
+    if novo not in permitidos:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Transição de status inválida: '{atual}' → '{novo}'. "
+            f"Permitido a partir de '{atual}': {sorted(permitidos) or 'nenhum'}.",
         )
 
 
@@ -111,8 +131,8 @@ def _impostos_base(db: Session, mod_fat: str, uf: str) -> dict:
 
 
 @router.get("/clientes", response_model=list[ClienteRead], tags=["clientes"])
-def listar_clientes(db: Session = Depends(get_db)):
-    return db.query(Cliente).all()
+def listar_clientes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(Cliente).offset(skip).limit(limit).all()
 
 
 @router.post(
@@ -157,8 +177,8 @@ def excluir_cliente(id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/orcamentos", response_model=list[OrcamentoRead], tags=["orcamentos"])
-def listar_orcamentos(db: Session = Depends(get_db)):
-    return db.query(Orcamento).all()
+def listar_orcamentos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(Orcamento).offset(skip).limit(limit).all()
 
 
 @router.post(
@@ -184,9 +204,19 @@ def obter_orcamento(id: int, db: Session = Depends(get_db)):
 @router.put("/orcamentos/{id}", response_model=OrcamentoRead, tags=["orcamentos"])
 def atualizar_orcamento(id: int, body: OrcamentoUpdate, db: Session = Depends(get_db)):
     obj = _get_or_404(db, Orcamento, id)
-    _guard_rascunho(obj)
-    for k, v in body.model_dump(exclude_none=True).items():
-        setattr(obj, k, v)
+    dados = body.model_dump(exclude_none=True)
+
+    if "status" in dados:
+        # Transição de status: não exige rascunho, mas valida a máquina de estados
+        _guard_transicao_status(obj.status, dados.pop("status"))
+        obj.status = body.status  # type: ignore[assignment]
+
+    if dados:
+        # Demais campos só podem ser alterados em rascunho
+        _guard_rascunho(obj)
+        for k, v in dados.items():
+            setattr(obj, k, v)
+
     db.commit()
     db.refresh(obj)
     return obj
@@ -321,6 +351,7 @@ def calcular_orcamento(id: int, db: Session = Depends(get_db)):
     7. Retorna ResultadoCalculoRead
     """
     orc = _get_or_404(db, Orcamento, id)
+    _guard_rascunho(orc)
     itens = db.query(OrcamentoItem).filter(OrcamentoItem.orcamento_id == id).all()
 
     if not itens:
@@ -331,6 +362,15 @@ def calcular_orcamento(id: int, db: Session = Depends(get_db)):
 
     uf = orc.uf_execucao
     reidi = orc.beneficio_reidi
+
+    # Pré-carrega todas as 4 linhas de bd_BDI para evitar N+1 dentro do loop
+    _bdi_cache: dict[str, dict] = {}
+
+    def _impostos_cached(mod_fat: str, uf_exec: str) -> dict:
+        key = f"{mod_fat}:{uf_exec}"
+        if key not in _bdi_cache:
+            _bdi_cache[key] = _impostos_base(db, mod_fat, uf_exec)
+        return _bdi_cache[key]
 
     # Separar blocos
     FATURAVEIS = {"servicos", "produtos"}
@@ -345,7 +385,7 @@ def calcular_orcamento(id: int, db: Session = Depends(get_db)):
 
     for item in itens_fat:
         mod_fat = item.mod_fat if item.mod_fat != "-" else "BDI-MAT+MO"
-        params = _impostos_base(db, mod_fat, uf)
+        params = _impostos_cached(mod_fat, uf)
 
         imp = {
             "pis": params["pis"],
@@ -431,8 +471,6 @@ def calcular_orcamento(id: int, db: Session = Depends(get_db)):
         nfat_resultados.append({"item": item, "custo_carregado": custo_carregado})
 
     # ── Passo 3: Fator K ──────────────────────────────────────────────────────
-    from backend.services.motor_bdi import ItemFaturavel
-
     itens_fk = [
         ItemFaturavel(
             id=r["item"].id,

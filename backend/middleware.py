@@ -36,7 +36,7 @@ _RBAC: list[tuple[str, frozenset[str]]] = [
 # Prefixos que exigem startswith
 _PUBLICAS_PREFIX = ("/api/v1/auth/", "/docs", "/redoc")
 # Paths que exigem match exato
-_PUBLICAS_EXACT = ("/", "/openapi.json")
+_PUBLICAS_EXACT = ("/", "/openapi.json", "/health")
 
 
 def _eh_publica(path: str) -> bool:
@@ -102,6 +102,15 @@ class AuthMiddleware:
 
         papel = payload.get("papel", "")
         papeis_ok = _papeis_permitidos(path)
+
+        if papeis_ok is None and path.startswith("/api/v1/"):
+            # Rota /api/v1/* não registrada no RBAC — nega por padrão
+            resp = JSONResponse(
+                {"detail": "Rota não autorizada."},
+                status_code=403,
+            )
+            await resp(scope, receive, send)
+            return
 
         if papeis_ok is not None and papel not in papeis_ok:
             resp = JSONResponse(

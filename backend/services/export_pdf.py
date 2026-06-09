@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import datetime
 from decimal import Decimal
+from html import escape
 
 from backend.models.orcamento_models import Cliente, Orcamento, OrcamentoItem
 
@@ -52,6 +53,19 @@ def _build_html(orc: Orcamento, itens: list[OrcamentoItem], cliente: Cliente) ->
     criado_em_str = orc.criado_em.strftime("%d/%m/%Y") if orc.criado_em else hoje
     reidi_label = "Sim (REIDI)" if orc.beneficio_reidi else "Não"
 
+    # Escapa todos os dados vindos do banco para evitar injeção HTML no PDF
+    e_numero_proposta = escape(str(orc.numero_proposta or ""))
+    e_versao = escape(str(orc.versao or ""))
+    e_descricao_obra = escape(str(orc.descricao_obra or "—"))
+    e_uf_execucao = escape(str(orc.uf_execucao or ""))
+    e_status = escape(str(orc.status or "").capitalize())
+    e_razao_social = escape(str(cliente.razao_social or "—"))
+    e_cnpj = escape(str(cliente.cnpj or "—"))
+    e_contato_nome = escape(str(cliente.contato_nome or "—"))
+    e_contato_email = escape(str(cliente.contato_email or "—"))
+    e_contato_telefone = escape(str(cliente.contato_telefone or "—"))
+    e_uf_sede = escape(str(cliente.uf_sede or "—"))
+
     # Agrupa itens por bloco preservando a ordem definida
     blocos: dict[str, list[OrcamentoItem]] = {}
     for b in _BLOCO_ORDER:
@@ -65,15 +79,15 @@ def _build_html(orc: Orcamento, itens: list[OrcamentoItem], cliente: Cliente) ->
         label = _BLOCO_LABEL.get(bloco_key, bloco_key.capitalize())
         tabela_html += f"""
         <tr class="bloco-header">
-            <td colspan="8">{label}</td>
+            <td colspan="8">{escape(label)}</td>
         </tr>"""
         for item in bloco_itens:
             bdi_pct = _fmt_pct(item.bdi_taxa)
             tabela_html += f"""
         <tr>
-            <td class="center">{label[:3].upper()}</td>
-            <td>{item.descricao}</td>
-            <td class="center">{item.unidade_medida}</td>
+            <td class="center">{escape(label[:3].upper())}</td>
+            <td>{escape(str(item.descricao or ""))}</td>
+            <td class="center">{escape(str(item.unidade_medida or ""))}</td>
             <td class="right">{_fmt_qty(item.quantidade)}</td>
             <td class="right">{_fmt_brl(item.custo_direto_unitario)}</td>
             <td class="center">{bdi_pct}</td>
@@ -279,8 +293,8 @@ def _build_html(orc: Orcamento, itens: list[OrcamentoItem], cliente: Cliente) ->
     <div class="subtitle">Proposta Comercial de Obra Viária</div>
   </div>
   <div class="header-right">
-    <div class="proposta-num">Proposta {orc.numero_proposta}</div>
-    <div>Versão {orc.versao} &nbsp;|&nbsp; Data: {criado_em_str}</div>
+    <div class="proposta-num">Proposta {e_numero_proposta}</div>
+    <div>Versão {e_versao} &nbsp;|&nbsp; Data: {criado_em_str}</div>
   </div>
 </div>
 
@@ -290,27 +304,27 @@ def _build_html(orc: Orcamento, itens: list[OrcamentoItem], cliente: Cliente) ->
   <div class="dados-grid">
     <div class="dado">
       <div class="dado-label">Razão Social</div>
-      <div class="dado-valor">{cliente.razao_social}</div>
+      <div class="dado-valor">{e_razao_social}</div>
     </div>
     <div class="dado">
       <div class="dado-label">CNPJ</div>
-      <div class="dado-valor">{cliente.cnpj or '—'}</div>
+      <div class="dado-valor">{e_cnpj}</div>
     </div>
     <div class="dado">
       <div class="dado-label">Contato</div>
-      <div class="dado-valor">{cliente.contato_nome or '—'}</div>
+      <div class="dado-valor">{e_contato_nome}</div>
     </div>
     <div class="dado">
       <div class="dado-label">E-mail</div>
-      <div class="dado-valor">{cliente.contato_email or '—'}</div>
+      <div class="dado-valor">{e_contato_email}</div>
     </div>
     <div class="dado">
       <div class="dado-label">Telefone</div>
-      <div class="dado-valor">{cliente.contato_telefone or '—'}</div>
+      <div class="dado-valor">{e_contato_telefone}</div>
     </div>
     <div class="dado">
       <div class="dado-label">UF Sede</div>
-      <div class="dado-valor">{cliente.uf_sede or '—'}</div>
+      <div class="dado-valor">{e_uf_sede}</div>
     </div>
   </div>
 </div>
@@ -321,11 +335,11 @@ def _build_html(orc: Orcamento, itens: list[OrcamentoItem], cliente: Cliente) ->
   <div class="dados-grid">
     <div class="dado" style="min-width:340px;">
       <div class="dado-label">Descrição da Obra</div>
-      <div class="dado-valor">{orc.descricao_obra or '—'}</div>
+      <div class="dado-valor">{e_descricao_obra}</div>
     </div>
     <div class="dado">
       <div class="dado-label">UF de Execução</div>
-      <div class="dado-valor">{orc.uf_execucao}</div>
+      <div class="dado-valor">{e_uf_execucao}</div>
     </div>
     <div class="dado">
       <div class="dado-label">Benefício REIDI</div>
@@ -333,7 +347,7 @@ def _build_html(orc: Orcamento, itens: list[OrcamentoItem], cliente: Cliente) ->
     </div>
     <div class="dado">
       <div class="dado-label">Status</div>
-      <div class="dado-valor">{orc.status.capitalize()}</div>
+      <div class="dado-valor">{e_status}</div>
     </div>
   </div>
 </div>
@@ -362,8 +376,8 @@ def _build_html(orc: Orcamento, itens: list[OrcamentoItem], cliente: Cliente) ->
 <div class="rodape">
   <div class="rodape-info">
     <div>Gerado em: {hoje}</div>
-    <div>Versão da proposta: {orc.versao}</div>
-    <div>Número da proposta: {orc.numero_proposta}</div>
+    <div>Versão da proposta: {e_versao}</div>
+    <div>Número da proposta: {e_numero_proposta}</div>
   </div>
   <div class="totais">
     <div class="total-label">Total da Proposta</div>

@@ -38,10 +38,28 @@ def _senha_ou_gerada(env_var: str, label: str) -> str:
     if val:
         return val
     gerada = secrets.token_urlsafe(16)
-    print(
-        f"[seeds_prod] AVISO: {env_var} não definida. Senha gerada para {label}: {gerada}"
-    )
+    # Avisa sem expor a senha no stdout — senha escrita apenas no arquivo de credenciais
+    print(f"[seeds_prod] AVISO: {env_var} não definida. Senha gerada para {label}.")
     return gerada
+
+
+def _salvar_credenciais(credenciais: dict[str, str]) -> None:
+    """Grava credenciais geradas em arquivo restrito (chmod 600) fora do stdout."""
+    cred_path = os.path.join(os.path.dirname(__file__), "..", "credenciais_iniciais.txt")
+    cred_path = os.path.abspath(cred_path)
+    with open(cred_path, "w", encoding="utf-8") as f:
+        f.write("Credenciais iniciais — altere imediatamente após o primeiro login.\n\n")
+        for email, senha in credenciais.items():
+            f.write(f"{email}  →  {senha}\n")
+    # Restringe leitura ao dono do processo (equivalente a chmod 600)
+    try:
+        import stat
+
+        os.chmod(cred_path, stat.S_IRUSR | stat.S_IWUSR)
+    except OSError:
+        pass  # Windows não suporta chmod POSIX; aceita como está
+    print(f"[seeds_prod] Credenciais gravadas em: {cred_path}")
+    print("[seeds_prod] IMPORTANTE: altere as senhas e remova o arquivo após o primeiro login.")
 
 
 def seed_usuarios_prod(db):
@@ -100,11 +118,7 @@ def run():
 
         db.commit()
         print("[seeds_prod] Seed de produção concluído.")
-        print(
-            "[seeds_prod] Credenciais iniciais (altere imediatamente após o primeiro login):"
-        )
-        for email, senha in credenciais.items():
-            print(f"  {email}  →  {senha}")
+        _salvar_credenciais(credenciais)
     except Exception:
         db.rollback()
         raise

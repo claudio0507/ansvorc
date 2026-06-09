@@ -373,12 +373,16 @@ class TestOrcamentoItens:
 class TestGuardAprovado:
 
     def _aprovar(self, orcamento_id):
-        """Força o status para 'aprovado' via PUT (status rascunho)."""
-        resp = client.put(
+        """Força o status para 'aprovado' via PUT seguindo a máquina de estados."""
+        r1 = client.put(
+            f"/api/v1/orcamentos/{orcamento_id}", json={"status": "enviado"}
+        )
+        assert r1.status_code == 200, r1.json()
+        r2 = client.put(
             f"/api/v1/orcamentos/{orcamento_id}", json={"status": "aprovado"}
         )
-        assert resp.status_code == 200
-        assert resp.json()["status"] == "aprovado"
+        assert r2.status_code == 200, r2.json()
+        assert r2.json()["status"] == "aprovado"
 
     def test_nao_pode_editar_item_de_orcamento_aprovado(
         self, orcamento_id, ficha_servico_id

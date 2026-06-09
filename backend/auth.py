@@ -77,7 +77,14 @@ def get_current_user(
         )
 
     payload = verificar_token(credentials.credentials)
-    usuario_id = int(payload["sub"])
+    sub = payload.get("sub")
+    if not sub:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido: campo 'sub' ausente.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    usuario_id = int(sub)
 
     usuario = db.get(Usuario, usuario_id)
     if not usuario or not usuario.ativo:
