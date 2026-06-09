@@ -1,11 +1,10 @@
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import ConfigDict, field_validator, model_validator
-from pydantic import BaseModel
-
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 # ── Clientes ──────────────────────────────────────────────────────────────────
+
 
 class ClienteCreate(BaseModel):
     razao_social: str
@@ -42,9 +41,35 @@ class ClienteRead(BaseModel):
 
 # ── Orçamentos ────────────────────────────────────────────────────────────────
 
-_UF_VALIDAS = {"PR", "SP", "SC", "RS", "MG", "RJ", "ES", "GO", "DF", "MT", "MS", "BA",
-               "PE", "CE", "AM", "PA", "RO", "RR", "AP", "TO", "MA", "PI", "RN", "PB",
-               "AL", "SE", "AC"}
+_UF_VALIDAS = {
+    "PR",
+    "SP",
+    "SC",
+    "RS",
+    "MG",
+    "RJ",
+    "ES",
+    "GO",
+    "DF",
+    "MT",
+    "MS",
+    "BA",
+    "PE",
+    "CE",
+    "AM",
+    "PA",
+    "RO",
+    "RR",
+    "AP",
+    "TO",
+    "MA",
+    "PI",
+    "RN",
+    "PB",
+    "AL",
+    "SE",
+    "AC",
+}
 
 _STATUS_VALIDOS = {"rascunho", "enviado", "aprovado", "rejeitado"}
 
@@ -111,6 +136,7 @@ class OrcamentoRead(BaseModel):
 
 # ── Itens do Orçamento ────────────────────────────────────────────────────────
 
+
 class OrcamentoItemCreate(BaseModel):
     bloco: str
     ficha_servico_id: int | None = None
@@ -148,7 +174,9 @@ class OrcamentoItemCreate(BaseModel):
     @classmethod
     def valida_margem(cls, v: Decimal) -> Decimal:
         if v < Decimal("0") or v >= Decimal("1"):
-            raise ValueError("margem_percentual deve estar entre 0 e 1 (fração decimal)")
+            raise ValueError(
+                "margem_percentual deve estar entre 0 e 1 (fração decimal)"
+            )
         return v
 
     @model_validator(mode="after")
@@ -213,6 +241,7 @@ class OrcamentoItemRead(BaseModel):
 
 
 # ── Resultado do cálculo (/calcular) ─────────────────────────────────────────
+
 
 class ItemCalculadoRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)

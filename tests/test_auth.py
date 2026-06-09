@@ -60,9 +60,24 @@ client = TestClient(app, raise_server_exceptions=False)
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-_ADMIN = {"nome": "Admin", "email": "admin@test.com", "senha": "admin123", "papel": "gestor_bd"}
-_ORC   = {"nome": "Orc",   "email": "orc@test.com",   "senha": "orc123",   "papel": "orcamentista"}
-_PARAM = {"nome": "Param", "email": "param@test.com", "senha": "param123", "papel": "parametrizador"}
+_ADMIN = {
+    "nome": "Admin",
+    "email": "admin@test.com",
+    "senha": "admin123",
+    "papel": "gestor_bd",
+}
+_ORC = {
+    "nome": "Orc",
+    "email": "orc@test.com",
+    "senha": "orc123",
+    "papel": "orcamentista",
+}
+_PARAM = {
+    "nome": "Param",
+    "email": "param@test.com",
+    "senha": "param123",
+    "papel": "parametrizador",
+}
 
 
 def registrar(payload: dict) -> dict:
@@ -84,6 +99,7 @@ def headers(token: str) -> dict:
 # ══════════════════════════════════════════════════════════════════════════════
 #   REGISTRO
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestRegistro:
     def test_registro_ok(self):
@@ -119,10 +135,14 @@ class TestRegistro:
 #   LOGIN
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestLogin:
     def test_login_ok_retorna_token_e_papel(self):
         registrar(_ADMIN)
-        r = client.post("/api/v1/auth/login", json={"email": _ADMIN["email"], "senha": _ADMIN["senha"]})
+        r = client.post(
+            "/api/v1/auth/login",
+            json={"email": _ADMIN["email"], "senha": _ADMIN["senha"]},
+        )
         assert r.status_code == 200
         data = r.json()
         assert data["token_type"] == "bearer"
@@ -131,11 +151,15 @@ class TestLogin:
 
     def test_login_senha_errada_401(self):
         registrar(_ADMIN)
-        r = client.post("/api/v1/auth/login", json={"email": _ADMIN["email"], "senha": "errada"})
+        r = client.post(
+            "/api/v1/auth/login", json={"email": _ADMIN["email"], "senha": "errada"}
+        )
         assert r.status_code == 401
 
     def test_login_email_inexistente_401(self):
-        r = client.post("/api/v1/auth/login", json={"email": "ninguem@x.com", "senha": "qualquer"})
+        r = client.post(
+            "/api/v1/auth/login", json={"email": "ninguem@x.com", "senha": "qualquer"}
+        )
         assert r.status_code == 401
 
 
@@ -143,24 +167,30 @@ class TestLogin:
 #   AUTENTICAÇÃO DE ROTA
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class TestAutenticacao:
     def test_sem_token_retorna_401(self):
         r = client.get("/api/v1/bd-rh")
         assert r.status_code == 401
 
     def test_token_invalido_retorna_401(self):
-        r = client.get("/api/v1/bd-rh", headers={"Authorization": "Bearer token.lixo.aqui"})
+        r = client.get(
+            "/api/v1/bd-rh", headers={"Authorization": "Bearer token.lixo.aqui"}
+        )
         assert r.status_code == 401
 
     def test_token_expirado_retorna_401(self):
         from backend.config import settings
+
         payload = {
-            "sub":   "1",
+            "sub": "1",
             "papel": "gestor_bd",
-            "exp":   datetime.now(timezone.utc) - timedelta(seconds=1),
+            "exp": datetime.now(timezone.utc) - timedelta(seconds=1),
         }
         token_expirado = jwt.encode(payload, settings.JWT_SECRET, algorithm="HS256")
-        r = client.get("/api/v1/bd-rh", headers={"Authorization": f"Bearer {token_expirado}"})
+        r = client.get(
+            "/api/v1/bd-rh", headers={"Authorization": f"Bearer {token_expirado}"}
+        )
         assert r.status_code == 401
 
     def test_me_com_token_valido(self):
@@ -178,6 +208,7 @@ class TestAutenticacao:
 # ══════════════════════════════════════════════════════════════════════════════
 #   RBAC
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 class TestRBAC:
     def test_orcamentista_nao_acessa_bd_rh(self):

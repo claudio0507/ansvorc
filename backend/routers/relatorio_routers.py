@@ -26,14 +26,18 @@ router = APIRouter(tags=["relatorios"])
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
+
 def _get_orc_or_404(db: Session, orc_id: int) -> Orcamento:
     orc = db.get(Orcamento, orc_id)
     if not orc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orçamento não encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Orçamento não encontrado"
+        )
     return orc
 
 
 # ── Export PDF ─────────────────────────────────────────────────────────────────
+
 
 @router.get("/orcamentos/{id}/export/pdf")
 def exportar_pdf(id: int, db: Session = Depends(get_db)) -> Response:
@@ -47,11 +51,7 @@ def exportar_pdf(id: int, db: Session = Depends(get_db)) -> Response:
             detail="Cliente vinculado ao orçamento não encontrado",
         )
 
-    itens = (
-        db.query(OrcamentoItem)
-        .filter(OrcamentoItem.orcamento_id == id)
-        .all()
-    )
+    itens = db.query(OrcamentoItem).filter(OrcamentoItem.orcamento_id == id).all()
 
     pdf_bytes = gerar_pdf_proposta(orc, itens, cliente)
 
@@ -65,6 +65,7 @@ def exportar_pdf(id: int, db: Session = Depends(get_db)) -> Response:
 
 # ── Versões de proposta ────────────────────────────────────────────────────────
 
+
 @router.get("/orcamentos/{id}/versoes")
 def listar_versoes(id: int, db: Session = Depends(get_db)) -> list[dict]:
     """
@@ -77,17 +78,18 @@ def listar_versoes(id: int, db: Session = Depends(get_db)) -> list[dict]:
 
     return [
         {
-            "id":              orc.id,
+            "id": orc.id,
             "numero_proposta": orc.numero_proposta,
-            "versao":          orc.versao,
-            "status":          orc.status,
-            "total_proposta":  orc.total_proposta,
-            "criado_em":       orc.criado_em,
+            "versao": orc.versao,
+            "status": orc.status,
+            "total_proposta": orc.total_proposta,
+            "criado_em": orc.criado_em,
         }
     ]
 
 
 # ── Dashboard ──────────────────────────────────────────────────────────────────
+
 
 @router.get("/dashboard")
 def dashboard(db: Session = Depends(get_db)) -> dict:
@@ -133,9 +135,9 @@ def dashboard(db: Session = Depends(get_db)) -> dict:
         .all()
     )
     por_status: dict[str, int] = {
-        "rascunho":  0,
-        "enviado":   0,
-        "aprovado":  0,
+        "rascunho": 0,
+        "enviado": 0,
+        "aprovado": 0,
         "rejeitado": 0,
     }
     for s, cnt in status_counts:
@@ -148,27 +150,22 @@ def dashboard(db: Session = Depends(get_db)) -> dict:
     total_orcamentos: int = db.query(func.count(Orcamento.id)).scalar() or 0
 
     # Últimos 5 orçamentos
-    recentes = (
-        db.query(Orcamento)
-        .order_by(Orcamento.criado_em.desc())
-        .limit(5)
-        .all()
-    )
+    recentes = db.query(Orcamento).order_by(Orcamento.criado_em.desc()).limit(5).all()
     orcamentos_recentes = [
         {
-            "id":              o.id,
+            "id": o.id,
             "numero_proposta": o.numero_proposta,
-            "status":          o.status,
-            "total_proposta":  o.total_proposta,
-            "criado_em":       o.criado_em,
+            "status": o.status,
+            "total_proposta": o.total_proposta,
+            "criado_em": o.criado_em,
         }
         for o in recentes
     ]
 
     return {
-        "total_orcado_mes":    total_orcado_mes,
-        "margem_media":        margem_media,
-        "por_status":          por_status,
-        "total_orcamentos":    total_orcamentos,
+        "total_orcado_mes": total_orcado_mes,
+        "margem_media": margem_media,
+        "por_status": por_status,
+        "total_orcamentos": total_orcamentos,
         "orcamentos_recentes": orcamentos_recentes,
     }

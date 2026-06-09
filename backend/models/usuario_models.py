@@ -17,12 +17,16 @@ class Usuario(Base):
         ),
     )
 
-    id: Mapped[int]           = mapped_column(primary_key=True, index=True)
-    nome: Mapped[str]         = mapped_column(String(120), nullable=False)
-    email: Mapped[str]        = mapped_column(String(200), unique=True, nullable=False, index=True)
-    senha_hash: Mapped[str]   = mapped_column(String(300), nullable=False)
-    papel: Mapped[str]        = mapped_column(String(30), nullable=False, default="orcamentista")
-    ativo: Mapped[bool]       = mapped_column(Boolean, default=True, nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    nome: Mapped[str] = mapped_column(String(120), nullable=False)
+    email: Mapped[str] = mapped_column(
+        String(200), unique=True, nullable=False, index=True
+    )
+    senha_hash: Mapped[str] = mapped_column(String(300), nullable=False)
+    papel: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="orcamentista"
+    )
+    ativo: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     criado_em: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )

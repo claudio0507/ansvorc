@@ -44,7 +44,9 @@ class Orcamento(Base):
     __tablename__ = "orcamentos"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    numero_proposta: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)
+    numero_proposta: Mapped[str] = mapped_column(
+        String(30), unique=True, nullable=False
+    )
     versao: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     cliente_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("clientes.id"), nullable=False
@@ -54,7 +56,9 @@ class Orcamento(Base):
     # Parâmetros fiscais globais do orçamento
     uf_execucao: Mapped[str] = mapped_column(String(2), nullable=False, default="PR")
     # PR | SP | ... (determina alíquota ISSQN)
-    beneficio_reidi: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    beneficio_reidi: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
 
     # Status do ciclo de vida
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="rascunho")
@@ -78,7 +82,9 @@ class Orcamento(Base):
         DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
     )
 
-    cliente_obj: Mapped["Cliente"] = relationship("Cliente", back_populates="orcamentos")
+    cliente_obj: Mapped["Cliente"] = relationship(
+        "Cliente", back_populates="orcamentos"
+    )
     itens: Mapped[list["OrcamentoItem"]] = relationship(
         "OrcamentoItem", back_populates="orcamento", cascade="all, delete-orphan"
     )
@@ -131,7 +137,9 @@ class OrcamentoItem(Base):
     quantidade: Mapped[Decimal] = mapped_column(DECIMAL(12, 4), nullable=False)
 
     # Parâmetros de precificação da linha
-    mod_fat: Mapped[str] = mapped_column(String(20), nullable=False, default="BDI-MAT+MO")
+    mod_fat: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="BDI-MAT+MO"
+    )
     # BDI-MO | BDI-MAT+MO | BDI+ICMS | FAT DIR SIMP | - (não faturável)
     margem_percentual: Mapped[Decimal] = mapped_column(
         DECIMAL(6, 4), nullable=False, default=Decimal("0.1000")
@@ -166,7 +174,11 @@ class OrcamentoItem(Base):
     )
 
     # Flag: item adicionado manualmente (fora do catálogo de fichas)
-    item_excepcional: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    demanda_aprovacao: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    item_excepcional: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    demanda_aprovacao: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
 
     orcamento: Mapped["Orcamento"] = relationship("Orcamento", back_populates="itens")

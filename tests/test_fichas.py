@@ -46,6 +46,7 @@ def client(setup_db, sponsor_headers):
 
 # ── Fixtures de dados base ────────────────────────────────────────────────────
 
+
 @pytest.fixture()
 def db_session(setup_db):
     db = TestingSessionLocal()
@@ -161,6 +162,7 @@ def material_pelicula(db_session):
 
 # ── Fichas de Equipe ─────────────────────────────────────────────────────────
 
+
 class TestFichaEquipe:
     BASE = "/api/v1/fichas-equipe"
 
@@ -200,9 +202,7 @@ class TestFichaEquipe:
         assert client.delete(f"{self.BASE}/1").status_code == 204
         assert client.get(f"{self.BASE}/1").status_code == 404
 
-    def test_adicionar_item_rh_lookup_automatico(
-        self, client, rh_encarregado
-    ):
+    def test_adicionar_item_rh_lookup_automatico(self, client, rh_encarregado):
         client.post(self.BASE, json={"codigo": "EQ-001", "nome": "Equipe"})
         payload = {
             "tipo_recurso": "RH",
@@ -222,7 +222,11 @@ class TestFichaEquipe:
         client.post(self.BASE, json={"codigo": "EQ-001", "nome": "Equipe"})
         client.post(
             f"{self.BASE}/1/itens",
-            json={"tipo_recurso": "RH", "rh_id": rh_encarregado.id, "quantidade": "1.0"},
+            json={
+                "tipo_recurso": "RH",
+                "rh_id": rh_encarregado.id,
+                "quantidade": "1.0",
+            },
         )
         ficha = client.get(f"{self.BASE}/1").json()
         assert ficha["possui_itens"] is True
@@ -287,7 +291,11 @@ class TestFichaEquipe:
         client.post(self.BASE, json={"codigo": "EQ-001", "nome": "Equipe"})
         client.post(
             f"{self.BASE}/1/itens",
-            json={"tipo_recurso": "RH", "rh_id": rh_encarregado.id, "quantidade": "1.0"},
+            json={
+                "tipo_recurso": "RH",
+                "rh_id": rh_encarregado.id,
+                "quantidade": "1.0",
+            },
         )
         client.post(
             f"{self.BASE}/1/itens",
@@ -300,7 +308,11 @@ class TestFichaEquipe:
         client.post(self.BASE, json={"codigo": "EQ-001", "nome": "Equipe"})
         r = client.post(
             f"{self.BASE}/1/itens",
-            json={"tipo_recurso": "RH", "rh_id": rh_encarregado.id, "quantidade": "1.0"},
+            json={
+                "tipo_recurso": "RH",
+                "rh_id": rh_encarregado.id,
+                "quantidade": "1.0",
+            },
         )
         item_id = r.json()["id"]
         client.delete(f"{self.BASE}/1/itens/{item_id}")
@@ -310,13 +322,18 @@ class TestFichaEquipe:
 
 # ── Fichas de Produto (BOM) ───────────────────────────────────────────────────
 
+
 class TestFichaProduto:
     BASE = "/api/v1/fichas-produto"
 
     def test_criar_ficha_produto(self, client):
         resp = client.post(
             self.BASE,
-            json={"codigo": "PROD-001", "nome": "Placa R-1 0.60m", "unidade_medida": "un"},
+            json={
+                "codigo": "PROD-001",
+                "nome": "Placa R-1 0.60m",
+                "unidade_medida": "un",
+            },
         )
         assert resp.status_code == 201
         assert resp.json()["possui_itens"] is False
@@ -339,11 +356,15 @@ class TestFichaProduto:
         )
         assert client.get(f"{self.BASE}/1").json()["possui_itens"] is True
 
-    def test_bom_aninhado_produto_filho(self, client, material_chapa, material_pelicula):
+    def test_bom_aninhado_produto_filho(
+        self, client, material_chapa, material_pelicula
+    ):
         # Produto pai: placa montada
         client.post(self.BASE, json={"codigo": "PROD-PAI", "nome": "Placa Montada"})
         # Produto filho: chapa com película
-        client.post(self.BASE, json={"codigo": "PROD-FILHO", "nome": "Chapa c/ Película"})
+        client.post(
+            self.BASE, json={"codigo": "PROD-FILHO", "nome": "Chapa c/ Película"}
+        )
         # Adiciona materiais ao filho (id=2)
         client.post(
             f"{self.BASE}/2/itens",
@@ -411,7 +432,10 @@ class TestFichaProduto:
             json={"componente_filho_id": 1, "quantidade": "1.0"},
         )
         assert resp.status_code == 422
-        assert "circular" in resp.json()["detail"].lower() or "ciclo" in resp.json()["detail"].lower()
+        assert (
+            "circular" in resp.json()["detail"].lower()
+            or "ciclo" in resp.json()["detail"].lower()
+        )
 
     def test_deletar_ficha_produto(self, client):
         client.post(self.BASE, json={"codigo": "PROD-001", "nome": "Placa"})
@@ -420,6 +444,7 @@ class TestFichaProduto:
 
 
 # ── Fichas de Serviço ─────────────────────────────────────────────────────────
+
 
 class TestFichaServico:
     BASE = "/api/v1/fichas-servico"
@@ -455,7 +480,11 @@ class TestFichaServico:
         client.post(self.BASE_EQ, json={"codigo": "EQ-001", "nome": "Equipe SV"})
         client.post(
             f"{self.BASE_EQ}/1/itens",
-            json={"tipo_recurso": "RH", "rh_id": rh_encarregado.id, "quantidade": "1.0"},
+            json={
+                "tipo_recurso": "RH",
+                "rh_id": rh_encarregado.id,
+                "quantidade": "1.0",
+            },
         )
         # Cria serviço
         client.post(self.BASE, json=self.SERVICO_PAYLOAD)
@@ -504,7 +533,9 @@ class TestFichaServico:
         resp = client.post(f"{self.BASE}/1/recursos", json={"quantidade": "1.0"})
         assert resp.status_code == 422
 
-    def test_recurso_dois_fk_rejeitado(self, client, frota_caminhao, ferramental_furadeira):
+    def test_recurso_dois_fk_rejeitado(
+        self, client, frota_caminhao, ferramental_furadeira
+    ):
         client.post(self.BASE, json=self.SERVICO_PAYLOAD)
         resp = client.post(
             f"{self.BASE}/1/recursos",

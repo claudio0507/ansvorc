@@ -38,23 +38,40 @@ def _senha_ou_gerada(env_var: str, label: str) -> str:
     if val:
         return val
     gerada = secrets.token_urlsafe(16)
-    print(f"[seeds_prod] AVISO: {env_var} não definida. Senha gerada para {label}: {gerada}")
+    print(
+        f"[seeds_prod] AVISO: {env_var} não definida. Senha gerada para {label}: {gerada}"
+    )
     return gerada
 
 
 def seed_usuarios_prod(db):
     admin_email = os.getenv("ADMIN_EMAIL", "admin@altanoroeste.com.br")
     param_email = os.getenv("PARAM_EMAIL", "param@altanoroeste.com.br")
-    orc_email   = os.getenv("ORC_EMAIL",   "orc@altanoroeste.com.br")
+    orc_email = os.getenv("ORC_EMAIL", "orc@altanoroeste.com.br")
 
     admin_pw = _senha_ou_gerada("ADMIN_PASSWORD", admin_email)
     param_pw = _senha_ou_gerada("PARAM_PASSWORD", param_email)
-    orc_pw   = _senha_ou_gerada("ORC_PASSWORD",   orc_email)
+    orc_pw = _senha_ou_gerada("ORC_PASSWORD", orc_email)
 
     usuarios = [
-        Usuario(nome="Administrador",  email=admin_email, senha_hash=hash_senha(admin_pw), papel="gestor_bd"),
-        Usuario(nome="Parametrizador", email=param_email, senha_hash=hash_senha(param_pw), papel="parametrizador"),
-        Usuario(nome="Orçamentista",   email=orc_email,   senha_hash=hash_senha(orc_pw),   papel="orcamentista"),
+        Usuario(
+            nome="Administrador",
+            email=admin_email,
+            senha_hash=hash_senha(admin_pw),
+            papel="gestor_bd",
+        ),
+        Usuario(
+            nome="Parametrizador",
+            email=param_email,
+            senha_hash=hash_senha(param_pw),
+            papel="parametrizador",
+        ),
+        Usuario(
+            nome="Orçamentista",
+            email=orc_email,
+            senha_hash=hash_senha(orc_pw),
+            papel="orcamentista",
+        ),
     ]
     db.add_all(usuarios)
     return {admin_email: admin_pw, param_email: param_pw, orc_email: orc_pw}
@@ -83,7 +100,9 @@ def run():
 
         db.commit()
         print("[seeds_prod] Seed de produção concluído.")
-        print("[seeds_prod] Credenciais iniciais (altere imediatamente após o primeiro login):")
+        print(
+            "[seeds_prod] Credenciais iniciais (altere imediatamente após o primeiro login):"
+        )
         for email, senha in credenciais.items():
             print(f"  {email}  →  {senha}")
     except Exception:

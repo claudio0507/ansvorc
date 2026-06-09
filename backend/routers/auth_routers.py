@@ -4,12 +4,19 @@ from sqlalchemy.orm import Session
 from backend.auth import criar_token, get_current_user, hash_senha, verificar_senha
 from backend.database import get_db
 from backend.models.usuario_models import Usuario
-from backend.schemas.usuario_schemas import TokenResponse, UsuarioCreate, UsuarioLogin, UsuarioRead
+from backend.schemas.usuario_schemas import (
+    TokenResponse,
+    UsuarioCreate,
+    UsuarioLogin,
+    UsuarioRead,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/registro", response_model=UsuarioRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/registro", response_model=UsuarioRead, status_code=status.HTTP_201_CREATED
+)
 def registro(body: UsuarioCreate, db: Session = Depends(get_db)):
     if db.query(Usuario).filter(Usuario.email == body.email).first():
         raise HTTPException(

@@ -37,11 +37,14 @@ router = APIRouter()
 def _get_or_404(db: Session, model, id: int):
     obj = db.get(model, id)
     if not obj:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Não encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Não encontrado"
+        )
     return obj
 
 
 # ── Lookup helpers ────────────────────────────────────────────────────────────
+
 
 def _custo_diario_rh(rh: BdRH) -> Decimal:
     """custo_diario = salario_base * (1 + encargos) / (horas_mes / 8)."""
@@ -52,13 +55,17 @@ def _custo_diario_rh(rh: BdRH) -> Decimal:
 def _custo_diario_epi(epi: BdEPI) -> Decimal:
     """custo_diario = custo_unitario / vida_util_dias (ou custo_unitario se sem vida útil)."""
     if epi.vida_util_dias:
-        return (epi.custo_unitario / Decimal(str(epi.vida_util_dias))).quantize(Decimal("0.0001"))
+        return (epi.custo_unitario / Decimal(str(epi.vida_util_dias))).quantize(
+            Decimal("0.0001")
+        )
     return epi.custo_unitario
 
 
 def _custo_diario_ferramental(ferr: BdFerramental) -> Decimal:
     if ferr.vida_util_dias:
-        return (ferr.custo_unitario / Decimal(str(ferr.vida_util_dias))).quantize(Decimal("0.0001"))
+        return (ferr.custo_unitario / Decimal(str(ferr.vida_util_dias))).quantize(
+            Decimal("0.0001")
+        )
     return ferr.custo_unitario
 
 
@@ -91,7 +98,10 @@ def _detecta_ciclo_bom(db: Session, ficha_pai_id: int, candidato_filho_id: int) 
 
 # ── Fichas de Equipe ─────────────────────────────────────────────────────────
 
-@router.get("/fichas-equipe", response_model=list[FichaEquipeRead], tags=["fichas_equipe"])
+
+@router.get(
+    "/fichas-equipe", response_model=list[FichaEquipeRead], tags=["fichas_equipe"]
+)
 def listar_fichas_equipe(db: Session = Depends(get_db)):
     return db.query(FichaEquipe).all()
 
@@ -110,13 +120,19 @@ def criar_ficha_equipe(payload: FichaEquipeCreate, db: Session = Depends(get_db)
     return obj
 
 
-@router.get("/fichas-equipe/{id}", response_model=FichaEquipeRead, tags=["fichas_equipe"])
+@router.get(
+    "/fichas-equipe/{id}", response_model=FichaEquipeRead, tags=["fichas_equipe"]
+)
 def obter_ficha_equipe(id: int, db: Session = Depends(get_db)):
     return _get_or_404(db, FichaEquipe, id)
 
 
-@router.put("/fichas-equipe/{id}", response_model=FichaEquipeRead, tags=["fichas_equipe"])
-def atualizar_ficha_equipe(id: int, payload: FichaEquipeUpdate, db: Session = Depends(get_db)):
+@router.put(
+    "/fichas-equipe/{id}", response_model=FichaEquipeRead, tags=["fichas_equipe"]
+)
+def atualizar_ficha_equipe(
+    id: int, payload: FichaEquipeUpdate, db: Session = Depends(get_db)
+):
     obj = _get_or_404(db, FichaEquipe, id)
     for field, value in payload.model_dump(exclude_none=True).items():
         setattr(obj, field, value)
@@ -184,19 +200,25 @@ def adicionar_item_equipe(
 )
 def remover_item_equipe(ficha_id: int, item_id: int, db: Session = Depends(get_db)):
     _get_or_404(db, FichaEquipe, ficha_id)
-    item = db.query(FichaEquipeItem).filter(
-        FichaEquipeItem.id == item_id,
-        FichaEquipeItem.ficha_equipe_id == ficha_id,
-    ).first()
+    item = (
+        db.query(FichaEquipeItem)
+        .filter(
+            FichaEquipeItem.id == item_id,
+            FichaEquipeItem.ficha_equipe_id == ficha_id,
+        )
+        .first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Item não encontrado nesta ficha")
     db.delete(item)
     db.flush()
 
     # Atualiza flag após flush (item já removido da sessão)
-    restantes = db.query(FichaEquipeItem).filter(
-        FichaEquipeItem.ficha_equipe_id == ficha_id
-    ).count()
+    restantes = (
+        db.query(FichaEquipeItem)
+        .filter(FichaEquipeItem.ficha_equipe_id == ficha_id)
+        .count()
+    )
     ficha = db.get(FichaEquipe, ficha_id)
     ficha.possui_itens = restantes > 0
 
@@ -205,7 +227,10 @@ def remover_item_equipe(ficha_id: int, item_id: int, db: Session = Depends(get_d
 
 # ── Fichas de Produto ─────────────────────────────────────────────────────────
 
-@router.get("/fichas-produto", response_model=list[FichaProdutoRead], tags=["fichas_produto"])
+
+@router.get(
+    "/fichas-produto", response_model=list[FichaProdutoRead], tags=["fichas_produto"]
+)
 def listar_fichas_produto(db: Session = Depends(get_db)):
     return db.query(FichaProduto).all()
 
@@ -224,13 +249,19 @@ def criar_ficha_produto(payload: FichaProdutoCreate, db: Session = Depends(get_d
     return obj
 
 
-@router.get("/fichas-produto/{id}", response_model=FichaProdutoRead, tags=["fichas_produto"])
+@router.get(
+    "/fichas-produto/{id}", response_model=FichaProdutoRead, tags=["fichas_produto"]
+)
 def obter_ficha_produto(id: int, db: Session = Depends(get_db)):
     return _get_or_404(db, FichaProduto, id)
 
 
-@router.put("/fichas-produto/{id}", response_model=FichaProdutoRead, tags=["fichas_produto"])
-def atualizar_ficha_produto(id: int, payload: FichaProdutoUpdate, db: Session = Depends(get_db)):
+@router.put(
+    "/fichas-produto/{id}", response_model=FichaProdutoRead, tags=["fichas_produto"]
+)
+def atualizar_ficha_produto(
+    id: int, payload: FichaProdutoUpdate, db: Session = Depends(get_db)
+):
     obj = _get_or_404(db, FichaProduto, id)
     for field, value in payload.model_dump(exclude_none=True).items():
         setattr(obj, field, value)
@@ -312,18 +343,24 @@ def adicionar_item_produto(
 )
 def remover_item_produto(ficha_id: int, item_id: int, db: Session = Depends(get_db)):
     _get_or_404(db, FichaProduto, ficha_id)
-    item = db.query(FichaProdutoItem).filter(
-        FichaProdutoItem.id == item_id,
-        FichaProdutoItem.ficha_produto_id == ficha_id,
-    ).first()
+    item = (
+        db.query(FichaProdutoItem)
+        .filter(
+            FichaProdutoItem.id == item_id,
+            FichaProdutoItem.ficha_produto_id == ficha_id,
+        )
+        .first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Item não encontrado nesta ficha")
     db.delete(item)
     db.flush()
 
-    restantes = db.query(FichaProdutoItem).filter(
-        FichaProdutoItem.ficha_produto_id == ficha_id
-    ).count()
+    restantes = (
+        db.query(FichaProdutoItem)
+        .filter(FichaProdutoItem.ficha_produto_id == ficha_id)
+        .count()
+    )
     ficha = db.get(FichaProduto, ficha_id)
     ficha.possui_itens = restantes > 0
     db.commit()
@@ -331,7 +368,10 @@ def remover_item_produto(ficha_id: int, item_id: int, db: Session = Depends(get_
 
 # ── Fichas de Serviço ─────────────────────────────────────────────────────────
 
-@router.get("/fichas-servico", response_model=list[FichaServicoRead], tags=["fichas_servico"])
+
+@router.get(
+    "/fichas-servico", response_model=list[FichaServicoRead], tags=["fichas_servico"]
+)
 def listar_fichas_servico(db: Session = Depends(get_db)):
     return db.query(FichaServico).all()
 
@@ -350,13 +390,19 @@ def criar_ficha_servico(payload: FichaServicoCreate, db: Session = Depends(get_d
     return obj
 
 
-@router.get("/fichas-servico/{id}", response_model=FichaServicoRead, tags=["fichas_servico"])
+@router.get(
+    "/fichas-servico/{id}", response_model=FichaServicoRead, tags=["fichas_servico"]
+)
 def obter_ficha_servico(id: int, db: Session = Depends(get_db)):
     return _get_or_404(db, FichaServico, id)
 
 
-@router.put("/fichas-servico/{id}", response_model=FichaServicoRead, tags=["fichas_servico"])
-def atualizar_ficha_servico(id: int, payload: FichaServicoUpdate, db: Session = Depends(get_db)):
+@router.put(
+    "/fichas-servico/{id}", response_model=FichaServicoRead, tags=["fichas_servico"]
+)
+def atualizar_ficha_servico(
+    id: int, payload: FichaServicoUpdate, db: Session = Depends(get_db)
+):
     obj = _get_or_404(db, FichaServico, id)
     for field, value in payload.model_dump(exclude_none=True).items():
         setattr(obj, field, value)
@@ -430,20 +476,30 @@ def adicionar_recurso_servico(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["fichas_servico"],
 )
-def remover_recurso_servico(ficha_id: int, recurso_id: int, db: Session = Depends(get_db)):
+def remover_recurso_servico(
+    ficha_id: int, recurso_id: int, db: Session = Depends(get_db)
+):
     _get_or_404(db, FichaServico, ficha_id)
-    recurso = db.query(FichaServicoRecurso).filter(
-        FichaServicoRecurso.id == recurso_id,
-        FichaServicoRecurso.ficha_servico_id == ficha_id,
-    ).first()
+    recurso = (
+        db.query(FichaServicoRecurso)
+        .filter(
+            FichaServicoRecurso.id == recurso_id,
+            FichaServicoRecurso.ficha_servico_id == ficha_id,
+        )
+        .first()
+    )
     if not recurso:
-        raise HTTPException(status_code=404, detail="Recurso não encontrado nesta ficha")
+        raise HTTPException(
+            status_code=404, detail="Recurso não encontrado nesta ficha"
+        )
     db.delete(recurso)
     db.flush()
 
-    restantes = db.query(FichaServicoRecurso).filter(
-        FichaServicoRecurso.ficha_servico_id == ficha_id
-    ).count()
+    restantes = (
+        db.query(FichaServicoRecurso)
+        .filter(FichaServicoRecurso.ficha_servico_id == ficha_id)
+        .count()
+    )
     ficha = db.get(FichaServico, ficha_id)
     ficha.possui_recursos = restantes > 0
     db.commit()

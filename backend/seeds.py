@@ -167,21 +167,21 @@ def seed_ferramental(db):
     registros = [
         BdFerramental(
             codigo="FER-001",
-            descricao="Furadeira de impacto 1/2\" 850W",
+            descricao='Furadeira de impacto 1/2" 850W',
             unidade_medida="un",
             custo_unitario=Decimal("480.00"),
             vida_util_dias=1095,
         ),
         BdFerramental(
             codigo="FER-002",
-            descricao="Serra circular 7.1/4\" 1800W",
+            descricao='Serra circular 7.1/4" 1800W',
             unidade_medida="un",
             custo_unitario=Decimal("650.00"),
             vida_util_dias=1095,
         ),
         BdFerramental(
             codigo="FER-003",
-            descricao="Chave de torque 3/8\" 10-80Nm",
+            descricao='Chave de torque 3/8" 10-80Nm',
             unidade_medida="un",
             custo_unitario=Decimal("210.00"),
             vida_util_dias=1825,
@@ -409,7 +409,9 @@ def run():
         print(f"  bd_BDI:                    {db.query(BdBDI).count()} registros")
         print(f"  bd_RH:                     {db.query(BdRH).count()} registros")
         print(f"  bd_EPI:                    {db.query(BdEPI).count()} registros")
-        print(f"  bd_FERRAMENTAL:            {db.query(BdFerramental).count()} registros")
+        print(
+            f"  bd_FERRAMENTAL:            {db.query(BdFerramental).count()} registros"
+        )
         print(f"  bd_FROTAS:                 {db.query(BdFrotas).count()} registros")
         print(f"  bd_MATERIAIS:              {db.query(BdMateriais).count()} registros")
         print(f"  bd_ESTRUTURA_OPERACIONAL:  {db.query(BdEstrutura).count()} registros")

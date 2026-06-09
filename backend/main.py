@@ -40,9 +40,9 @@ app.add_middleware(
 # AuthMiddleware deve vir APÓS o CORSMiddleware
 app.add_middleware(AuthMiddleware)
 
-app.include_router(auth_router,      prefix="/api/v1")
-app.include_router(bd_router,        prefix="/api/v1")
-app.include_router(ficha_router,     prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
+app.include_router(bd_router, prefix="/api/v1")
+app.include_router(ficha_router, prefix="/api/v1")
 app.include_router(orcamento_router, prefix="/api/v1")
 app.include_router(relatorio_router, prefix="/api/v1")
 

@@ -2,8 +2,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-
 # ── bd_BDI ──────────────────────────────────────────────────────────────────
+
 
 class BdBDIBase(BaseModel):
     modalidade: str
@@ -39,6 +39,7 @@ class BdBDIRead(BdBDIBase):
 
 
 # ── bd_RH ───────────────────────────────────────────────────────────────────
+
 
 class BdRHBase(BaseModel):
     codigo: str
@@ -79,6 +80,7 @@ class BdRHRead(BdRHBase):
 
 # ── bd_EPI ──────────────────────────────────────────────────────────────────
 
+
 class BdEPIBase(BaseModel):
     codigo: str
     descricao: str
@@ -107,6 +109,7 @@ class BdEPIRead(BdEPIBase):
 
 # ── bd_FERRAMENTAL ──────────────────────────────────────────────────────────
 
+
 class BdFerramentalBase(BaseModel):
     codigo: str
     descricao: str
@@ -134,6 +137,7 @@ class BdFerramentalRead(BdFerramentalBase):
 
 
 # ── bd_FROTAS ───────────────────────────────────────────────────────────────
+
 
 class BdFrotasBase(BaseModel):
     codigo: str
@@ -164,6 +168,7 @@ class BdFrotasRead(BdFrotasBase):
 
 
 # ── bd_MATERIAIS ─────────────────────────────────────────────────────────────
+
 
 class BdMateriaisBase(BaseModel):
     codigo: str
@@ -197,6 +202,7 @@ class BdMateriaisRead(BdMateriaisBase):
 
 # ── bd_ESTRUTURA_OPERACIONAL ─────────────────────────────────────────────────
 
+
 class BdEstruturaBase(BaseModel):
     codigo: str
     descricao: str
@@ -224,6 +230,7 @@ class BdEstruturaRead(BdEstruturaBase):
 
 
 # ── bd_DESPESAS ──────────────────────────────────────────────────────────────
+
 
 class BdDespesasBase(BaseModel):
     codigo: str

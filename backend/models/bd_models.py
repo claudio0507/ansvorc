@@ -14,12 +14,24 @@ class BdBDI(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     modalidade: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)
     # BDI-MO, BDI-MAT+MO, BDI+ICMS, FAT DIR SIMP
-    adm_percentual: Mapped[Decimal] = mapped_column(DECIMAL(5, 4), nullable=False, default=Decimal("0.1300"))
-    custo_financeiro_percentual: Mapped[Decimal] = mapped_column(DECIMAL(5, 4), nullable=False, default=Decimal("0.0150"))
-    pis_cofins_percentual: Mapped[Decimal] = mapped_column(DECIMAL(5, 4), nullable=False, default=Decimal("0.0365"))
-    issqn_pr_percentual: Mapped[Decimal] = mapped_column(DECIMAL(5, 4), nullable=False, default=Decimal("0.0350"))
-    issqn_sp_percentual: Mapped[Decimal] = mapped_column(DECIMAL(5, 4), nullable=False, default=Decimal("0.0500"))
-    icms_percentual: Mapped[Decimal] = mapped_column(DECIMAL(5, 4), nullable=False, default=Decimal("0.0000"))
+    adm_percentual: Mapped[Decimal] = mapped_column(
+        DECIMAL(5, 4), nullable=False, default=Decimal("0.1300")
+    )
+    custo_financeiro_percentual: Mapped[Decimal] = mapped_column(
+        DECIMAL(5, 4), nullable=False, default=Decimal("0.0150")
+    )
+    pis_cofins_percentual: Mapped[Decimal] = mapped_column(
+        DECIMAL(5, 4), nullable=False, default=Decimal("0.0365")
+    )
+    issqn_pr_percentual: Mapped[Decimal] = mapped_column(
+        DECIMAL(5, 4), nullable=False, default=Decimal("0.0350")
+    )
+    issqn_sp_percentual: Mapped[Decimal] = mapped_column(
+        DECIMAL(5, 4), nullable=False, default=Decimal("0.0500")
+    )
+    icms_percentual: Mapped[Decimal] = mapped_column(
+        DECIMAL(5, 4), nullable=False, default=Decimal("0.0000")
+    )
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     descricao: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -87,7 +99,9 @@ class BdFrotas(Base):
     # VEICULO_LEVE, VEICULO_PESADO, EQUIPAMENTO, PRANCHA
     custo_diaria: Mapped[Decimal] = mapped_column(DECIMAL(12, 4), nullable=False)
     custo_km: Mapped[Decimal | None] = mapped_column(DECIMAL(12, 4), nullable=True)
-    unidade_medida: Mapped[str] = mapped_column(String(10), nullable=False, default="dia")
+    unidade_medida: Mapped[str] = mapped_column(
+        String(10), nullable=False, default="dia"
+    )
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 

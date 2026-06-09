@@ -21,31 +21,34 @@ from backend.schemas.orcamento_schemas import (
     ResultadoCalculoRead,
 )
 from backend.services.motor_bdi import (
-    aplicar_mod_fat,
-    aplicar_reidi,
-    calcular_bdi_completo,
-    calcular_bdi_sombra,
-    calcular_fator_k,
-    margem_liquida_real,
     ADM_PADRAO,
     CF_PADRAO,
+    COFINS_PADRAO,
     ICMS_PADRAO,
     ISSQN_PR,
     ISSQN_SP,
     PIS_COFINS_REGIME_CUMULATIVO,
     PIS_COFINS_REGIME_NORMAL,
     PIS_PADRAO,
-    COFINS_PADRAO,
+    aplicar_mod_fat,
+    aplicar_reidi,
+    calcular_bdi_completo,
+    calcular_bdi_sombra,
+    calcular_fator_k,
+    margem_liquida_real,
 )
 
 router = APIRouter()
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
+
 def _get_or_404(db: Session, model, id: int):
     obj = db.get(model, id)
     if not obj:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Não encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Não encontrado"
+        )
     return obj
 
 
@@ -55,13 +58,15 @@ def _guard_rascunho(orc: Orcamento) -> None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Orçamento com status '{orc.status}' não pode ser editado. "
-                   "Apenas orçamentos em 'rascunho' permitem alterações.",
+            "Apenas orçamentos em 'rascunho' permitem alterações.",
         )
 
 
 def _bdi_params_do_bd(db: Session, mod_fat: str) -> BdBDI | None:
     """Busca os parâmetros de BDI cadastrados para a modalidade, se existir."""
-    return db.query(BdBDI).filter(BdBDI.modalidade == mod_fat, BdBDI.ativo == True).first()
+    return (
+        db.query(BdBDI).filter(BdBDI.modalidade == mod_fat, BdBDI.ativo == True).first()
+    )
 
 
 def _impostos_base(db: Session, mod_fat: str, uf: str) -> dict:
@@ -73,15 +78,17 @@ def _impostos_base(db: Session, mod_fat: str, uf: str) -> dict:
 
     if bdi_row:
         adm = bdi_row.adm_percentual
-        cf  = bdi_row.custo_financeiro_percentual
-        issqn = bdi_row.issqn_pr_percentual if uf == "PR" else bdi_row.issqn_sp_percentual
+        cf = bdi_row.custo_financeiro_percentual
+        issqn = (
+            bdi_row.issqn_pr_percentual if uf == "PR" else bdi_row.issqn_sp_percentual
+        )
         # Para BDI+ICMS usa pis_cofins_percentual do registro; fallback ao regime cumulativo
         pis_cofins = bdi_row.pis_cofins_percentual
         icms = bdi_row.icms_percentual
     else:
         # Fallback: constantes padrão
         adm = ADM_PADRAO
-        cf  = CF_PADRAO
+        cf = CF_PADRAO
         issqn = ISSQN_PR if uf == "PR" else ISSQN_SP
         pis_cofins = (
             PIS_COFINS_REGIME_CUMULATIVO
@@ -93,7 +100,7 @@ def _impostos_base(db: Session, mod_fat: str, uf: str) -> dict:
     return {
         "adm": adm,
         "cf": cf,
-        "pis": pis_cofins,   # pis+cofins acumulado no campo "pis"
+        "pis": pis_cofins,  # pis+cofins acumulado no campo "pis"
         "cofins": Decimal("0"),
         "issqn": issqn,
         "icms": icms,
@@ -102,12 +109,18 @@ def _impostos_base(db: Session, mod_fat: str, uf: str) -> dict:
 
 # ── Clientes ──────────────────────────────────────────────────────────────────
 
+
 @router.get("/clientes", response_model=list[ClienteRead], tags=["clientes"])
 def listar_clientes(db: Session = Depends(get_db)):
     return db.query(Cliente).all()
 
 
-@router.post("/clientes", response_model=ClienteRead, status_code=status.HTTP_201_CREATED, tags=["clientes"])
+@router.post(
+    "/clientes",
+    response_model=ClienteRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["clientes"],
+)
 def criar_cliente(body: ClienteCreate, db: Session = Depends(get_db)):
     obj = Cliente(**body.model_dump())
     db.add(obj)
@@ -131,7 +144,9 @@ def atualizar_cliente(id: int, body: ClienteUpdate, db: Session = Depends(get_db
     return obj
 
 
-@router.delete("/clientes/{id}", status_code=status.HTTP_204_NO_CONTENT, tags=["clientes"])
+@router.delete(
+    "/clientes/{id}", status_code=status.HTTP_204_NO_CONTENT, tags=["clientes"]
+)
 def excluir_cliente(id: int, db: Session = Depends(get_db)):
     obj = _get_or_404(db, Cliente, id)
     db.delete(obj)
@@ -140,14 +155,20 @@ def excluir_cliente(id: int, db: Session = Depends(get_db)):
 
 # ── Orçamentos ────────────────────────────────────────────────────────────────
 
+
 @router.get("/orcamentos", response_model=list[OrcamentoRead], tags=["orcamentos"])
 def listar_orcamentos(db: Session = Depends(get_db)):
     return db.query(Orcamento).all()
 
 
-@router.post("/orcamentos", response_model=OrcamentoRead, status_code=status.HTTP_201_CREATED, tags=["orcamentos"])
+@router.post(
+    "/orcamentos",
+    response_model=OrcamentoRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["orcamentos"],
+)
 def criar_orcamento(body: OrcamentoCreate, db: Session = Depends(get_db)):
-    _get_or_404(db, Cliente, body.cliente_id)   # valida existência do cliente
+    _get_or_404(db, Cliente, body.cliente_id)  # valida existência do cliente
     obj = Orcamento(**body.model_dump())
     db.add(obj)
     db.commit()
@@ -171,7 +192,9 @@ def atualizar_orcamento(id: int, body: OrcamentoUpdate, db: Session = Depends(ge
     return obj
 
 
-@router.delete("/orcamentos/{id}", status_code=status.HTTP_204_NO_CONTENT, tags=["orcamentos"])
+@router.delete(
+    "/orcamentos/{id}", status_code=status.HTTP_204_NO_CONTENT, tags=["orcamentos"]
+)
 def excluir_orcamento(id: int, db: Session = Depends(get_db)):
     obj = _get_or_404(db, Orcamento, id)
     _guard_rascunho(obj)
@@ -181,7 +204,12 @@ def excluir_orcamento(id: int, db: Session = Depends(get_db)):
 
 # ── Itens do Orçamento ────────────────────────────────────────────────────────
 
-@router.get("/orcamentos/{id}/itens", response_model=list[OrcamentoItemRead], tags=["orcamentos"])
+
+@router.get(
+    "/orcamentos/{id}/itens",
+    response_model=list[OrcamentoItemRead],
+    tags=["orcamentos"],
+)
 def listar_itens(id: int, db: Session = Depends(get_db)):
     _get_or_404(db, Orcamento, id)
     return db.query(OrcamentoItem).filter(OrcamentoItem.orcamento_id == id).all()
@@ -226,11 +254,15 @@ def atualizar_item(
     orc = _get_or_404(db, Orcamento, id)
     _guard_rascunho(orc)
 
-    item = db.query(OrcamentoItem).filter(
-        OrcamentoItem.id == item_id, OrcamentoItem.orcamento_id == id
-    ).first()
+    item = (
+        db.query(OrcamentoItem)
+        .filter(OrcamentoItem.id == item_id, OrcamentoItem.orcamento_id == id)
+        .first()
+    )
     if not item:
-        raise HTTPException(status_code=404, detail="Item não encontrado neste orçamento")
+        raise HTTPException(
+            status_code=404, detail="Item não encontrado neste orçamento"
+        )
 
     for k, v in body.model_dump(exclude_none=True).items():
         setattr(item, k, v)
@@ -248,17 +280,22 @@ def remover_item(id: int, item_id: int, db: Session = Depends(get_db)):
     orc = _get_or_404(db, Orcamento, id)
     _guard_rascunho(orc)
 
-    item = db.query(OrcamentoItem).filter(
-        OrcamentoItem.id == item_id, OrcamentoItem.orcamento_id == id
-    ).first()
+    item = (
+        db.query(OrcamentoItem)
+        .filter(OrcamentoItem.id == item_id, OrcamentoItem.orcamento_id == id)
+        .first()
+    )
     if not item:
-        raise HTTPException(status_code=404, detail="Item não encontrado neste orçamento")
+        raise HTTPException(
+            status_code=404, detail="Item não encontrado neste orçamento"
+        )
 
     db.delete(item)
     db.commit()
 
 
 # ── Endpoint de Cálculo ───────────────────────────────────────────────────────
+
 
 @router.post(
     "/orcamentos/{id}/calcular",
@@ -311,10 +348,10 @@ def calcular_orcamento(id: int, db: Session = Depends(get_db)):
         params = _impostos_base(db, mod_fat, uf)
 
         imp = {
-            "pis":    params["pis"],
+            "pis": params["pis"],
             "cofins": params["cofins"],
-            "issqn":  params["issqn"],
-            "icms":   params["icms"],
+            "issqn": params["issqn"],
+            "icms": params["icms"],
         }
 
         if reidi:
@@ -352,15 +389,17 @@ def calcular_orcamento(id: int, db: Session = Depends(get_db)):
 
         total_custo_direto += cdu * item.quantidade
 
-        fat_intermediarios.append({
-            "item": item,
-            "bdi_taxa": bdi_taxa,
-            "preco_unit_base": preco_unit_base,
-            "preco_total_base": preco_total_base,
-            "lucro_abs": lucro_abs,
-            "adm": params["adm"],
-            "cf": params["cf"],
-        })
+        fat_intermediarios.append(
+            {
+                "item": item,
+                "bdi_taxa": bdi_taxa,
+                "preco_unit_base": preco_unit_base,
+                "preco_total_base": preco_total_base,
+                "lucro_abs": lucro_abs,
+                "adm": params["adm"],
+                "cf": params["cf"],
+            }
+        )
 
     # ── Passo 2: BDI Sombra dos itens não faturáveis ─────────────────────────
     total_nao_faturavel = Decimal("0")
@@ -371,13 +410,13 @@ def calcular_orcamento(id: int, db: Session = Depends(get_db)):
         # Usa modalidade "BDI-MAT+MO" como referência de alíquotas ADM/CF
         params_sombra = _impostos_base(db, "BDI-MAT+MO", uf)
 
-        pis_s  = params_sombra["pis"]
-        cof_s  = params_sombra["cofins"]
-        iss_s  = params_sombra["issqn"]
+        pis_s = params_sombra["pis"]
+        cof_s = params_sombra["cofins"]
+        iss_s = params_sombra["issqn"]
 
         if reidi:
-            pis_s  = Decimal("0")
-            cof_s  = Decimal("0")
+            pis_s = Decimal("0")
+            cof_s = Decimal("0")
 
         custo_carregado = calcular_bdi_sombra(
             custo_direto=item.custo_direto_unitario * item.quantidade,
@@ -409,11 +448,11 @@ def calcular_orcamento(id: int, db: Session = Depends(get_db)):
     # ── Passo 4: Margem Líquida Real ──────────────────────────────────────────
     itens_mlr = [
         {
-            "custo_direto":      r["item"].custo_direto_unitario,
-            "quantidade":        r["item"].quantidade,
-            "margem":            r["item"].margem_percentual,
-            "despesas_adm":      r["adm"],
-            "custo_financeiro":  r["cf"],
+            "custo_direto": r["item"].custo_direto_unitario,
+            "quantidade": r["item"].quantidade,
+            "margem": r["item"].margem_percentual,
+            "despesas_adm": r["adm"],
+            "custo_financeiro": r["cf"],
         }
         for r in fat_intermediarios
     ]
@@ -428,36 +467,38 @@ def calcular_orcamento(id: int, db: Session = Depends(get_db)):
     for r in fat_intermediarios:
         item = r["item"]
         fk = fk_por_id.get(item.id, {})
-        item.bdi_taxa             = r["bdi_taxa"]
+        item.bdi_taxa = r["bdi_taxa"]
         item.preco_venda_unitario = r["preco_unit_base"].quantize(Decimal("0.0001"))
-        item.preco_venda_total    = r["preco_total_base"].quantize(Decimal("0.0001"))
-        item.peso_rateio          = fk.get("peso_percentual", Decimal("0"))
-        item.rateio_absorvido     = fk.get("rateio", Decimal("0"))
+        item.preco_venda_total = r["preco_total_base"].quantize(Decimal("0.0001"))
+        item.peso_rateio = fk.get("peso_percentual", Decimal("0"))
+        item.rateio_absorvido = fk.get("rateio", Decimal("0"))
         item.preco_final_unitario = (
             fk.get("preco_final", r["preco_total_base"]) / item.quantidade
         ).quantize(Decimal("0.0001"))
-        item.lucro_absoluto       = r["lucro_abs"].quantize(Decimal("0.0001"))
+        item.lucro_absoluto = r["lucro_abs"].quantize(Decimal("0.0001"))
 
     for r in nfat_resultados:
         item = r["item"]
-        item.bdi_taxa             = Decimal("0")
+        item.bdi_taxa = Decimal("0")
         item.preco_venda_unitario = item.custo_direto_unitario
-        item.preco_venda_total    = r["custo_carregado"]
-        item.peso_rateio          = Decimal("0")
-        item.rateio_absorvido     = Decimal("0")
+        item.preco_venda_total = r["custo_carregado"]
+        item.peso_rateio = Decimal("0")
+        item.rateio_absorvido = Decimal("0")
         item.preco_final_unitario = Decimal("0")
-        item.lucro_absoluto       = Decimal("0")
+        item.lucro_absoluto = Decimal("0")
 
     # ── Passo 6: Atualizar cabeçalho ──────────────────────────────────────────
-    orc.total_custo_direto  = total_custo_direto.quantize(Decimal("0.0001"))
-    orc.total_proposta      = total_proposta.quantize(Decimal("0.0001"))
+    orc.total_custo_direto = total_custo_direto.quantize(Decimal("0.0001"))
+    orc.total_proposta = total_proposta.quantize(Decimal("0.0001"))
     orc.margem_liquida_real = mlr
 
     db.commit()
 
     # ── Passo 7: Montar resposta ──────────────────────────────────────────────
     fk_val = (
-        (total_nao_faturavel / subtotal_faturavel * Decimal("100")).quantize(Decimal("0.0001"))
+        (total_nao_faturavel / subtotal_faturavel * Decimal("100")).quantize(
+            Decimal("0.0001")
+        )
         if subtotal_faturavel > Decimal("0")
         else Decimal("0")
     )

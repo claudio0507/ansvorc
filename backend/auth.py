@@ -18,6 +18,7 @@ from backend.models.usuario_models import Usuario
 
 # ── Hashing de senha (bcrypt direto, sem passlib) ─────────────────────────────
 
+
 def hash_senha(senha: str) -> str:
     return bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()
 
@@ -34,9 +35,9 @@ _EXPIRACAO_HORAS = 24
 
 def criar_token(usuario_id: int, papel: str) -> str:
     payload = {
-        "sub":   str(usuario_id),
+        "sub": str(usuario_id),
         "papel": papel,
-        "exp":   datetime.now(timezone.utc) + timedelta(hours=_EXPIRACAO_HORAS),
+        "exp": datetime.now(timezone.utc) + timedelta(hours=_EXPIRACAO_HORAS),
     }
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=_ALGORITMO)
 
@@ -89,6 +90,7 @@ def get_current_user(
 
 # ── Factories de Depends por papel ───────────────────────────────────────────
 
+
 def requer_papel(*papeis: str):
     """
     Retorna uma dependência FastAPI que verifica se o usuário tem um dos papéis.
@@ -98,6 +100,7 @@ def requer_papel(*papeis: str):
     ou como parâmetro:
         def endpoint(u: Usuario = Depends(requer_papel("gestor_bd", "sponsor"))):
     """
+
     def _dep(usuario: Usuario = Depends(get_current_user)) -> Usuario:
         if usuario.papel not in papeis:
             raise HTTPException(
@@ -105,4 +108,5 @@ def requer_papel(*papeis: str):
                 detail=f"Acesso negado. Requer papel: {papeis}.",
             )
         return usuario
+
     return _dep

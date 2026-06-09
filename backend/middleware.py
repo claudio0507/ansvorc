@@ -20,17 +20,23 @@ from backend.config import settings
 _ALGORITMO = "HS256"
 
 _RBAC: list[tuple[str, frozenset[str]]] = [
-    ("/api/v1/bd-",        frozenset({"gestor_bd", "sponsor"})),
-    ("/api/v1/fichas-",    frozenset({"parametrizador", "sponsor"})),
-    ("/api/v1/clientes",   frozenset({"orcamentista", "parametrizador", "gestor_bd", "sponsor"})),
+    ("/api/v1/bd-", frozenset({"gestor_bd", "sponsor"})),
+    ("/api/v1/fichas-", frozenset({"parametrizador", "sponsor"})),
+    (
+        "/api/v1/clientes",
+        frozenset({"orcamentista", "parametrizador", "gestor_bd", "sponsor"}),
+    ),
     ("/api/v1/orcamentos", frozenset({"orcamentista", "parametrizador", "sponsor"})),
-    ("/api/v1/dashboard", frozenset({"orcamentista", "parametrizador", "gestor_bd", "sponsor"})),
+    (
+        "/api/v1/dashboard",
+        frozenset({"orcamentista", "parametrizador", "gestor_bd", "sponsor"}),
+    ),
 ]
 
 # Prefixos que exigem startswith
 _PUBLICAS_PREFIX = ("/api/v1/auth/", "/docs", "/redoc")
 # Paths que exigem match exato
-_PUBLICAS_EXACT  = ("/", "/openapi.json")
+_PUBLICAS_EXACT = ("/", "/openapi.json")
 
 
 def _eh_publica(path: str) -> bool:
@@ -99,7 +105,9 @@ class AuthMiddleware:
 
         if papeis_ok is not None and papel not in papeis_ok:
             resp = JSONResponse(
-                {"detail": f"Acesso negado. Seu papel '{papel}' não tem permissão nesta rota."},
+                {
+                    "detail": f"Acesso negado. Seu papel '{papel}' não tem permissão nesta rota."
+                },
                 status_code=403,
             )
             await resp(scope, receive, send)
@@ -107,6 +115,6 @@ class AuthMiddleware:
 
         scope.setdefault("state", {})
         scope["state"]["usuario_id"] = int(payload["sub"])
-        scope["state"]["papel"]      = papel
+        scope["state"]["papel"] = papel
 
         await self.app(scope, receive, send)

@@ -11,30 +11,32 @@ Constantes fiscais usadas:
   PIS+COFINS regime normal   = 3.65%
 """
 
-import pytest
 from decimal import Decimal
 
+import pytest
+
 from backend.services.motor_bdi import (
+    ADM_PADRAO,
+    CF_PADRAO,
+    COFINS_PADRAO,
+    ICMS_PADRAO,
+    ISSQN_PR,
+    ISSQN_SP,
+    PIS_COFINS_REGIME_CUMULATIVO,
+    PIS_PADRAO,
+    aplicar_mod_fat,
+    aplicar_reidi,
     calcular_bdi_completo,
     calcular_bdi_sombra,
     calcular_fator_k,
-    aplicar_reidi,
-    aplicar_mod_fat,
     margem_liquida_real,
-    ADM_PADRAO,
-    CF_PADRAO,
-    PIS_PADRAO,
-    COFINS_PADRAO,
-    ISSQN_PR,
-    ISSQN_SP,
-    ICMS_PADRAO,
-    PIS_COFINS_REGIME_CUMULATIVO,
 )
 
 D = Decimal
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
+
 
 def bdi_para_pct(bdi: Decimal, casas: int = 2) -> Decimal:
     """Converte fração para percentual arredondado (ex: 0.3589 → 35.89)."""
@@ -43,6 +45,7 @@ def bdi_para_pct(bdi: Decimal, casas: int = 2) -> Decimal:
 
 
 # ── calcular_bdi_completo ─────────────────────────────────────────────────────
+
 
 class TestBdiCompleto:
 
@@ -126,19 +129,24 @@ class TestBdiCompleto:
     def test_fat_dir_simp_qualquer_uf_margem_5(self):
         """FAT DIR SIMP → BDI = margem pura (todos impostos = 0)"""
         margem = D("0.05")
-        impostos = aplicar_mod_fat("FAT DIR SIMP", {
-            "pis": PIS_PADRAO, "cofins": COFINS_PADRAO,
-            "issqn": ISSQN_PR, "icms": D("0"),
-        })
+        impostos = aplicar_mod_fat(
+            "FAT DIR SIMP",
+            {
+                "pis": PIS_PADRAO,
+                "cofins": COFINS_PADRAO,
+                "issqn": ISSQN_PR,
+                "icms": D("0"),
+            },
+        )
         # FAT DIR SIMP: num / (1-0) - 1 com num = (1+ADM)(1+CF)(1+M)
         # Mas o JS faz: bdiTax = margin/100 diretamente
         # Replicamos: FAT DIR SIMP → BDI = margem
         # Testamos que a função respeita zero impostos → BDI ≈ (1+ADM)(1+CF)(1+M) - 1
         # Para o teste funcional, verificamos via aplicar_mod_fat que impostos são todos 0
-        assert impostos["pis"]    == D("0")
+        assert impostos["pis"] == D("0")
         assert impostos["cofins"] == D("0")
-        assert impostos["issqn"]  == D("0")
-        assert impostos["icms"]   == D("0")
+        assert impostos["issqn"] == D("0")
+        assert impostos["icms"] == D("0")
 
         # Quando BDI é calculado com zero impostos E margem=5%,
         # o preço final é custo × (1+ADM)(1+CF)(1+5%) apenas
@@ -148,7 +156,10 @@ class TestBdiCompleto:
             despesas_adm=D("0"),
             custo_financeiro=D("0"),
             margem=margem,
-            pis=D("0"), cofins=D("0"), issqn=D("0"), icms=D("0"),
+            pis=D("0"),
+            cofins=D("0"),
+            issqn=D("0"),
+            icms=D("0"),
         )
         assert bdi_puro == margem
 
@@ -167,6 +178,7 @@ class TestBdiCompleto:
 
 
 # ── calcular_bdi_sombra ───────────────────────────────────────────────────────
+
 
 class TestBdiSombra:
 
@@ -198,13 +210,15 @@ class TestBdiSombra:
         carga_esperada = D("0.13") + D("0.035")
         esperado = (custo * (D("1") + carga_esperada)).quantize(D("0.0001"))
         assert resultado == esperado
-        assert resultado < custo * D("1.2015")   # menor que sem REIDI
+        assert resultado < custo * D("1.2015")  # menor que sem REIDI
 
     def test_sombra_retorna_decimal(self):
         resultado = calcular_bdi_sombra(
             custo_direto=D("1000"),
             despesas_adm=D("0.13"),
-            pis=D("0"), cofins=D("0"), issqn=D("0"),
+            pis=D("0"),
+            cofins=D("0"),
+            issqn=D("0"),
         )
         assert isinstance(resultado, Decimal)
         assert resultado == D("1130.0000")
@@ -212,47 +226,74 @@ class TestBdiSombra:
 
 # ── aplicar_reidi ─────────────────────────────────────────────────────────────
 
+
 class TestAplicarReidi:
 
     def test_zera_pis_e_cofins(self):
-        impostos = {"pis": PIS_PADRAO, "cofins": COFINS_PADRAO, "issqn": ISSQN_PR, "icms": D("0")}
+        impostos = {
+            "pis": PIS_PADRAO,
+            "cofins": COFINS_PADRAO,
+            "issqn": ISSQN_PR,
+            "icms": D("0"),
+        }
         resultado = aplicar_reidi(impostos)
-        assert resultado["pis"]    == D("0")
+        assert resultado["pis"] == D("0")
         assert resultado["cofins"] == D("0")
-        assert resultado["issqn"]  == ISSQN_PR   # inalterado
-        assert resultado["icms"]   == D("0")
+        assert resultado["issqn"] == ISSQN_PR  # inalterado
+        assert resultado["icms"] == D("0")
 
     def test_nao_modifica_original(self):
         impostos = {"pis": PIS_PADRAO, "cofins": COFINS_PADRAO}
         aplicar_reidi(impostos)
-        assert impostos["pis"]    == PIS_PADRAO   # original intacto
+        assert impostos["pis"] == PIS_PADRAO  # original intacto
         assert impostos["cofins"] == COFINS_PADRAO
 
 
 # ── aplicar_mod_fat ───────────────────────────────────────────────────────────
 
+
 class TestAplicarModFat:
 
     def test_bdi_mo_zera_icms(self):
-        imp = {"pis": PIS_PADRAO, "cofins": COFINS_PADRAO, "issqn": ISSQN_PR, "icms": ICMS_PADRAO}
+        imp = {
+            "pis": PIS_PADRAO,
+            "cofins": COFINS_PADRAO,
+            "issqn": ISSQN_PR,
+            "icms": ICMS_PADRAO,
+        }
         r = aplicar_mod_fat("BDI-MO", imp)
-        assert r["icms"]  == D("0")
-        assert r["issqn"] == ISSQN_PR   # ISSQN permanece
+        assert r["icms"] == D("0")
+        assert r["issqn"] == ISSQN_PR  # ISSQN permanece
 
     def test_bdi_mat_mo_zera_icms(self):
-        imp = {"pis": PIS_PADRAO, "cofins": COFINS_PADRAO, "issqn": ISSQN_SP, "icms": ICMS_PADRAO}
+        imp = {
+            "pis": PIS_PADRAO,
+            "cofins": COFINS_PADRAO,
+            "issqn": ISSQN_SP,
+            "icms": ICMS_PADRAO,
+        }
         r = aplicar_mod_fat("BDI-MAT+MO", imp)
-        assert r["icms"]  == D("0")
+        assert r["icms"] == D("0")
         assert r["issqn"] == ISSQN_SP
 
     def test_bdi_mais_icms_zera_issqn(self):
-        imp = {"pis": PIS_COFINS_REGIME_CUMULATIVO, "cofins": D("0"), "issqn": ISSQN_PR, "icms": ICMS_PADRAO}
+        imp = {
+            "pis": PIS_COFINS_REGIME_CUMULATIVO,
+            "cofins": D("0"),
+            "issqn": ISSQN_PR,
+            "icms": ICMS_PADRAO,
+        }
         r = aplicar_mod_fat("BDI+ICMS", imp)
         assert r["issqn"] == D("0")
-        assert r["icms"]  == ICMS_PADRAO   # ICMS permanece
+        assert r["icms"] == ICMS_PADRAO  # ICMS permanece
 
     def test_fat_dir_simp_zera_tudo(self):
-        imp = {"pis": PIS_PADRAO, "cofins": COFINS_PADRAO, "issqn": ISSQN_SP, "icms": ICMS_PADRAO}
+        imp = {
+            "pis": PIS_PADRAO,
+            "cofins": COFINS_PADRAO,
+            "issqn": ISSQN_SP,
+            "icms": ICMS_PADRAO,
+        }
         r = aplicar_mod_fat("FAT DIR SIMP", imp)
         assert all(r[k] == D("0") for k in ("pis", "cofins", "issqn", "icms"))
 
@@ -261,17 +302,27 @@ class TestAplicarModFat:
             aplicar_mod_fat("DESCONHECIDA", {"pis": D("0")})
 
     def test_nao_modifica_original(self):
-        imp = {"pis": PIS_PADRAO, "cofins": COFINS_PADRAO, "issqn": ISSQN_PR, "icms": ICMS_PADRAO}
+        imp = {
+            "pis": PIS_PADRAO,
+            "cofins": COFINS_PADRAO,
+            "issqn": ISSQN_PR,
+            "icms": ICMS_PADRAO,
+        }
         aplicar_mod_fat("FAT DIR SIMP", imp)
-        assert imp["pis"] == PIS_PADRAO   # original intacto
+        assert imp["pis"] == PIS_PADRAO  # original intacto
 
 
 # ── calcular_fator_k ──────────────────────────────────────────────────────────
 
+
 class TestFatorK:
 
     def _item(self, id_, custo, preco_base):
-        return {"id": id_, "custo_direto": D(str(custo)), "preco_base_total": D(str(preco_base))}
+        return {
+            "id": id_,
+            "custo_direto": D(str(custo)),
+            "preco_base_total": D(str(preco_base)),
+        }
 
     def test_tres_itens_faturaveis_mais_um_operacional(self):
         """
@@ -281,9 +332,9 @@ class TestFatorK:
         """
         # Preços base simulados (já aplicados BDI sobre custo direto)
         itens = [
-            self._item("A", 409.32, 554.30),   # 100 un → 55.430,00 total
-            self._item("B", 158.90, 218.65),   # 45 un  → 9.839,25 total
-            self._item("C", 185.00, 245.68),   # 20 un  → 4.913,60 total
+            self._item("A", 409.32, 554.30),  # 100 un → 55.430,00 total
+            self._item("B", 158.90, 218.65),  # 45 un  → 9.839,25 total
+            self._item("C", 185.00, 245.68),  # 20 un  → 4.913,60 total
         ]
         # Bloco operacional: custo carregado com BDI Sombra
         total_operacional = D("57000.00") * (D("1") + D("0.2015"))  # ≈ 68485.50
@@ -333,6 +384,7 @@ class TestFatorK:
 
 # ── margem_liquida_real ───────────────────────────────────────────────────────
 
+
 class TestMargemLiquidaReal:
 
     def test_cenario_completo(self):
@@ -346,15 +398,15 @@ class TestMargemLiquidaReal:
         # lucro_A = 409.32 * 100 * 1.13 * 1.015 * 0.10
         item_a = {
             "custo_direto": D("409.32"),
-            "quantidade":   D("100"),
-            "margem":       D("0.10"),
+            "quantidade": D("100"),
+            "margem": D("0.10"),
             "despesas_adm": ADM_PADRAO,
             "custo_financeiro": CF_PADRAO,
         }
         item_b = {
             "custo_direto": D("158.90"),
-            "quantidade":   D("45"),
-            "margem":       D("0.12"),
+            "quantidade": D("45"),
+            "margem": D("0.12"),
             "despesas_adm": ADM_PADRAO,
             "custo_financeiro": CF_PADRAO,
         }
@@ -365,18 +417,24 @@ class TestMargemLiquidaReal:
         mlr = margem_liquida_real([item_a, item_b], total_proposta)
 
         assert isinstance(mlr, Decimal)
-        assert D("0") < mlr < D("1")     # margem real entre 0 e 100%
+        assert D("0") < mlr < D("1")  # margem real entre 0 e 100%
 
         # Verifica cálculo manual para item_a:
         lucro_a = D("409.32") * D("100") * D("1.13") * D("1.015") * D("0.10")
-        lucro_b = D("158.90") * D("45")  * D("1.13") * D("1.015") * D("0.12")
+        lucro_b = D("158.90") * D("45") * D("1.13") * D("1.015") * D("0.12")
         mlr_esperado = (lucro_a + lucro_b) / total_proposta
         assert abs(mlr - mlr_esperado) < D("0.000001")
 
     def test_total_proposta_zero_retorna_zero(self):
-        itens = [{"custo_direto": D("100"), "quantidade": D("1"),
-                  "margem": D("0.10"), "despesas_adm": ADM_PADRAO,
-                  "custo_financeiro": CF_PADRAO}]
+        itens = [
+            {
+                "custo_direto": D("100"),
+                "quantidade": D("1"),
+                "margem": D("0.10"),
+                "despesas_adm": ADM_PADRAO,
+                "custo_financeiro": CF_PADRAO,
+            }
+        ]
         assert margem_liquida_real(itens, D("0")) == D("0")
 
     def test_sem_itens_retorna_zero(self):

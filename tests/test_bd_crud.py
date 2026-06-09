@@ -48,6 +48,7 @@ def client(setup_db, sponsor_headers):
 
 # ── bd_BDI ──────────────────────────────────────────────────────────────────
 
+
 class TestBdBDI:
     BASE = "/api/v1/bd-bdi"
 
@@ -93,6 +94,7 @@ class TestBdBDI:
 
 
 # ── bd_RH ───────────────────────────────────────────────────────────────────
+
 
 class TestBdRH:
     BASE = "/api/v1/bd-rh"
@@ -143,6 +145,7 @@ class TestBdRH:
 
 # ── bd_EPI ──────────────────────────────────────────────────────────────────
 
+
 class TestBdEPI:
     BASE = "/api/v1/bd-epi"
 
@@ -181,6 +184,7 @@ class TestBdEPI:
 
 # ── bd_FERRAMENTAL ──────────────────────────────────────────────────────────
 
+
 class TestBdFerramental:
     BASE = "/api/v1/bd-ferramental"
 
@@ -207,6 +211,7 @@ class TestBdFerramental:
 
 
 # ── bd_FROTAS ───────────────────────────────────────────────────────────────
+
 
 class TestBdFrotas:
     BASE = "/api/v1/bd-frotas"
@@ -239,6 +244,7 @@ class TestBdFrotas:
 
 # ── bd_MATERIAIS ─────────────────────────────────────────────────────────────
 
+
 class TestBdMateriais:
     BASE = "/api/v1/bd-materiais"
 
@@ -269,6 +275,7 @@ class TestBdMateriais:
 
 # ── bd_ESTRUTURA_OPERACIONAL ─────────────────────────────────────────────────
 
+
 class TestBdEstrutura:
     BASE = "/api/v1/bd-estrutura"
 
@@ -295,6 +302,7 @@ class TestBdEstrutura:
 
 
 # ── bd_DESPESAS ──────────────────────────────────────────────────────────────
+
 
 class TestBdDespesas:
     BASE = "/api/v1/bd-despesas"

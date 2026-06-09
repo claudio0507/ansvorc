@@ -19,25 +19,26 @@ Valores padrão documentados (referência, não normativo):
   PIS+COFINS acumulado BDI+ICMS  = 9.25% (regime cumulativo diferenciado)
 """
 
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from typing import TypedDict
 
 # ── Constantes de referência (NÃO usar em produção — consultar bd_BDI) ────────
 
-PIS_PADRAO      = Decimal("0.0065")
-COFINS_PADRAO   = Decimal("0.0300")
-ISSQN_PR        = Decimal("0.0350")
-ISSQN_SP        = Decimal("0.0500")
-ICMS_PADRAO     = Decimal("0.1200")
-ADM_PADRAO      = Decimal("0.1300")
-CF_PADRAO       = Decimal("0.0150")
+PIS_PADRAO = Decimal("0.0065")
+COFINS_PADRAO = Decimal("0.0300")
+ISSQN_PR = Decimal("0.0350")
+ISSQN_SP = Decimal("0.0500")
+ICMS_PADRAO = Decimal("0.1200")
+ADM_PADRAO = Decimal("0.1300")
+CF_PADRAO = Decimal("0.0150")
 
 # PIS+COFINS acumulado no regime BDI+ICMS/FAT DIR SIMP (base de cálculo diferente)
 PIS_COFINS_REGIME_CUMULATIVO = Decimal("0.0925")
-PIS_COFINS_REGIME_NORMAL     = Decimal("0.0365")
+PIS_COFINS_REGIME_NORMAL = Decimal("0.0365")
 
 
 # ── Helpers internos ──────────────────────────────────────────────────────────
+
 
 def _q4(v: Decimal) -> Decimal:
     """Arredonda para 4 casas decimais (ROUND_HALF_UP)."""
@@ -50,6 +51,7 @@ def _q6(v: Decimal) -> Decimal:
 
 
 # ── API pública ───────────────────────────────────────────────────────────────
+
 
 def calcular_bdi_sombra(
     custo_direto: Decimal,
@@ -90,14 +92,16 @@ def calcular_bdi_completo(
     Raises:
         ValueError: se (PIS+COFINS+ISSQN+ICMS) >= 1 (denominador ≤ 0).
     """
-    numerador   = (Decimal("1") + despesas_adm) * (Decimal("1") + custo_financeiro) * (Decimal("1") + margem)
-    impostos    = pis + cofins + issqn + icms
+    numerador = (
+        (Decimal("1") + despesas_adm)
+        * (Decimal("1") + custo_financeiro)
+        * (Decimal("1") + margem)
+    )
+    impostos = pis + cofins + issqn + icms
     denominador = Decimal("1") - impostos
 
     if denominador <= Decimal("0"):
-        raise ValueError(
-            f"Soma de impostos ({impostos}) >= 1: denominador inválido."
-        )
+        raise ValueError(f"Soma de impostos ({impostos}) >= 1: denominador inválido.")
 
     return _q6(numerador / denominador - Decimal("1"))
 
@@ -110,7 +114,7 @@ def aplicar_reidi(impostos: dict) -> dict:
     Não modifica o dict original (retorna cópia).
     """
     resultado = dict(impostos)
-    resultado["pis"]    = Decimal("0")
+    resultado["pis"] = Decimal("0")
     resultado["cofins"] = Decimal("0")
     return resultado
 
@@ -139,10 +143,10 @@ def aplicar_mod_fat(mod_fat: str, impostos: dict) -> dict:
         resultado["issqn"] = Decimal("0")
 
     elif mod_fat == "FAT DIR SIMP":
-        resultado["pis"]    = Decimal("0")
+        resultado["pis"] = Decimal("0")
         resultado["cofins"] = Decimal("0")
-        resultado["issqn"]  = Decimal("0")
-        resultado["icms"]   = Decimal("0")
+        resultado["issqn"] = Decimal("0")
+        resultado["icms"] = Decimal("0")
 
     else:
         raise ValueError(
@@ -155,16 +159,17 @@ def aplicar_mod_fat(mod_fat: str, impostos: dict) -> dict:
 
 class ItemFaturavel(TypedDict):
     """Representa um item faturável para o cálculo do Fator K."""
+
     id: int | str
     custo_direto: Decimal
-    preco_base_total: Decimal       # custo_direto × (1 + BDI) × quantidade
+    preco_base_total: Decimal  # custo_direto × (1 + BDI) × quantidade
 
 
 class ResultadoFatorK(TypedDict):
     id: int | str
-    peso_percentual: Decimal        # participação % no subtotal faturável
-    rateio: Decimal                 # R$ absorvido do bloco não faturável
-    preco_final: Decimal            # preco_base_total + rateio
+    peso_percentual: Decimal  # participação % no subtotal faturável
+    rateio: Decimal  # R$ absorvido do bloco não faturável
+    preco_final: Decimal  # preco_base_total + rateio
 
 
 def calcular_fator_k(
@@ -189,12 +194,14 @@ def calcular_fator_k(
 
     if subtotal_faturavel == Decimal("0") or not itens_faturaveis:
         for item in itens_faturaveis:
-            resultado.append(ResultadoFatorK(
-                id=item["id"],
-                peso_percentual=Decimal("0"),
-                rateio=Decimal("0"),
-                preco_final=item["preco_base_total"],
-            ))
+            resultado.append(
+                ResultadoFatorK(
+                    id=item["id"],
+                    peso_percentual=Decimal("0"),
+                    rateio=Decimal("0"),
+                    preco_final=item["preco_base_total"],
+                )
+            )
         return resultado
 
     total_proposta = subtotal_faturavel + total_diluir_nao_faturavel
@@ -207,12 +214,14 @@ def calcular_fator_k(
         else:
             preco_final = _q4(peso * total_proposta)
             rateio = max(_q4(preco_final - item["preco_base_total"]), Decimal("0"))
-        resultado.append(ResultadoFatorK(
-            id=item["id"],
-            peso_percentual=_q4(peso * Decimal("100")),
-            rateio=rateio,
-            preco_final=preco_final,
-        ))
+        resultado.append(
+            ResultadoFatorK(
+                id=item["id"],
+                peso_percentual=_q4(peso * Decimal("100")),
+                rateio=rateio,
+                preco_final=preco_final,
+            )
+        )
 
     return resultado
 
@@ -240,7 +249,8 @@ def margem_liquida_real(
 
     lucro_total = sum(
         (
-            item["custo_direto"] * item["quantidade"]
+            item["custo_direto"]
+            * item["quantidade"]
             * (Decimal("1") + item["despesas_adm"])
             * (Decimal("1") + item["custo_financeiro"])
             * item["margem"]

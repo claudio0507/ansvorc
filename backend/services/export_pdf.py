@@ -12,8 +12,8 @@ from decimal import Decimal
 from backend.models.orcamento_models import Cliente, Orcamento, OrcamentoItem
 
 _BLOCO_LABEL: dict[str, str] = {
-    "servicos":    "Serviços",
-    "produtos":    "Produtos",
+    "servicos": "Serviços",
+    "produtos": "Produtos",
     "operacional": "Operacional",
     "excepcionais": "Excepcionais",
 }
@@ -27,7 +27,9 @@ def _fmt_brl(value: Decimal | None) -> str:
         return "—"
     # Força 2 casas decimais e formata com separadores BR
     quantized = value.quantize(Decimal("0.01"))
-    parts = f"{abs(quantized):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    parts = (
+        f"{abs(quantized):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    )
     return f"R$ {parts}" if quantized >= 0 else f"R$ -{parts}"
 
 
@@ -47,9 +49,7 @@ def _fmt_qty(value: Decimal | None) -> str:
 
 def _build_html(orc: Orcamento, itens: list[OrcamentoItem], cliente: Cliente) -> str:
     hoje = datetime.date.today().strftime("%d/%m/%Y")
-    criado_em_str = (
-        orc.criado_em.strftime("%d/%m/%Y") if orc.criado_em else hoje
-    )
+    criado_em_str = orc.criado_em.strftime("%d/%m/%Y") if orc.criado_em else hoje
     reidi_label = "Sim (REIDI)" if orc.beneficio_reidi else "Não"
 
     # Agrupa itens por bloco preservando a ordem definida

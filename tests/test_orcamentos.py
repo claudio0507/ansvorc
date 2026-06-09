@@ -5,9 +5,9 @@ Padrão: SQLite in-memory com StaticPool, dependency_overrides[get_db].
 Todos os valores Decimal; sem float.
 """
 
-import pytest
 from decimal import Decimal
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -53,6 +53,7 @@ def setup_db():
 
 
 # ── Fixtures de dados base ────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def db_session():
@@ -152,26 +153,33 @@ def ficha_produto_id(db_session):
 
 @pytest.fixture
 def orcamento_id(cliente_id):
-    resp = client.post("/api/v1/orcamentos", json={
-        "numero_proposta": "PROP-001",
-        "cliente_id": cliente_id,
-        "uf_execucao": "PR",
-        "beneficio_reidi": False,
-    })
+    resp = client.post(
+        "/api/v1/orcamentos",
+        json={
+            "numero_proposta": "PROP-001",
+            "cliente_id": cliente_id,
+            "uf_execucao": "PR",
+            "beneficio_reidi": False,
+        },
+    )
     assert resp.status_code == 201
     return resp.json()["id"]
 
 
 # ── Clientes ──────────────────────────────────────────────────────────────────
 
+
 class TestClientes:
 
     def test_criar_cliente(self):
-        resp = client.post("/api/v1/clientes", json={
-            "razao_social": "Alta Noroeste S.A.",
-            "cnpj": "00.000.000/0001-91",
-            "uf_sede": "PR",
-        })
+        resp = client.post(
+            "/api/v1/clientes",
+            json={
+                "razao_social": "Alta Noroeste S.A.",
+                "cnpj": "00.000.000/0001-91",
+                "uf_sede": "PR",
+            },
+        )
         assert resp.status_code == 201
         assert resp.json()["razao_social"] == "Alta Noroeste S.A."
 
@@ -187,15 +195,19 @@ class TestClientes:
 
 # ── CRUD Orçamentos ───────────────────────────────────────────────────────────
 
+
 class TestOrcamentosCRUD:
 
     def test_criar_orcamento(self, cliente_id):
-        resp = client.post("/api/v1/orcamentos", json={
-            "numero_proposta": "PROP-CRUD-01",
-            "cliente_id": cliente_id,
-            "uf_execucao": "PR",
-            "beneficio_reidi": False,
-        })
+        resp = client.post(
+            "/api/v1/orcamentos",
+            json={
+                "numero_proposta": "PROP-CRUD-01",
+                "cliente_id": cliente_id,
+                "uf_execucao": "PR",
+                "beneficio_reidi": False,
+            },
+        )
         assert resp.status_code == 201
         data = resp.json()
         assert data["status"] == "rascunho"
@@ -208,118 +220,148 @@ class TestOrcamentosCRUD:
         assert any(o["id"] == orcamento_id for o in resp.json())
 
     def test_atualizar_orcamento_rascunho(self, orcamento_id):
-        resp = client.put(f"/api/v1/orcamentos/{orcamento_id}", json={
-            "uf_execucao": "SP",
-            "beneficio_reidi": True,
-        })
+        resp = client.put(
+            f"/api/v1/orcamentos/{orcamento_id}",
+            json={
+                "uf_execucao": "SP",
+                "beneficio_reidi": True,
+            },
+        )
         assert resp.status_code == 200
         assert resp.json()["uf_execucao"] == "SP"
         assert resp.json()["beneficio_reidi"] is True
 
     def test_excluir_orcamento_rascunho(self, cliente_id):
-        resp = client.post("/api/v1/orcamentos", json={
-            "numero_proposta": "PROP-DEL",
-            "cliente_id": cliente_id,
-            "uf_execucao": "PR",
-        })
+        resp = client.post(
+            "/api/v1/orcamentos",
+            json={
+                "numero_proposta": "PROP-DEL",
+                "cliente_id": cliente_id,
+                "uf_execucao": "PR",
+            },
+        )
         oid = resp.json()["id"]
         resp = client.delete(f"/api/v1/orcamentos/{oid}")
         assert resp.status_code == 204
 
     def test_criar_orcamento_cliente_inexistente(self):
-        resp = client.post("/api/v1/orcamentos", json={
-            "numero_proposta": "PROP-X",
-            "cliente_id": 99999,
-            "uf_execucao": "PR",
-        })
+        resp = client.post(
+            "/api/v1/orcamentos",
+            json={
+                "numero_proposta": "PROP-X",
+                "cliente_id": 99999,
+                "uf_execucao": "PR",
+            },
+        )
         assert resp.status_code == 404
 
 
 # ── Itens ─────────────────────────────────────────────────────────────────────
 
+
 class TestOrcamentoItens:
 
     def test_adicionar_item_servico(self, orcamento_id, ficha_servico_id):
-        resp = client.post(f"/api/v1/orcamentos/{orcamento_id}/itens", json={
-            "bloco": "servicos",
-            "ficha_servico_id": ficha_servico_id,
-            "descricao": "Implantação de placas R-1",
-            "unidade_medida": "un",
-            "quantidade": "100",
-            "mod_fat": "BDI-MAT+MO",
-            "margem_percentual": "0.10",
-            "custo_direto_unitario": "409.32",
-        })
+        resp = client.post(
+            f"/api/v1/orcamentos/{orcamento_id}/itens",
+            json={
+                "bloco": "servicos",
+                "ficha_servico_id": ficha_servico_id,
+                "descricao": "Implantação de placas R-1",
+                "unidade_medida": "un",
+                "quantidade": "100",
+                "mod_fat": "BDI-MAT+MO",
+                "margem_percentual": "0.10",
+                "custo_direto_unitario": "409.32",
+            },
+        )
         assert resp.status_code == 201
         assert resp.json()["bloco"] == "servicos"
         assert resp.json()["ficha_servico_id"] == ficha_servico_id
 
     def test_adicionar_item_produto(self, orcamento_id, ficha_produto_id):
-        resp = client.post(f"/api/v1/orcamentos/{orcamento_id}/itens", json={
-            "bloco": "produtos",
-            "ficha_produto_id": ficha_produto_id,
-            "descricao": "Chapa galvanizada R-1",
-            "unidade_medida": "un",
-            "quantidade": "50",
-            "mod_fat": "BDI+ICMS",
-            "margem_percentual": "0.12",
-            "custo_direto_unitario": "185.00",
-        })
+        resp = client.post(
+            f"/api/v1/orcamentos/{orcamento_id}/itens",
+            json={
+                "bloco": "produtos",
+                "ficha_produto_id": ficha_produto_id,
+                "descricao": "Chapa galvanizada R-1",
+                "unidade_medida": "un",
+                "quantidade": "50",
+                "mod_fat": "BDI+ICMS",
+                "margem_percentual": "0.12",
+                "custo_direto_unitario": "185.00",
+            },
+        )
         assert resp.status_code == 201
         assert resp.json()["bloco"] == "produtos"
 
     def test_adicionar_item_operacional(self, orcamento_id):
-        resp = client.post(f"/api/v1/orcamentos/{orcamento_id}/itens", json={
-            "bloco": "operacional",
-            "descricao": "Alojamento Passo Fundo",
-            "unidade_medida": "Mês",
-            "quantidade": "1",
-            "mod_fat": "-",
-            "margem_percentual": "0",
-            "custo_direto_unitario": "57000.00",
-        })
+        resp = client.post(
+            f"/api/v1/orcamentos/{orcamento_id}/itens",
+            json={
+                "bloco": "operacional",
+                "descricao": "Alojamento Passo Fundo",
+                "unidade_medida": "Mês",
+                "quantidade": "1",
+                "mod_fat": "-",
+                "margem_percentual": "0",
+                "custo_direto_unitario": "57000.00",
+            },
+        )
         assert resp.status_code == 201
 
-    def test_rejeitar_ficha_servico_e_produto_simultaneos(self, orcamento_id, ficha_servico_id, ficha_produto_id):
-        resp = client.post(f"/api/v1/orcamentos/{orcamento_id}/itens", json={
-            "bloco": "servicos",
-            "ficha_servico_id": ficha_servico_id,
-            "ficha_produto_id": ficha_produto_id,
-            "descricao": "Inválido",
-            "unidade_medida": "un",
-            "quantidade": "1",
-            "mod_fat": "BDI-MO",
-            "margem_percentual": "0.10",
-            "custo_direto_unitario": "100",
-        })
+    def test_rejeitar_ficha_servico_e_produto_simultaneos(
+        self, orcamento_id, ficha_servico_id, ficha_produto_id
+    ):
+        resp = client.post(
+            f"/api/v1/orcamentos/{orcamento_id}/itens",
+            json={
+                "bloco": "servicos",
+                "ficha_servico_id": ficha_servico_id,
+                "ficha_produto_id": ficha_produto_id,
+                "descricao": "Inválido",
+                "unidade_medida": "un",
+                "quantidade": "1",
+                "mod_fat": "BDI-MO",
+                "margem_percentual": "0.10",
+                "custo_direto_unitario": "100",
+            },
+        )
         assert resp.status_code == 422
 
     def test_listar_itens(self, orcamento_id, ficha_servico_id):
-        client.post(f"/api/v1/orcamentos/{orcamento_id}/itens", json={
-            "bloco": "servicos",
-            "ficha_servico_id": ficha_servico_id,
-            "descricao": "Serviço X",
-            "unidade_medida": "m²",
-            "quantidade": "10",
-            "mod_fat": "BDI-MAT+MO",
-            "margem_percentual": "0.10",
-            "custo_direto_unitario": "38.50",
-        })
+        client.post(
+            f"/api/v1/orcamentos/{orcamento_id}/itens",
+            json={
+                "bloco": "servicos",
+                "ficha_servico_id": ficha_servico_id,
+                "descricao": "Serviço X",
+                "unidade_medida": "m²",
+                "quantidade": "10",
+                "mod_fat": "BDI-MAT+MO",
+                "margem_percentual": "0.10",
+                "custo_direto_unitario": "38.50",
+            },
+        )
         resp = client.get(f"/api/v1/orcamentos/{orcamento_id}/itens")
         assert resp.status_code == 200
         assert len(resp.json()) >= 1
 
     def test_remover_item(self, orcamento_id, ficha_servico_id):
-        r = client.post(f"/api/v1/orcamentos/{orcamento_id}/itens", json={
-            "bloco": "servicos",
-            "ficha_servico_id": ficha_servico_id,
-            "descricao": "Serviço para deletar",
-            "unidade_medida": "un",
-            "quantidade": "5",
-            "mod_fat": "BDI-MAT+MO",
-            "margem_percentual": "0.10",
-            "custo_direto_unitario": "100",
-        })
+        r = client.post(
+            f"/api/v1/orcamentos/{orcamento_id}/itens",
+            json={
+                "bloco": "servicos",
+                "ficha_servico_id": ficha_servico_id,
+                "descricao": "Serviço para deletar",
+                "unidade_medida": "un",
+                "quantidade": "5",
+                "mod_fat": "BDI-MAT+MO",
+                "margem_percentual": "0.10",
+                "custo_direto_unitario": "100",
+            },
+        )
         item_id = r.json()["id"]
         resp = client.delete(f"/api/v1/orcamentos/{orcamento_id}/itens/{item_id}")
         assert resp.status_code == 204
@@ -327,25 +369,33 @@ class TestOrcamentoItens:
 
 # ── Guard: orçamento aprovado ─────────────────────────────────────────────────
 
+
 class TestGuardAprovado:
 
     def _aprovar(self, orcamento_id):
         """Força o status para 'aprovado' via PUT (status rascunho)."""
-        resp = client.put(f"/api/v1/orcamentos/{orcamento_id}", json={"status": "aprovado"})
+        resp = client.put(
+            f"/api/v1/orcamentos/{orcamento_id}", json={"status": "aprovado"}
+        )
         assert resp.status_code == 200
         assert resp.json()["status"] == "aprovado"
 
-    def test_nao_pode_editar_item_de_orcamento_aprovado(self, orcamento_id, ficha_servico_id):
-        r = client.post(f"/api/v1/orcamentos/{orcamento_id}/itens", json={
-            "bloco": "servicos",
-            "ficha_servico_id": ficha_servico_id,
-            "descricao": "Serviço",
-            "unidade_medida": "un",
-            "quantidade": "10",
-            "mod_fat": "BDI-MAT+MO",
-            "margem_percentual": "0.10",
-            "custo_direto_unitario": "200",
-        })
+    def test_nao_pode_editar_item_de_orcamento_aprovado(
+        self, orcamento_id, ficha_servico_id
+    ):
+        r = client.post(
+            f"/api/v1/orcamentos/{orcamento_id}/itens",
+            json={
+                "bloco": "servicos",
+                "ficha_servico_id": ficha_servico_id,
+                "descricao": "Serviço",
+                "unidade_medida": "un",
+                "quantidade": "10",
+                "mod_fat": "BDI-MAT+MO",
+                "margem_percentual": "0.10",
+                "custo_direto_unitario": "200",
+            },
+        )
         item_id = r.json()["id"]
         self._aprovar(orcamento_id)
 
@@ -355,31 +405,41 @@ class TestGuardAprovado:
         )
         assert resp.status_code == 403
 
-    def test_nao_pode_adicionar_item_em_orcamento_aprovado(self, orcamento_id, ficha_servico_id):
+    def test_nao_pode_adicionar_item_em_orcamento_aprovado(
+        self, orcamento_id, ficha_servico_id
+    ):
         self._aprovar(orcamento_id)
-        resp = client.post(f"/api/v1/orcamentos/{orcamento_id}/itens", json={
-            "bloco": "servicos",
-            "ficha_servico_id": ficha_servico_id,
-            "descricao": "Novo item proibido",
-            "unidade_medida": "un",
-            "quantidade": "1",
-            "mod_fat": "BDI-MAT+MO",
-            "margem_percentual": "0.10",
-            "custo_direto_unitario": "100",
-        })
+        resp = client.post(
+            f"/api/v1/orcamentos/{orcamento_id}/itens",
+            json={
+                "bloco": "servicos",
+                "ficha_servico_id": ficha_servico_id,
+                "descricao": "Novo item proibido",
+                "unidade_medida": "un",
+                "quantidade": "1",
+                "mod_fat": "BDI-MAT+MO",
+                "margem_percentual": "0.10",
+                "custo_direto_unitario": "100",
+            },
+        )
         assert resp.status_code == 403
 
-    def test_nao_pode_deletar_item_de_orcamento_aprovado(self, orcamento_id, ficha_servico_id):
-        r = client.post(f"/api/v1/orcamentos/{orcamento_id}/itens", json={
-            "bloco": "servicos",
-            "ficha_servico_id": ficha_servico_id,
-            "descricao": "Serviço",
-            "unidade_medida": "un",
-            "quantidade": "10",
-            "mod_fat": "BDI-MAT+MO",
-            "margem_percentual": "0.10",
-            "custo_direto_unitario": "200",
-        })
+    def test_nao_pode_deletar_item_de_orcamento_aprovado(
+        self, orcamento_id, ficha_servico_id
+    ):
+        r = client.post(
+            f"/api/v1/orcamentos/{orcamento_id}/itens",
+            json={
+                "bloco": "servicos",
+                "ficha_servico_id": ficha_servico_id,
+                "descricao": "Serviço",
+                "unidade_medida": "un",
+                "quantidade": "10",
+                "mod_fat": "BDI-MAT+MO",
+                "margem_percentual": "0.10",
+                "custo_direto_unitario": "200",
+            },
+        )
         item_id = r.json()["id"]
         self._aprovar(orcamento_id)
 
@@ -388,7 +448,9 @@ class TestGuardAprovado:
 
     def test_nao_pode_atualizar_orcamento_aprovado(self, orcamento_id):
         self._aprovar(orcamento_id)
-        resp = client.put(f"/api/v1/orcamentos/{orcamento_id}", json={"uf_execucao": "SP"})
+        resp = client.put(
+            f"/api/v1/orcamentos/{orcamento_id}", json={"uf_execucao": "SP"}
+        )
         assert resp.status_code == 403
 
     def test_nao_pode_excluir_orcamento_aprovado(self, orcamento_id):
@@ -399,10 +461,21 @@ class TestGuardAprovado:
 
 # ── Endpoint /calcular ────────────────────────────────────────────────────────
 
+
 class TestCalcular:
 
-    def _adicionar_item(self, orcamento_id, bloco, mod_fat, margem, custo, qty=100,
-                        ficha_servico_id=None, ficha_produto_id=None, descricao="Item"):
+    def _adicionar_item(
+        self,
+        orcamento_id,
+        bloco,
+        mod_fat,
+        margem,
+        custo,
+        qty=100,
+        ficha_servico_id=None,
+        ficha_produto_id=None,
+        descricao="Item",
+    ):
         payload = {
             "bloco": bloco,
             "descricao": descricao,
@@ -420,10 +493,17 @@ class TestCalcular:
         assert r.status_code == 201, r.text
         return r.json()["id"]
 
-    def test_calcular_bdi_mat_mo_pr_sem_reidi(self, orcamento_id, bdi_rows, ficha_servico_id):
+    def test_calcular_bdi_mat_mo_pr_sem_reidi(
+        self, orcamento_id, bdi_rows, ficha_servico_id
+    ):
         """BDI-MAT+MO, PR, sem REIDI, margem 10% → BDI ≈ 35.88%"""
         self._adicionar_item(
-            orcamento_id, "servicos", "BDI-MAT+MO", "0.10", "409.32", qty=100,
+            orcamento_id,
+            "servicos",
+            "BDI-MAT+MO",
+            "0.10",
+            "409.32",
+            qty=100,
             ficha_servico_id=ficha_servico_id,
         )
         resp = client.post(f"/api/v1/orcamentos/{orcamento_id}/calcular")
@@ -434,18 +514,28 @@ class TestCalcular:
         bdi_pct = Decimal(str(item["bdi_taxa"])) * 100
         assert abs(bdi_pct - Decimal("35.88")) < Decimal("0.01")
 
-    def test_calcular_bdi_mat_mo_pr_com_reidi(self, cliente_id, bdi_rows, ficha_servico_id):
+    def test_calcular_bdi_mat_mo_pr_com_reidi(
+        self, cliente_id, bdi_rows, ficha_servico_id
+    ):
         """BDI-MAT+MO, PR, com REIDI, margem 10% → BDI ≈ 30.74%"""
-        resp = client.post("/api/v1/orcamentos", json={
-            "numero_proposta": "PROP-REIDI",
-            "cliente_id": cliente_id,
-            "uf_execucao": "PR",
-            "beneficio_reidi": True,
-        })
+        resp = client.post(
+            "/api/v1/orcamentos",
+            json={
+                "numero_proposta": "PROP-REIDI",
+                "cliente_id": cliente_id,
+                "uf_execucao": "PR",
+                "beneficio_reidi": True,
+            },
+        )
         orc_id = resp.json()["id"]
 
         self._adicionar_item(
-            orc_id, "servicos", "BDI-MAT+MO", "0.10", "409.32", qty=100,
+            orc_id,
+            "servicos",
+            "BDI-MAT+MO",
+            "0.10",
+            "409.32",
+            qty=100,
             ficha_servico_id=ficha_servico_id,
         )
         resp = client.post(f"/api/v1/orcamentos/{orc_id}/calcular")
@@ -457,23 +547,48 @@ class TestCalcular:
         bdi_pct = Decimal(str(item["bdi_taxa"])) * 100
         assert abs(bdi_pct - Decimal("30.74")) < Decimal("0.01")
 
-    def test_calcular_com_fator_k(self, orcamento_id, bdi_rows, ficha_servico_id, ficha_produto_id):
+    def test_calcular_com_fator_k(
+        self, orcamento_id, bdi_rows, ficha_servico_id, ficha_produto_id
+    ):
         """Fator K: 1 item operacional diluído em 3 faturáveis."""
         self._adicionar_item(
-            orcamento_id, "servicos", "BDI-MAT+MO", "0.10", "409.32", qty=100,
-            ficha_servico_id=ficha_servico_id, descricao="Serviço A"
+            orcamento_id,
+            "servicos",
+            "BDI-MAT+MO",
+            "0.10",
+            "409.32",
+            qty=100,
+            ficha_servico_id=ficha_servico_id,
+            descricao="Serviço A",
         )
         self._adicionar_item(
-            orcamento_id, "servicos", "BDI-MAT+MO", "0.12", "158.90", qty=45,
-            ficha_servico_id=ficha_servico_id, descricao="Serviço B"
+            orcamento_id,
+            "servicos",
+            "BDI-MAT+MO",
+            "0.12",
+            "158.90",
+            qty=45,
+            ficha_servico_id=ficha_servico_id,
+            descricao="Serviço B",
         )
         self._adicionar_item(
-            orcamento_id, "produtos", "BDI+ICMS", "0.10", "185.00", qty=20,
-            ficha_produto_id=ficha_produto_id, descricao="Produto C"
+            orcamento_id,
+            "produtos",
+            "BDI+ICMS",
+            "0.10",
+            "185.00",
+            qty=20,
+            ficha_produto_id=ficha_produto_id,
+            descricao="Produto C",
         )
         self._adicionar_item(
-            orcamento_id, "operacional", "-", "0", "57000.00", qty=1,
-            descricao="Alojamento"
+            orcamento_id,
+            "operacional",
+            "-",
+            "0",
+            "57000.00",
+            qty=1,
+            descricao="Alojamento",
         )
 
         resp = client.post(f"/api/v1/orcamentos/{orcamento_id}/calcular")
@@ -483,7 +598,7 @@ class TestCalcular:
         # Total proposta deve ser maior que subtotal faturável
         subtotal = Decimal(str(data["subtotal_faturavel"]))
         total_nf = Decimal(str(data["total_nao_faturavel"]))
-        total    = Decimal(str(data["total_proposta"]))
+        total = Decimal(str(data["total_proposta"]))
         assert total > subtotal
         assert total_nf > Decimal("0")
         assert abs(total - (subtotal + total_nf)) < Decimal("0.01")
@@ -506,9 +621,16 @@ class TestCalcular:
         resp = client.post(f"/api/v1/orcamentos/{orcamento_id}/calcular")
         assert resp.status_code == 422
 
-    def test_calcular_atualiza_totais_no_orcamento(self, orcamento_id, bdi_rows, ficha_servico_id):
+    def test_calcular_atualiza_totais_no_orcamento(
+        self, orcamento_id, bdi_rows, ficha_servico_id
+    ):
         self._adicionar_item(
-            orcamento_id, "servicos", "BDI-MAT+MO", "0.10", "100.00", qty=10,
+            orcamento_id,
+            "servicos",
+            "BDI-MAT+MO",
+            "0.10",
+            "100.00",
+            qty=10,
             ficha_servico_id=ficha_servico_id,
         )
         client.post(f"/api/v1/orcamentos/{orcamento_id}/calcular")

@@ -2,8 +2,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
-
 # ── Fichas de Equipe ─────────────────────────────────────────────────────────
+
 
 class FichaEquipeItemCreate(BaseModel):
     tipo_recurso: str  # RH | EPI | FERRAMENTAL
@@ -15,17 +15,27 @@ class FichaEquipeItemCreate(BaseModel):
 
     @model_validator(mode="after")
     def valida_recurso_exclusivo(self) -> "FichaEquipeItemCreate":
-        filled = sum([
-            self.rh_id is not None,
-            self.epi_id is not None,
-            self.ferramental_id is not None,
-        ])
+        filled = sum(
+            [
+                self.rh_id is not None,
+                self.epi_id is not None,
+                self.ferramental_id is not None,
+            ]
+        )
         if filled != 1:
-            raise ValueError("Exatamente um de rh_id, epi_id ou ferramental_id deve ser informado")
-        mapa = {"RH": self.rh_id, "EPI": self.epi_id, "FERRAMENTAL": self.ferramental_id}
+            raise ValueError(
+                "Exatamente um de rh_id, epi_id ou ferramental_id deve ser informado"
+            )
+        mapa = {
+            "RH": self.rh_id,
+            "EPI": self.epi_id,
+            "FERRAMENTAL": self.ferramental_id,
+        }
         esperado = mapa.get(self.tipo_recurso)
         if esperado is None:
-            raise ValueError(f"tipo_recurso '{self.tipo_recurso}' não corresponde ao FK preenchido")
+            raise ValueError(
+                f"tipo_recurso '{self.tipo_recurso}' não corresponde ao FK preenchido"
+            )
         return self
 
 
@@ -73,6 +83,7 @@ class FichaEquipeRead(BaseModel):
 
 # ── Fichas de Produto ─────────────────────────────────────────────────────────
 
+
 class FichaProdutoItemCreate(BaseModel):
     material_id: int | None = None
     componente_filho_id: int | None = None
@@ -81,10 +92,12 @@ class FichaProdutoItemCreate(BaseModel):
 
     @model_validator(mode="after")
     def valida_bom_exclusividade(self) -> "FichaProdutoItemCreate":
-        filled = sum([
-            self.material_id is not None,
-            self.componente_filho_id is not None,
-        ])
+        filled = sum(
+            [
+                self.material_id is not None,
+                self.componente_filho_id is not None,
+            ]
+        )
         if filled != 1:
             raise ValueError(
                 "Exatamente um de material_id ou componente_filho_id deve ser informado — nunca ambos, nunca nenhum"
@@ -131,6 +144,7 @@ class FichaProdutoRead(BaseModel):
 
 # ── Fichas de Serviço ─────────────────────────────────────────────────────────
 
+
 class FichaServicoRecursoCreate(BaseModel):
     ficha_equipe_id: int | None = None
     frota_id: int | None = None
@@ -141,12 +155,14 @@ class FichaServicoRecursoCreate(BaseModel):
 
     @model_validator(mode="after")
     def valida_recurso_exclusivo(self) -> "FichaServicoRecursoCreate":
-        filled = sum([
-            self.ficha_equipe_id is not None,
-            self.frota_id is not None,
-            self.ferramental_id is not None,
-            self.ficha_produto_id is not None,
-        ])
+        filled = sum(
+            [
+                self.ficha_equipe_id is not None,
+                self.frota_id is not None,
+                self.ferramental_id is not None,
+                self.ficha_produto_id is not None,
+            ]
+        )
         if filled != 1:
             raise ValueError(
                 "Exatamente um de ficha_equipe_id, frota_id, ferramental_id ou ficha_produto_id deve ser informado"
