@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     # False por padrão; testes e dev local definem DEBUG=true no .env
     DEBUG: bool = False
     JWT_SECRET: str = "sinalys-dev-secret-mude-em-producao"
+    # Em produção: CORS_ORIGINS=https://sinalys.altanoroeste.com.br
+    CORS_ORIGINS: str = "http://localhost:8000,http://localhost:3000"
 
     def __init__(self, **data):
         super().__init__(**data)

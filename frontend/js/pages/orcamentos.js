@@ -624,7 +624,7 @@ function wireEditorActions() {
     if (btn) { btn.disabled = true; btn.textContent = 'Gerando PDF…'; }
     try {
       const orcId = state.orcamento.id;
-      const token = (await import('../api.js')).auth.getToken();
+      const token = (await import('../api.js')).auth.getAccessToken();
       const resp  = await fetch(`/api/v1/orcamentos/${orcId}/export/pdf`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });

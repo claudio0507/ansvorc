@@ -1,7 +1,8 @@
 """
 Funções de autenticação: bcrypt + JWT (PyJWT).
 
-Token payload: {"sub": str(usuario_id), "papel": papel, "exp": timestamp}
+Access token payload:  {"sub": str(usuario_id), "papel": papel, "type": "access", "exp": ...}
+Refresh token payload: {"sub": str(usuario_id), "papel": papel, "type": "refresh", "exp": ...}
 """
 
 from datetime import datetime, timedelta, timezone
@@ -30,22 +31,39 @@ def verificar_senha(senha: str, hash_: str) -> bool:
 # ── JWT ───────────────────────────────────────────────────────────────────────
 
 _ALGORITMO = "HS256"
-_EXPIRACAO_HORAS = 24
+ACCESS_TOKEN_EXPIRE_MINUTES = 15
+REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 8  # 8 horas
 
 
 def criar_token(usuario_id: int, papel: str) -> str:
     payload = {
         "sub": str(usuario_id),
         "papel": papel,
-        "exp": datetime.now(timezone.utc) + timedelta(hours=_EXPIRACAO_HORAS),
+        "type": "access",
+        "exp": datetime.now(timezone.utc)
+        + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     }
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=_ALGORITMO)
 
 
-def verificar_token(token: str) -> dict:
-    """Retorna o payload decodificado ou levanta HTTPException 401."""
+def criar_refresh_token(usuario_id: int, papel: str) -> str:
+    payload = {
+        "sub": str(usuario_id),
+        "papel": papel,
+        "type": "refresh",
+        "exp": datetime.now(timezone.utc)
+        + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES),
+    }
+    return jwt.encode(payload, settings.JWT_SECRET, algorithm=_ALGORITMO)
+
+
+def verificar_token(token: str, expected_type: str = "access") -> dict:
+    """Retorna o payload decodificado ou levanta HTTPException 401.
+
+    expected_type: 'access' (padrão) ou 'refresh' — impede uso cruzado.
+    """
     try:
-        return jwt.decode(token, settings.JWT_SECRET, algorithms=[_ALGORITMO])
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[_ALGORITMO])
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -58,6 +76,13 @@ def verificar_token(token: str) -> dict:
             detail="Token inválido.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if payload.get("type") != expected_type:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Tipo de token inválido.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return payload
 
 
 # ── Dependency: usuário autenticado ──────────────────────────────────────────

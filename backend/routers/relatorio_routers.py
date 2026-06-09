@@ -10,6 +10,7 @@ Endpoints:
 from __future__ import annotations
 
 import datetime
+import re
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -55,7 +56,8 @@ def exportar_pdf(id: int, db: Session = Depends(get_db)) -> Response:
 
     pdf_bytes = gerar_pdf_proposta(orc, itens, cliente)
 
-    filename = f"proposta_{orc.numero_proposta}.pdf"
+    safe_num = re.sub(r"[^\w\-.]", "_", str(orc.numero_proposta or ""))
+    filename = f"proposta_{safe_num}.pdf"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",

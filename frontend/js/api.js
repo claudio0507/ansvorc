@@ -1,6 +1,10 @@
 /**
  * api.js — Wrapper fetch() para o backend Sinalys em /api/v1
  *
+ * Segurança de token:
+ *   - access token: mantido APENAS em memória (variável JS) — não persiste em localStorage
+ *   - refresh token: salvo em localStorage — vida longa (8h), usado apenas para renovar access
+ *
  * Uso:
  *   import { api } from './api.js';
  *   const rhs = await api.get('/bd-rh');
@@ -8,44 +12,90 @@
  */
 
 const BASE_URL = '/api/v1';
+const REFRESH_KEY = 'sinalys_refresh';
+const USER_KEY = 'sinalys_user';
+
+// Access token em memória — não exposto a XSS via localStorage
+let _accessToken = null;
 
 // ── Token helpers ─────────────────────────────────────────────────────────────
 
 export const auth = {
-  /** Salva o JWT no localStorage (fase dev: apenas simula login). */
-  setToken(token) { localStorage.setItem('sinalys_token', token); },
-  getToken()      { return localStorage.getItem('sinalys_token'); },
-  clearToken()    { localStorage.removeItem('sinalys_token'); },
+  /** Armazena access token em memória e refresh token em localStorage. */
+  setTokens(accessToken, refreshToken) {
+    _accessToken = accessToken;
+    localStorage.setItem(REFRESH_KEY, refreshToken);
+  },
 
-  /** Dados do usuário logado (gravados no login). */
-  setUser(user)   { localStorage.setItem('sinalys_user', JSON.stringify(user)); },
-  getUser()       {
-    const raw = localStorage.getItem('sinalys_user');
+  getAccessToken()  { return _accessToken; },
+  clearAccessToken(){ _accessToken = null; },
+
+  hasSession()      { return !!localStorage.getItem(REFRESH_KEY); },
+
+  /** Dados do usuário logado (nome, papel, id — sem credenciais). */
+  setUser(user)   { localStorage.setItem(USER_KEY, JSON.stringify(user)); },
+  getUser() {
+    const raw = localStorage.getItem(USER_KEY);
     try { return raw ? JSON.parse(raw) : null; } catch { return null; }
   },
-  clearUser()     { localStorage.removeItem('sinalys_user'); },
+  clearUser()     { localStorage.removeItem(USER_KEY); },
 
-  isLoggedIn()    { return !!auth.getToken(); },
+  isLoggedIn()    { return !!_accessToken || !!localStorage.getItem(REFRESH_KEY); },
 
   logout() {
-    auth.clearToken();
-    auth.clearUser();
+    _accessToken = null;
+    localStorage.removeItem(REFRESH_KEY);
+    localStorage.removeItem(USER_KEY);
     window.location.hash = '#/login';
   },
 };
 
+// ── Refresh automático ────────────────────────────────────────────────────────
+
+async function _refreshAccessToken() {
+  const refresh = localStorage.getItem(REFRESH_KEY);
+  if (!refresh) return null;
+
+  const res = await fetch(`${BASE_URL}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh_token: refresh }),
+  });
+
+  if (!res.ok) {
+    auth.logout();
+    return null;
+  }
+
+  const data = await res.json();
+  _accessToken = data.access_token;
+  // Atualiza o refresh token rotacionado
+  if (data.refresh_token) localStorage.setItem(REFRESH_KEY, data.refresh_token);
+  return _accessToken;
+}
+
 // ── Core fetch ────────────────────────────────────────────────────────────────
 
-async function request(method, path, body = null) {
-  const headers = { 'Content-Type': 'application/json' };
+async function request(method, path, body = null, _retry = true) {
+  // Tenta obter access token válido; se ausente, renova via refresh
+  if (!_accessToken) {
+    await _refreshAccessToken();
+  }
 
-  const token = auth.getToken();
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const headers = { 'Content-Type': 'application/json' };
+  if (_accessToken) headers['Authorization'] = `Bearer ${_accessToken}`;
 
   const init = { method, headers };
   if (body !== null) init.body = JSON.stringify(body);
 
   const response = await fetch(`${BASE_URL}${path}`, init);
+
+  // 401 com refresh disponível — renova e tenta uma vez
+  if (response.status === 401 && _retry && localStorage.getItem(REFRESH_KEY)) {
+    const newToken = await _refreshAccessToken();
+    if (newToken) return request(method, path, body, false);
+    return null;
+  }
 
   // 204 No Content — sem body
   if (response.status === 204) return null;

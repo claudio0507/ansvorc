@@ -19,6 +19,8 @@ from backend.config import settings
 
 _ALGORITMO = "HS256"
 
+_TODOS_PAPEIS = frozenset({"orcamentista", "parametrizador", "gestor_bd", "sponsor"})
+
 _RBAC: list[tuple[str, frozenset[str]]] = [
     ("/api/v1/bd-", frozenset({"gestor_bd", "sponsor"})),
     ("/api/v1/fichas-", frozenset({"parametrizador", "sponsor"})),
@@ -27,22 +29,29 @@ _RBAC: list[tuple[str, frozenset[str]]] = [
         frozenset({"orcamentista", "parametrizador", "gestor_bd", "sponsor"}),
     ),
     ("/api/v1/orcamentos", frozenset({"orcamentista", "parametrizador", "sponsor"})),
-    (
-        "/api/v1/dashboard",
-        frozenset({"orcamentista", "parametrizador", "gestor_bd", "sponsor"}),
-    ),
+    ("/api/v1/dashboard", _TODOS_PAPEIS),
 ]
 
-# Prefixos que exigem startswith
-_PUBLICAS_PREFIX = ("/api/v1/auth/", "/docs", "/redoc")
-# Paths que exigem match exato
-_PUBLICAS_EXACT = ("/", "/openapi.json", "/health")
+# Paths que exigem startswith
+_PUBLICAS_PREFIX = ("/api/v1/auth/",)
+# /docs, /redoc, /openapi.json só são públicos quando DEBUG=True (desabilitados em prod)
+_PUBLICAS_PREFIX_DEBUG = ("/docs", "/redoc")
+_PUBLICAS_EXACT_DEBUG = ("/openapi.json",)
+# Paths que exigem match exato sempre
+_PUBLICAS_EXACT = ("/", "/health")
 
 
 def _eh_publica(path: str) -> bool:
     if path in _PUBLICAS_EXACT:
         return True
-    return any(path.startswith(p) for p in _PUBLICAS_PREFIX)
+    if any(path.startswith(p) for p in _PUBLICAS_PREFIX):
+        return True
+    if settings.DEBUG:
+        if path in _PUBLICAS_EXACT_DEBUG:
+            return True
+        if any(path.startswith(p) for p in _PUBLICAS_PREFIX_DEBUG):
+            return True
+    return False
 
 
 def _papeis_permitidos(path: str) -> frozenset[str] | None:

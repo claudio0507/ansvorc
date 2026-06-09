@@ -73,7 +73,7 @@ export function renderLogin(container) {
 
     try {
       const data = await api.post('/auth/login', { email, senha });
-      auth.setToken(data.access_token);
+      auth.setTokens(data.access_token, data.refresh_token);
       auth.setUser({ email, nome: data.nome, papel: data.papel, id: data.usuario_id });
       toast('Bem-vindo ao Sinalys!', 'success');
       window.location.hash = '#/dashboard';

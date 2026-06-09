@@ -5,8 +5,14 @@ Fornece `auth_token` (papel sponsor, acesso total) para os testes que
 precisam de autenticação após a Fase 3.
 """
 
+import os
+
+# Seta DEBUG antes de qualquer import do backend.
+# conftest.py é o primeiro arquivo Python que o pytest executa — isso garante
+# que pydantic-settings leia DEBUG=true ao instanciar Settings().
+os.environ["DEBUG"] = "true"
+
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool

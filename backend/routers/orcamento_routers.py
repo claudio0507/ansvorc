@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
@@ -27,10 +27,10 @@ from backend.services.motor_bdi import (
     ICMS_PADRAO,
     ISSQN_PR,
     ISSQN_SP,
-    ItemFaturavel,
     PIS_COFINS_REGIME_CUMULATIVO,
     PIS_COFINS_REGIME_NORMAL,
     PIS_PADRAO,
+    ItemFaturavel,
     aplicar_mod_fat,
     aplicar_reidi,
     calcular_bdi_completo,
@@ -131,7 +131,11 @@ def _impostos_base(db: Session, mod_fat: str, uf: str) -> dict:
 
 
 @router.get("/clientes", response_model=list[ClienteRead], tags=["clientes"])
-def listar_clientes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def listar_clientes(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
     return db.query(Cliente).offset(skip).limit(limit).all()
 
 
@@ -177,7 +181,11 @@ def excluir_cliente(id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/orcamentos", response_model=list[OrcamentoRead], tags=["orcamentos"])
-def listar_orcamentos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def listar_orcamentos(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
     return db.query(Orcamento).offset(skip).limit(limit).all()
 
 

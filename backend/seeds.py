@@ -1,6 +1,20 @@
-"""Script de seed — popula dados iniciais das 8 tabelas do Bloco 1 + usuários padrão."""
+"""Script de seed — popula dados iniciais das 8 tabelas do Bloco 1 + usuários padrão.
 
+ATENÇÃO: este script é exclusivo para desenvolvimento/testes.
+Em produção use seeds_prod.py.
+"""
+
+import os
+import sys
 from decimal import Decimal
+
+if os.getenv("ENV") == "production" or os.getenv("DATABASE_URL", "").startswith(
+    "postgresql"
+):
+    sys.exit(
+        "ERRO: seeds.py contém credenciais de desenvolvimento e não pode rodar em produção. "
+        "Use seeds_prod.py."
+    )
 
 from backend.database import Base, SessionLocal, engine
 from backend.models.bd_models import (

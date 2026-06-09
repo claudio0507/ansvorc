@@ -12,6 +12,31 @@ class UsuarioCreate(BaseModel):
     nome: str
     email: str
     senha: str
+    # papel não aceito no auto-registro — sempre nasce como orcamentista
+
+    @field_validator("email")
+    @classmethod
+    def valida_email(cls, v: str) -> str:
+        if not _RE_EMAIL.match(v):
+            raise ValueError("E-mail inválido.")
+        return v.lower().strip()
+
+    @field_validator("senha")
+    @classmethod
+    def valida_senha(cls, v: str) -> str:
+        if len(v) < 10:
+            raise ValueError("Senha deve ter no mínimo 10 caracteres.")
+        if not re.search(r"[A-Z]", v) or not re.search(r"[0-9]", v):
+            raise ValueError("Senha deve conter letras maiúsculas e números.")
+        return v
+
+
+class UsuarioAdminCreate(BaseModel):
+    """Schema exclusivo para criação de usuários por administradores (com papel)."""
+
+    nome: str
+    email: str
+    senha: str
     papel: str = "orcamentista"
 
     @field_validator("email")
@@ -31,8 +56,10 @@ class UsuarioCreate(BaseModel):
     @field_validator("senha")
     @classmethod
     def valida_senha(cls, v: str) -> str:
-        if len(v) < 6:
-            raise ValueError("Senha deve ter no mínimo 6 caracteres.")
+        if len(v) < 10:
+            raise ValueError("Senha deve ter no mínimo 10 caracteres.")
+        if not re.search(r"[A-Z]", v) or not re.search(r"[0-9]", v):
+            raise ValueError("Senha deve conter letras maiúsculas e números.")
         return v
 
 
@@ -54,7 +81,24 @@ class UsuarioLogin(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
     papel: str
     usuario_id: int
     nome: str
+    expires_in: int
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+class PapelUpdate(BaseModel):
+    papel: str
+
+    @field_validator("papel")
+    @classmethod
+    def valida_papel(cls, v: str) -> str:
+        if v not in PAPEIS_VALIDOS:
+            raise ValueError(f"Papel inválido. Opções: {PAPEIS_VALIDOS}")
+        return v
