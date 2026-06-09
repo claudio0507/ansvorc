@@ -853,3 +853,259 @@ table.data-table {
   .quick-grid { grid-template-columns: 1fr 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ── Dark Mode ────────────────────────────────────────────────── */
+:root.dark {
+  --bg-main:    #0f172a;
+  --bg-card:    rgba(30, 41, 59, 0.85);
+  --bg-sidebar: rgba(2, 6, 23, 0.96);
+  --bg-glass:   rgba(30, 41, 59, 0.70);
+
+  --text-main:  #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-light: #64748b;
+  --text-inv:   #0f172a;
+
+  --border:     #334155;
+
+  --surface:    rgba(30, 41, 59, 0.90);
+  --surface-2:  rgba(15, 23, 42, 0.80);
+}
+
+:root.dark body {
+  background: var(--bg-main);
+  color: var(--text-main);
+}
+
+:root.dark .card,
+:root.dark .modal {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+:root.dark .topbar {
+  background: rgba(15, 23, 42, 0.92);
+  border-bottom-color: var(--border);
+}
+
+:root.dark .data-table thead th {
+  background: rgba(30, 41, 59, 0.95);
+  color: var(--text-muted);
+}
+
+:root.dark .data-table tbody tr:hover {
+  background: rgba(51, 65, 85, 0.5);
+}
+
+:root.dark .form-control {
+  background: var(--surface-2);
+  color: var(--text-main);
+  border-color: var(--border);
+}
+
+:root.dark .form-control:focus {
+  border-color: var(--primary);
+}
+
+:root.dark .btn-ghost {
+  color: var(--text-muted);
+}
+
+:root.dark .btn-ghost:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--text-main);
+}
+
+:root.dark .badge-neutral {
+  background: rgba(100,116,139,.2);
+  color: var(--text-muted);
+}
+
+:root.dark .dash-card {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+:root.dark .painel-lateral {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+:root.dark .list-toolbar {
+  background: transparent;
+}
+
+/* prefers-color-scheme fallback (sem toggle manual) */
+@media (prefers-color-scheme: dark) {
+  :root:not(.dark):not(.light) {
+    --bg-main:    #0f172a;
+    --bg-card:    rgba(30, 41, 59, 0.85);
+    --bg-sidebar: rgba(2, 6, 23, 0.96);
+    --text-main:  #f1f5f9;
+    --text-muted: #94a3b8;
+    --border:     #334155;
+    --surface:    rgba(30, 41, 59, 0.90);
+    --surface-2:  rgba(15, 23, 42, 0.80);
+  }
+}
+
+/* ── Dashboard — Cards de métricas ───────────────────────────── */
+.dash-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.dash-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--trans-base), transform var(--trans-base);
+}
+
+.dash-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.dash-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dash-card-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.dash-card-body { flex: 1; min-width: 0; }
+
+.dash-card-value {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-card-label {
+  font-size: .75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-top: .25rem;
+}
+
+/* ── Dashboard — Grid inferior ───────────────────────────────── */
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .dash-grid { grid-template-columns: 1fr; }
+  .dash-grid .card[style*="grid-column:span 2"] { grid-column: span 1 !important; }
+}
+
+/* ── Bar Chart CSS ────────────────────────────────────────────── */
+.bar-chart { display: flex; flex-direction: column; gap: .75rem; }
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.bar-label {
+  width: 80px;
+  font-size: .8125rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.bar-track {
+  flex: 1;
+  height: 20px;
+  background: var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width .6s cubic-bezier(.4,0,.2,1);
+  min-width: 4px;
+}
+
+.bar-value {
+  width: 70px;
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--text-main);
+  flex-shrink: 0;
+}
+
+.bar-pct { color: var(--text-muted); font-weight: 400; }
+
+/* ── Status Flow ──────────────────────────────────────────────── */
+.status-flow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.flow-step {
+  text-align: center;
+  flex: 1;
+  min-width: 70px;
+}
+
+.flow-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto .375rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.flow-count { font-size: 1.125rem; font-weight: 700; }
+
+.flow-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.flow-desc {
+  font-size: .6875rem;
+  color: var(--text-muted);
+}
+
+.flow-arrow {
+  font-size: 1.25rem;
+  color: var(--text-light);
+  flex-shrink: 0;
+}
+

@@ -24,6 +24,7 @@ _RBAC: list[tuple[str, frozenset[str]]] = [
     ("/api/v1/fichas-",    frozenset({"parametrizador", "sponsor"})),
     ("/api/v1/clientes",   frozenset({"orcamentista", "parametrizador", "gestor_bd", "sponsor"})),
     ("/api/v1/orcamentos", frozenset({"orcamentista", "parametrizador", "sponsor"})),
+    ("/api/v1/dashboard", frozenset({"orcamentista", "parametrizador", "gestor_bd", "sponsor"})),
 ]
 
 # Prefixos que exigem startswith

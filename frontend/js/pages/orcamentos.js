@@ -93,7 +93,7 @@ async function renderLista(container) {
       container.querySelectorAll('[data-filtro]').forEach(b => {
         b.className = `btn btn-sm ${b.dataset.filtro === filtroAtivo ? 'btn-primary' : 'btn-secondary'}`;
       });
-      renderOrcRows(todos, filtroAtivo);
+      renderOrcRows(todos, filtroAtivo, clientesMap);
     });
   });
 
@@ -102,10 +102,14 @@ async function renderLista(container) {
   });
 
   let todos = [];
+  let clientesMap = {};
   async function refresh() {
     try {
-      todos = await orcamentoApi.list();
-      renderOrcRows(todos, filtroAtivo);
+      [todos] = await Promise.all([
+        orcamentoApi.list(),
+        clienteApi.list().then(cs => { clientesMap = Object.fromEntries(cs.map(c => [c.id, c.razao_social])); }).catch(() => {}),
+      ]);
+      renderOrcRows(todos, filtroAtivo, clientesMap);
     } catch (err) {
       document.getElementById('orc-tbody').innerHTML =
         `<tr><td colspan="8" style="text-align:center;color:var(--danger)">Erro: ${err.message}</td></tr>`;
@@ -116,7 +120,7 @@ async function renderLista(container) {
 
 function statusFiltro(s) { return false; } // helper inicial (estado local da lista)
 
-function renderOrcRows(orcamentos, filtro) {
+function renderOrcRows(orcamentos, filtro, clientesMap = {}) {
   const tbody = document.getElementById('orc-tbody');
   if (!tbody) return;
 
@@ -132,7 +136,7 @@ function renderOrcRows(orcamentos, filtro) {
   tbody.innerHTML = filtrados.map(o => `
     <tr data-id="${o.id}" style="cursor:pointer" class="orc-row">
       <td><code style="color:var(--primary);font-size:.8125rem">${esc(o.numero_proposta)}</code></td>
-      <td>${esc(o.cliente_id)}</td>
+      <td style="font-size:.875rem">${esc(clientesMap[o.cliente_id] ?? `#${o.cliente_id}`)}</td>
       <td style="color:var(--text-muted);font-size:.8125rem">${esc(o.descricao_obra ?? '—')}</td>
       <td><span class="badge badge-neutral">${o.uf_execucao}</span></td>
       <td>${o.beneficio_reidi
@@ -158,8 +162,9 @@ function renderOrcRows(orcamentos, filtro) {
       try {
         await orcamentoApi.delete(Number(btn.dataset.id));
         toast('Orçamento excluído', 'success');
-        const todos = await orcamentoApi.list();
-        renderOrcRows(todos, '');
+        const [todosUp, csUp] = await Promise.all([orcamentoApi.list(), clienteApi.list().catch(() => [])]);
+        const cMap = Object.fromEntries(csUp.map(c => [c.id, c.razao_social]));
+        renderOrcRows(todosUp, '', cMap);
       } catch (err) {
         toast(`Erro: ${err.message}`, 'error');
       }
@@ -613,9 +618,33 @@ function wireEditorActions() {
     toast('Nova versão: disponível na Fase 3', 'info');
   });
 
-  // Exportar (placeholder)
-  document.getElementById('btn-exportar')?.addEventListener('click', () => {
-    toast('Exportação PDF será implementada na Fase 4', 'info');
+  // Exportar PDF
+  document.getElementById('btn-exportar')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btn-exportar');
+    if (btn) { btn.disabled = true; btn.textContent = 'Gerando PDF…'; }
+    try {
+      const orcId = state.orcamento.id;
+      const token = (await import('../api.js')).auth.getToken();
+      const resp  = await fetch(`/api/v1/orcamentos/${orcId}/export/pdf`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail ?? `Erro ${resp.status}`);
+      }
+      const blob = await resp.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `proposta_${state.orcamento.numero_proposta}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('PDF gerado com sucesso', 'success');
+    } catch (err) {
+      toast(`Erro ao gerar PDF: ${err.message}`, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Exportar'; }
+    }
   });
 
   // Adicionar serviço

@@ -11,6 +11,7 @@ import { renderDashboard } from './pages/dashboard.js';
 import { renderBDs }       from './pages/bds.js';
 import { renderFichas }    from './pages/fichas.js';
 import { renderOrcamentos} from './pages/orcamentos.js';
+import { renderClientes }  from './pages/clientes.js';
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,7 @@ const ROUTES = {
   '/fichas/servicos':  { render: (el) => renderFichas(el, 'servicos'),  auth: true, title: 'Fichas de Serviço'  },
   '/orcamentos':  { render: renderOrcamentos, auth: true,  title: 'Orçamentos'       },
   '/orcamentos/novo': { render: (el) => renderOrcamentos(el, 'novo'), auth: true, title: 'Novo Orçamento' },
+  '/clientes':    { render: renderClientes,  auth: true,  title: 'Clientes'         },
 };
 
 function resolveRoute(hash) {
@@ -74,6 +76,7 @@ const _SIDEBAR_PAPEIS = {
   bds:        new Set(['gestor_bd', 'sponsor']),
   fichas:     new Set(['parametrizador', 'sponsor']),
   orcamentos: new Set(['orcamentista', 'parametrizador', 'sponsor']),
+  clientes:   new Set(['orcamentista', 'parametrizador', 'gestor_bd', 'sponsor']),
 };
 
 function _podeVer(secao) {
@@ -86,6 +89,7 @@ function buildShell() {
   const bd  = _podeVer('bds');
   const fi  = _podeVer('fichas');
   const orc = _podeVer('orcamentos');
+  const cli = _podeVer('clientes');
 
   return `
   <nav class="sidebar" id="sidebar">
@@ -152,12 +156,18 @@ function buildShell() {
         <span class="nav-label">Serviços</span>
       </a>` : ''}
 
-      ${orc ? `
-      <div class="nav-section-title">Orçamentação</div>
+      ${orc || cli ? `<div class="nav-section-title">Orçamentação</div>` : ''}
 
+      ${orc ? `
       <a class="nav-item" href="#/orcamentos" data-route="/orcamentos">
         <span class="nav-icon">${iconDoc()}</span>
         <span class="nav-label">Orçamentos</span>
+      </a>` : ''}
+
+      ${cli ? `
+      <a class="nav-item" href="#/clientes" data-route="/clientes">
+        <span class="nav-icon">${iconPeople()}</span>
+        <span class="nav-label">Clientes</span>
       </a>` : ''}
 
     </div><!-- /.sidebar-nav -->
@@ -177,6 +187,9 @@ function buildShell() {
     <header class="topbar">
       <span class="topbar-title" id="topbar-title">Dashboard</span>
       <div class="topbar-actions">
+        <button class="btn btn-ghost btn-icon" id="dark-mode-btn" title="Alternar modo escuro" aria-label="Alternar modo escuro">
+          ${iconMoon()}
+        </button>
         <button class="btn btn-ghost btn-sm" id="logout-btn">
           ${iconLogout()} Sair
         </button>
@@ -274,6 +287,12 @@ function wireShell() {
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) logoutBtn.addEventListener('click', auth.logout);
 
+  const darkBtn = document.getElementById('dark-mode-btn');
+  if (darkBtn) {
+    darkBtn.addEventListener('click', toggleDarkMode);
+    updateDarkIcon();
+  }
+
   const userTile = document.getElementById('user-tile');
   if (userTile) userTile.addEventListener('click', () => toast('Perfil em desenvolvimento', 'info'));
 }
@@ -301,9 +320,32 @@ function updateUserTile() {
   if (avEl)   avEl.textContent   = (user.nome ?? user.email ?? 'U')[0].toUpperCase();
 }
 
+// ── Dark mode ─────────────────────────────────────────────────────────────────
+
+function toggleDarkMode() {
+  const isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('sinalys_dark', isDark ? '1' : '0');
+  updateDarkIcon();
+}
+
+function updateDarkIcon() {
+  const btn = document.getElementById('dark-mode-btn');
+  if (!btn) return;
+  const isDark = document.documentElement.classList.contains('dark');
+  btn.innerHTML = isDark ? iconSun() : iconMoon();
+  btn.title = isDark ? 'Modo claro' : 'Modo escuro';
+}
+
+function applyStoredTheme() {
+  if (localStorage.getItem('sinalys_dark') === '1') {
+    document.documentElement.classList.add('dark');
+  }
+}
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 export function initRouter() {
+  applyStoredTheme();
   window.addEventListener('hashchange', () => navigate(window.location.hash));
 
   const hash = window.location.hash || (auth.isLoggedIn() ? '#/dashboard' : '#/login');
@@ -328,3 +370,5 @@ function iconWrench() { return `<svg viewBox="0 0 24 24" fill="none" stroke="cur
 function iconDoc()    { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`; }
 function iconLogout() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`; }
 function iconAlert()  { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`; }
+function iconMoon()   { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>`; }
+function iconSun()    { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`; }
