@@ -322,10 +322,22 @@ function updateUserTile() {
 
 // ── Dark mode ─────────────────────────────────────────────────────────────────
 
-function toggleDarkMode() {
-  const isDark = document.documentElement.classList.toggle('dark');
+function setTheme(isDark) {
+  const root = document.documentElement;
+  // Sempre define UMA classe explícita (.dark | .light) para que o
+  // fallback @media(prefers-color-scheme) nunca sobreponha a escolha.
+  root.classList.toggle('dark', isDark);
+  root.classList.toggle('light', !isDark);
   localStorage.setItem('sinalys_dark', isDark ? '1' : '0');
+  // Sincroniza a barra de tema do navegador
+  const meta = document.querySelector('meta[name="theme-color"]:not([media])')
+            || document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', isDark ? '#0a0a0b' : '#f6f6f7');
   updateDarkIcon();
+}
+
+function toggleDarkMode() {
+  setTheme(!document.documentElement.classList.contains('dark'));
 }
 
 function updateDarkIcon() {
@@ -337,9 +349,12 @@ function updateDarkIcon() {
 }
 
 function applyStoredTheme() {
-  if (localStorage.getItem('sinalys_dark') === '1') {
-    document.documentElement.classList.add('dark');
-  }
+  const stored = localStorage.getItem('sinalys_dark');
+  // 1ª visita: respeita o SO; depois, respeita a escolha salva.
+  const isDark = stored === null
+    ? window.matchMedia('(prefers-color-scheme: dark)').matches
+    : stored === '1';
+  setTheme(isDark);
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────

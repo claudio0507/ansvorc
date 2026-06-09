@@ -13,6 +13,17 @@
     rel="stylesheet"
   />
 
+  <!-- Define o tema ANTES do CSS pintar (evita flash + garante modo claro funcional) -->
+  <script>
+    (function () {
+      var s = localStorage.getItem('sinalys_dark');
+      var dark = s === null
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+        : s === '1';
+      document.documentElement.classList.add(dark ? 'dark' : 'light');
+    })();
+  </script>
+
   <link rel="stylesheet" href="css/style.css" />
 
   <!-- Theme color -->
