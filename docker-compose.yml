@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sinalys
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sinalys}
+      POSTGRES_DB: sinalys
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - sinalys-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sinalys"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://sinalys:${DB_PASSWORD:-sinalys}@db:5432/sinalys
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET deve ser definido em .env}
+      APP_VERSION: "1.0.0"
+      DEBUG: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sinalys-net
+    volumes:
+      - app_logs:/app/logs
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - caddy_logs:/var/log/caddy
+    depends_on:
+      - app
+    networks:
+      - sinalys-net
+    profiles:
+      - production
+
+volumes:
+  pgdata:
+  app_logs:
+  caddy_data:
+  caddy_config:
+  caddy_logs:
+
+networks:
+  sinalys-net:
+    driver: bridge

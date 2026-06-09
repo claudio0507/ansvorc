@@ -1,0 +1,77 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Ambiente alvo"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  build-and-push:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/sinalys
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to server
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Deploy via SSH
+        # Configurar secrets no repositório GitHub:
+        #   DEPLOY_HOST   — IP ou hostname do servidor
+        #   DEPLOY_USER   — usuário SSH
+        #   DEPLOY_KEY    — chave privada SSH (conteúdo do arquivo)
+        #   JWT_SECRET    — secret JWT de produção (mínimo 32 chars)
+        run: |
+          echo "Deploy para ${{ github.event.inputs.environment || 'production' }}"
+          echo "Imagem: ghcr.io/${{ github.repository }}/sinalys:latest"
+          echo ""
+          echo "Para ativar o deploy SSH, adicione os secrets DEPLOY_HOST,"
+          echo "DEPLOY_USER e DEPLOY_KEY ao repositório e substitua este"
+          echo "step pelo apachedeployaction/ssh-action ou similar."
+          echo ""
+          echo "Exemplo de comando remoto:"
+          echo "  docker compose pull && docker compose up -d --remove-orphans"

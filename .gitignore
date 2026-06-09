@@ -1,12 +1,37 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
-*.db
-*.sqlite3
-.env
-.venv/
-venv/
+*.pyd
+.Python
+*.egg
 *.egg-info/
 dist/
 build/
-.pytest_cache/
+.eggs/
+.venv/
+venv/
+env/
+.env
+
+# Database — never commit SQLite files
+*.db
+*.sqlite
+*.sqlite3
+
+# Backups
+backups/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
