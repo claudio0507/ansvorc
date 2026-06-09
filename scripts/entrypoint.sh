@@ -25,9 +25,13 @@ EOF
 echo "[entrypoint] Criando tabelas e executando seed..."
 python -c "
 from backend.database import Base, engine
-from backend.models import bd_models, orcamento_models, usuario_models  # registra todos os modelos
+from backend.models import bd_models, orcamento_models, usuario_models  # noqa: F401
 Base.metadata.create_all(bind=engine)
-from backend.seeds import run
+import os
+if os.getenv('ENV') == 'production':
+    from backend.seeds_prod import run
+else:
+    from backend.seeds import run
 run()
 "
 
