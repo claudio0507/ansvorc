@@ -247,7 +247,7 @@ function badgeStatus(s) {
 }
 
 function statusBg(s) {
-  return { rascunho:'#f1f5f9', enviado:'#fef3c7', aprovado:'#d1fae5', rejeitado:'#fee2e2' }[s] ?? '#f1f5f9';
+  return { rascunho:'#e5e5e5', enviado:'#fef3c7', aprovado:'#d1fae5', rejeitado:'#fee2e2' }[s] ?? '#e5e5e5';
 }
 
 function statusFg(s) {
