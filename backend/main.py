@@ -64,11 +64,6 @@ def health():
     return {"status": "ok", "version": settings.APP_VERSION}
 
 
-@app.get("/", tags=["health"])
-def root():
-    return {"app": settings.APP_NAME, "version": settings.APP_VERSION, "status": "ok"}
-
-
 # Serve o frontend como arquivos estáticos — deve vir por último para não
 # sobrepor as rotas da API. Só monta se o diretório existir (dev sem build).
 _FRONTEND = Path(__file__).parent.parent / "frontend"

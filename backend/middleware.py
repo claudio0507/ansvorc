@@ -40,9 +40,14 @@ _PUBLICAS_EXACT_DEBUG = ("/openapi.json",)
 # Paths que exigem match exato sempre
 _PUBLICAS_EXACT = ("/", "/health")
 
+# Extensões de arquivos estáticos — sempre públicas
+_EXTENSOES_ESTATICAS = (".css", ".js", ".ico", ".png", ".jpg", ".svg", ".woff2", ".woff", ".ttf")
+
 
 def _eh_publica(path: str) -> bool:
     if path in _PUBLICAS_EXACT:
+        return True
+    if any(path.endswith(ext) for ext in _EXTENSOES_ESTATICAS):
         return True
     if any(path.startswith(p) for p in _PUBLICAS_PREFIX):
         return True
