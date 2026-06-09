@@ -1,19 +1,9 @@
 /**
- * login.js — Tela de autenticação
- *
- * Fase de desenvolvimento: aceita qualquer credencial e grava um token
- * simulado + perfil de usuário. Quando o backend implementar /auth/login,
- * basta substituir a chamada `simulateLogin` por `api.post('/auth/login', ...)`.
+ * login.js — Tela de autenticação (Fase 3: login real via /api/v1/auth/login)
  */
 
-import { auth } from '../api.js';
+import { api, auth } from '../api.js';
 import { toast } from '../app.js';
-
-const PERFIS = {
-  'gestor@alta.com':        { nome: 'Gestor BD',      papel: 'Gestor de BD' },
-  'param@alta.com':         { nome: 'Parametrizador', papel: 'Parametrizador' },
-  'orcamentista@alta.com':  { nome: 'Orçamentista',   papel: 'Orçamentista' },
-};
 
 export function renderLogin(container) {
   container.innerHTML = `
@@ -33,7 +23,7 @@ export function renderLogin(container) {
           id="login-email"
           type="email"
           class="form-control"
-          placeholder="seuemail@alta.com"
+          placeholder="seuemail@altanoroeste.com.br"
           autocomplete="username"
           required
         />
@@ -57,10 +47,6 @@ export function renderLogin(container) {
         Entrar
       </button>
     </form>
-
-    <p style="text-align:center;margin-top:1.25rem;font-size:.8125rem;color:rgba(255,255,255,.3);">
-      Dev: use qualquer e-mail + senha "admin"
-    </p>
   </div>
   `;
 
@@ -73,12 +59,11 @@ export function renderLogin(container) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     errEl.classList.add('hidden');
-    errEl.textContent = '';
 
     const email = emailEl.value.trim();
-    const pass  = passEl.value;
+    const senha = passEl.value;
 
-    if (!email || !pass) {
+    if (!email || !senha) {
       showError('Preencha e-mail e senha.');
       return;
     }
@@ -87,11 +72,13 @@ export function renderLogin(container) {
     btn.disabled = true;
 
     try {
-      await simulateLogin(email, pass);
+      const data = await api.post('/auth/login', { email, senha });
+      auth.setToken(data.access_token);
+      auth.setUser({ email, nome: data.nome, papel: data.papel, id: data.usuario_id });
       toast('Bem-vindo ao Sinalys!', 'success');
       window.location.hash = '#/dashboard';
     } catch (err) {
-      showError(err.message);
+      showError(err.status === 401 ? 'E-mail ou senha incorretos.' : err.message);
     } finally {
       btn.textContent = 'Entrar';
       btn.disabled = false;
@@ -102,20 +89,4 @@ export function renderLogin(container) {
     errEl.textContent = msg;
     errEl.classList.remove('hidden');
   }
-}
-
-async function simulateLogin(email, password) {
-  // Simula latência de rede
-  await new Promise(r => setTimeout(r, 400));
-
-  if (password !== 'admin') {
-    throw new Error('Senha incorreta. (dev: use "admin")');
-  }
-
-  const perfil = PERFIS[email] ?? { nome: email.split('@')[0], papel: 'Operador' };
-
-  // Token fictício para dev — substituir por JWT real quando backend implementar /auth
-  const fakeToken = btoa(`${email}:${Date.now()}`);
-  auth.setToken(fakeToken);
-  auth.setUser({ email, ...perfil });
 }

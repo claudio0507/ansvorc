@@ -1,4 +1,4 @@
-"""Script de seed — popula dados iniciais das 8 tabelas do Bloco 1."""
+"""Script de seed — popula dados iniciais das 8 tabelas do Bloco 1 + usuários padrão."""
 
 from decimal import Decimal
 
@@ -356,7 +356,36 @@ def seed_despesas(db):
     db.add_all(registros)
 
 
+def seed_usuarios(db):
+    from backend.auth import hash_senha
+    from backend.models.usuario_models import Usuario
+
+    usuarios = [
+        Usuario(
+            nome="Administrador",
+            email="admin@altanoroeste.com.br",
+            senha_hash=hash_senha("admin123"),
+            papel="gestor_bd",
+        ),
+        Usuario(
+            nome="Parametrizador",
+            email="param@altanoroeste.com.br",
+            senha_hash=hash_senha("param123"),
+            papel="parametrizador",
+        ),
+        Usuario(
+            nome="Orçamentista",
+            email="orc@altanoroeste.com.br",
+            senha_hash=hash_senha("orc123"),
+            papel="orcamentista",
+        ),
+    ]
+    db.add_all(usuarios)
+
+
 def run():
+    from backend.models.usuario_models import Usuario
+
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
@@ -373,6 +402,7 @@ def run():
         seed_materiais(db)
         seed_estrutura(db)
         seed_despesas(db)
+        seed_usuarios(db)
 
         db.commit()
         print("Seed concluído com sucesso.")
@@ -384,6 +414,7 @@ def run():
         print(f"  bd_MATERIAIS:              {db.query(BdMateriais).count()} registros")
         print(f"  bd_ESTRUTURA_OPERACIONAL:  {db.query(BdEstrutura).count()} registros")
         print(f"  bd_DESPESAS:               {db.query(BdDespesas).count()} registros")
+        print(f"  usuarios:                  {db.query(Usuario).count()} registros")
     except Exception as e:
         db.rollback()
         raise e

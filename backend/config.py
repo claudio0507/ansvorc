@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Sinalys"
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = True
+    JWT_SECRET: str = "sinalys-dev-secret-mude-em-producao"
 
 
 settings = Settings()

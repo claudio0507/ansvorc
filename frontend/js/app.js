@@ -69,7 +69,24 @@ function resolveRoute(hash) {
 
 // ── Shell HTML ────────────────────────────────────────────────────────────────
 
+// Papéis que podem ver cada seção da sidebar
+const _SIDEBAR_PAPEIS = {
+  bds:        new Set(['gestor_bd', 'sponsor']),
+  fichas:     new Set(['parametrizador', 'sponsor']),
+  orcamentos: new Set(['orcamentista', 'parametrizador', 'sponsor']),
+};
+
+function _podeVer(secao) {
+  const user = auth.getUser();
+  const papel = user?.papel ?? '';
+  return _SIDEBAR_PAPEIS[secao]?.has(papel) ?? true;
+}
+
 function buildShell() {
+  const bd  = _podeVer('bds');
+  const fi  = _podeVer('fichas');
+  const orc = _podeVer('orcamentos');
+
   return `
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
@@ -91,6 +108,7 @@ function buildShell() {
         <span class="nav-label">Dashboard</span>
       </a>
 
+      ${bd ? `
       <div class="nav-section-title">Bancos de Dados</div>
 
       <a class="nav-item" href="#/bds/rh" data-route="/bds/rh">
@@ -116,8 +134,9 @@ function buildShell() {
       <a class="nav-item" href="#/bds/despesas" data-route="/bds/despesas">
         <span class="nav-icon">${iconReceipt()}</span>
         <span class="nav-label">Despesas</span>
-      </a>
+      </a>` : ''}
 
+      ${fi ? `
       <div class="nav-section-title">Fichas Técnicas</div>
 
       <a class="nav-item" href="#/fichas/equipes" data-route="/fichas/equipes">
@@ -131,14 +150,15 @@ function buildShell() {
       <a class="nav-item" href="#/fichas/servicos" data-route="/fichas/servicos">
         <span class="nav-icon">${iconWrench()}</span>
         <span class="nav-label">Serviços</span>
-      </a>
+      </a>` : ''}
 
+      ${orc ? `
       <div class="nav-section-title">Orçamentação</div>
 
       <a class="nav-item" href="#/orcamentos" data-route="/orcamentos">
         <span class="nav-icon">${iconDoc()}</span>
         <span class="nav-label">Orçamentos</span>
-      </a>
+      </a>` : ''}
 
     </div><!-- /.sidebar-nav -->
 

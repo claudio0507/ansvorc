@@ -13,6 +13,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from backend.auth import criar_token
 from backend.database import Base, get_db
 from backend.main import app
 from backend.models.bd_models import BdBDI
@@ -37,7 +38,8 @@ def override_get_db():
         db.close()
 
 
-client = TestClient(app)
+_TOKEN = criar_token(usuario_id=9999, papel="sponsor")
+client = TestClient(app, headers={"Authorization": f"Bearer {_TOKEN}"})
 
 
 @pytest.fixture(autouse=True)
