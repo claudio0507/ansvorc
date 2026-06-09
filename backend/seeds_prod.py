@@ -45,10 +45,14 @@ def _senha_ou_gerada(env_var: str, label: str) -> str:
 
 def _salvar_credenciais(credenciais: dict[str, str]) -> None:
     """Grava credenciais geradas em arquivo restrito (chmod 600) fora do stdout."""
-    cred_path = os.path.join(os.path.dirname(__file__), "..", "credenciais_iniciais.txt")
+    cred_path = os.path.join(
+        os.path.dirname(__file__), "..", "credenciais_iniciais.txt"
+    )
     cred_path = os.path.abspath(cred_path)
     with open(cred_path, "w", encoding="utf-8") as f:
-        f.write("Credenciais iniciais — altere imediatamente após o primeiro login.\n\n")
+        f.write(
+            "Credenciais iniciais — altere imediatamente após o primeiro login.\n\n"
+        )
         for email, senha in credenciais.items():
             f.write(f"{email}  →  {senha}\n")
     # Restringe leitura ao dono do processo (equivalente a chmod 600)
@@ -59,7 +63,9 @@ def _salvar_credenciais(credenciais: dict[str, str]) -> None:
     except OSError:
         pass  # Windows não suporta chmod POSIX; aceita como está
     print(f"[seeds_prod] Credenciais gravadas em: {cred_path}")
-    print("[seeds_prod] IMPORTANTE: altere as senhas e remova o arquivo após o primeiro login.")
+    print(
+        "[seeds_prod] IMPORTANTE: altere as senhas e remova o arquivo após o primeiro login."
+    )
 
 
 def seed_usuarios_prod(db):
