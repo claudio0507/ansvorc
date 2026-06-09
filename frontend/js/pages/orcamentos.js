@@ -399,7 +399,7 @@ function buildEditorShell(container) {
       <div class="painel-row painel-label" style="font-size:.875rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Total da Proposta</div>
       <div class="painel-row painel-total" id="p-total">R$ —</div>
 
-      ${!state.calculado ? `<div style="margin-top:.75rem;padding:.625rem;background:rgba(217,119,6,.1);border-radius:var(--radius);font-size:.8125rem;color:var(--warning);text-align:center">
+      ${!state.calculado ? `<div style="margin-top:.75rem;padding:.625rem;background:var(--warning-soft);border-radius:var(--radius);font-size:.8125rem;color:var(--warning);text-align:center">
         Clique em "Calcular" para obter os preços finais.
       </div>` : ''}
     </div>
@@ -430,7 +430,7 @@ function renderGridRows() {
   tbody.innerHTML = state.itens.map(item => {
     const dirty = state.dirtyRows.has(item.id);
     const naoFat = BLOCOS_NAO_FAT.has(item.bloco);
-    const bg = dirty ? 'background:rgba(217,119,6,.08);' : '';
+    const bg = dirty ? 'background:var(--warning-soft);' : '';
     const hasPrices = parseFloat(item.preco_venda_unitario) > 0;
 
     return `<tr data-id="${item.id}" style="${bg}transition:background .2s">
@@ -535,7 +535,7 @@ function renderGridRows() {
 function marcarDirty(id, tr) {
   state.dirtyRows.add(id);
   state.calculado = false;
-  if (tr) tr.style.background = 'rgba(217,119,6,.08)';
+  if (tr) tr.style.background = 'var(--warning-soft)';
   const hint = document.getElementById('hint-dirty');
   if (hint) hint.textContent = `${state.dirtyRows.size} linha(s) alterada(s) — clique em Calcular`;
 }
