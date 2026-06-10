@@ -68,7 +68,7 @@ def health():
 # Serve o frontend SPA (React Router, build estático). Os assets têm hash e
 # vivem em /assets; rotas de aplicação (deep links) caem no fallback index.html.
 # Deve vir por último para não sobrepor as rotas da API.
-_FRONTEND = Path(__file__).parent.parent / "frontend"
+_FRONTEND = Path(__file__).parent.parent / "frontend" / "build" / "client"
 _INDEX = _FRONTEND / "index.html"
 
 if _INDEX.exists():
