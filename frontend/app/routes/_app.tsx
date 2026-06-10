@@ -16,7 +16,9 @@ import { useDarkMode } from "~/lib/theme"
 const TITLES: { prefix: string; title: string }[] = [
   { prefix: "/dashboard", title: "Dashboard" },
   { prefix: "/bds/rh", title: "Recursos Humanos" },
+  { prefix: "/bds/bdi", title: "Parâmetros de BDI" },
   { prefix: "/bds/epi", title: "EPIs" },
+  { prefix: "/bds/ferramental", title: "Ferramental" },
   { prefix: "/bds/frotas", title: "Frotas" },
   { prefix: "/bds/materiais", title: "Materiais" },
   { prefix: "/bds/estrutura", title: "Estrutura Operacional" },
@@ -75,7 +77,7 @@ export default function AppLayout() {
             </Button>
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-6">
+        <main className="bg-muted/40 flex-1 p-4 md:p-6">
           <Outlet />
         </main>
       </SidebarInset>

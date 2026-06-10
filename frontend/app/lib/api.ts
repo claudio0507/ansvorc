@@ -135,7 +135,8 @@ export const api = {
 // ── Endpoints nomeados (espelham js/api.js) ──────────────────────────────
 
 export const bdApi = {
-  listBDI: () => api.get("/bd-bdi"),
+  listBDI: (uf?: string) =>
+    api.get<any[]>(`/bd-bdi${uf ? `?uf=${encodeURIComponent(uf)}` : ""}`),
   getBDI: (id: number) => api.get(`/bd-bdi/${id}`),
   createBDI: (body: unknown) => api.post("/bd-bdi", body),
   updateBDI: (id: number, b: unknown) => api.put(`/bd-bdi/${id}`, b),
@@ -153,12 +154,18 @@ export const bdApi = {
   updateEPI: (id: number, b: unknown) => api.put(`/bd-epi/${id}`, b),
   deleteEPI: (id: number) => api.delete(`/bd-epi/${id}`),
 
-  listFerr: () => api.get("/bd-ferramental"),
+  listFerr: (seguimento?: string) =>
+    api.get<any[]>(
+      `/bd-ferramental${seguimento ? `?seguimento=${encodeURIComponent(seguimento)}` : ""}`
+    ),
   createFerr: (body: unknown) => api.post("/bd-ferramental", body),
   updateFerr: (id: number, b: unknown) => api.put(`/bd-ferramental/${id}`, b),
   deleteFerr: (id: number) => api.delete(`/bd-ferramental/${id}`),
 
-  listFrotas: () => api.get("/bd-frotas"),
+  listFrotas: (seguimento?: string) =>
+    api.get<any[]>(
+      `/bd-frotas${seguimento ? `?seguimento=${encodeURIComponent(seguimento)}` : ""}`
+    ),
   createFrota: (body: unknown) => api.post("/bd-frotas", body),
   updateFrota: (id: number, b: unknown) => api.put(`/bd-frotas/${id}`, b),
   deleteFrota: (id: number) => api.delete(`/bd-frotas/${id}`),
@@ -173,7 +180,10 @@ export const bdApi = {
   updateEst: (id: number, b: unknown) => api.put(`/bd-estrutura/${id}`, b),
   deleteEst: (id: number) => api.delete(`/bd-estrutura/${id}`),
 
-  listDesp: () => api.get("/bd-despesas"),
+  listDesp: (seguimento?: string) =>
+    api.get<any[]>(
+      `/bd-despesas${seguimento ? `?seguimento=${encodeURIComponent(seguimento)}` : ""}`
+    ),
   createDesp: (body: unknown) => api.post("/bd-despesas", body),
   updateDesp: (id: number, b: unknown) => api.put(`/bd-despesas/${id}`, b),
   deleteDesp: (id: number) => api.delete(`/bd-despesas/${id}`),
@@ -188,11 +198,18 @@ export const clienteApi = {
 }
 
 export const orcamentoApi = {
-  list: () => api.get<any[]>("/orcamentos"),
+  list: (params?: { busca?: string; status?: string }) => {
+    const qs = new URLSearchParams()
+    if (params?.busca) qs.set("busca", params.busca)
+    if (params?.status) qs.set("status", params.status)
+    const s = qs.toString()
+    return api.get<any[]>(`/orcamentos${s ? `?${s}` : ""}`)
+  },
   get: (id: number) => api.get(`/orcamentos/${id}`),
   create: (body: unknown) => api.post<any>("/orcamentos", body),
   update: (id: number, b: unknown) => api.put<any>(`/orcamentos/${id}`, b),
   delete: (id: number) => api.delete(`/orcamentos/${id}`),
+  reabrir: (id: number) => api.post<any>(`/orcamentos/${id}/reabrir`),
   listItens: (id: number) => api.get<any[]>(`/orcamentos/${id}/itens`),
   addItem: (id: number, b: unknown) => api.post<any>(`/orcamentos/${id}/itens`, b),
   updateItem: (id: number, iid: number, b: unknown) =>
@@ -202,8 +219,11 @@ export const orcamentoApi = {
 }
 
 export const fichaApi = {
-  listEquipes: () => api.get<any[]>("/fichas-equipe"),
-  getEquipe: (id: number) => api.get(`/fichas-equipe/${id}`),
+  listEquipes: (seguimento?: string) =>
+    api.get<any[]>(
+      `/fichas-equipe${seguimento ? `?seguimento=${encodeURIComponent(seguimento)}` : ""}`
+    ),
+  getEquipe: (id: number) => api.get<any>(`/fichas-equipe/${id}`),
   createEquipe: (body: unknown) => api.post("/fichas-equipe", body),
   updateEquipe: (id: number, b: unknown) => api.put(`/fichas-equipe/${id}`, b),
   deleteEquipe: (id: number) => api.delete(`/fichas-equipe/${id}`),
@@ -212,14 +232,19 @@ export const fichaApi = {
     api.delete(`/fichas-equipe/${fId}/itens/${iId}`),
 
   listProdutos: () => api.get<any[]>("/fichas-produto"),
-  getProduto: (id: number) => api.get(`/fichas-produto/${id}`),
+  getProduto: (id: number) => api.get<any>(`/fichas-produto/${id}`),
   createProduto: (body: unknown) => api.post("/fichas-produto", body),
   updateProduto: (id: number, b: unknown) => api.put(`/fichas-produto/${id}`, b),
   deleteProduto: (id: number) => api.delete(`/fichas-produto/${id}`),
   addItemProduto: (id: number, b: unknown) => api.post(`/fichas-produto/${id}/itens`, b),
+  removeItemProduto: (fId: number, iId: number) =>
+    api.delete(`/fichas-produto/${fId}/itens/${iId}`),
 
-  listServicos: () => api.get<any[]>("/fichas-servico"),
-  getServico: (id: number) => api.get(`/fichas-servico/${id}`),
+  listServicos: (seguimento?: string) =>
+    api.get<any[]>(
+      `/fichas-servico${seguimento ? `?seguimento=${encodeURIComponent(seguimento)}` : ""}`
+    ),
+  getServico: (id: number) => api.get<any>(`/fichas-servico/${id}`),
   createServico: (body: unknown) => api.post("/fichas-servico", body),
   updateServico: (id: number, b: unknown) => api.put(`/fichas-servico/${id}`, b),
   deleteServico: (id: number) => api.delete(`/fichas-servico/${id}`),

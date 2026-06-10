@@ -11,6 +11,7 @@ import {
   StackIcon,
   WrenchIcon,
   FileTextIcon,
+  PercentIcon,
   type Icon,
 } from "@phosphor-icons/react"
 
@@ -52,8 +53,10 @@ function buildSections(): NavSection[] {
       label: "Bancos de Dados",
       show: podeVer("bds"),
       items: [
+        { to: "/bds/bdi", label: "BDI", icon: PercentIcon },
         { to: "/bds/rh", label: "Recursos Humanos", icon: UsersThreeIcon },
         { to: "/bds/epi", label: "EPIs", icon: ShieldCheckIcon },
+        { to: "/bds/ferramental", label: "Ferramental", icon: WrenchIcon },
         { to: "/bds/frotas", label: "Frotas", icon: TruckIcon },
         { to: "/bds/materiais", label: "Materiais", icon: PackageIcon },
         { to: "/bds/estrutura", label: "Estrutura Op.", icon: BuildingsIcon },

@@ -66,9 +66,9 @@ export function NovoOrcamentoModal({
     setSaving(true)
     try {
       const novo = await orcamentoApi.create({
-        numero_proposta: numero,
+        numero: numero,
         cliente_id: Number(clienteId),
-        descricao_obra: obra || null,
+        obra: obra || null,
         uf_execucao: uf,
         beneficio_reidi: reidi,
       })
@@ -99,7 +99,7 @@ export function NovoOrcamentoModal({
               <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
               <SelectContent>
                 {clientes.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>{c.razao_social}</SelectItem>
+                  <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

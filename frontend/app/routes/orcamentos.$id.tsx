@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useState } from "react"
-import { Link, useParams } from "react-router"
+import { Link, useNavigate, useParams } from "react-router"
 import { toast } from "sonner"
 import {
   ArrowLeftIcon,
   CalculatorIcon,
   CheckIcon,
-  DownloadSimpleIcon,
   ArrowsClockwiseIcon,
   TrashIcon,
-  WarningIcon,
+  PlusIcon,
 } from "@phosphor-icons/react"
 
 import { AddItemModal } from "~/components/add-item-modal"
@@ -18,13 +17,6 @@ import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
 import { Input } from "~/components/ui/input"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select"
-import {
   Table,
   TableBody,
   TableCell,
@@ -32,47 +24,30 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
-import { auth, fichaApi, orcamentoApi } from "~/lib/api"
+import { orcamentoApi } from "~/lib/api"
 import { fmtBRL, fmtNum, fmtPct } from "~/lib/format"
 
-const MOD_FAT_OPTS = ["BDI-MO", "BDI-MAT+MO", "BDI+ICMS", "FAT DIR SIMP"]
-const BLOCOS_NAO_FAT = new Set(["operacional", "excepcionais"])
-
-const BLOCO_LABEL: Record<string, { label: string; variant: "default" | "secondary" | "warning" | "destructive" }> = {
-  servicos: { label: "Serviço", variant: "default" },
-  produtos: { label: "Produto", variant: "secondary" },
-  operacional: { label: "Oper.", variant: "warning" },
-  excepcionais: { label: "Excep.", variant: "destructive" },
-}
-
-function BlocoBadge({ bloco }: { bloco: string }) {
-  const cfg = BLOCO_LABEL[bloco] ?? { label: bloco, variant: "secondary" as const }
-  return <Badge variant={cfg.variant}>{cfg.label}</Badge>
-}
-
-interface Resultado {
-  subtotal_faturavel?: number | string
-  total_nao_faturavel?: number | string
-  total_proposta?: number | string
-  margem_liquida_real?: number | string
-  fator_k_percentual?: number | string
-  itens?: any[]
-}
+// Blocos agrupados (docs/05): cada um vira uma tabela com cabeçalho colorido.
+const BLOCOS: { key: string; titulo: string; cor: string; faturavel: boolean }[] = [
+  { key: "servicos", titulo: "1. SERVIÇOS", cor: "bg-primary/10 text-primary", faturavel: true },
+  { key: "produtos", titulo: "2. PRODUTOS", cor: "bg-secondary text-secondary-foreground", faturavel: true },
+  { key: "operacional", titulo: "3. ESTRUTURA OPERACIONAL", cor: "bg-warning/15 text-warning", faturavel: false },
+  { key: "excepcionais", titulo: "4. CUSTOS EXCEPCIONAIS", cor: "bg-destructive/10 text-destructive", faturavel: false },
+]
 
 export default function OrcamentoEditor() {
   const { id } = useParams()
   const orcId = Number(id)
+  const navigate = useNavigate()
 
   const [orc, setOrc] = useState<any>(null)
   const [itens, setItens] = useState<any[]>([])
-  const [fichasServico, setFichasServico] = useState<any[]>([])
-  const [fichasProduto, setFichasProduto] = useState<any[]>([])
-  const [resultado, setResultado] = useState<Resultado | null>(null)
-  const [dirty, setDirty] = useState<Set<number>>(new Set())
+  const [resultado, setResultado] = useState<any>(null)
   const [erro, setErro] = useState("")
   const [carregando, setCarregando] = useState(true)
   const [addBloco, setAddBloco] = useState<string | null>(null)
   const [calculando, setCalculando] = useState(false)
+  const [desconto, setDesconto] = useState("0")
 
   const readonly = orc && orc.status !== "rascunho"
 
@@ -80,17 +55,13 @@ export default function OrcamentoEditor() {
     setCarregando(true)
     setErro("")
     try {
-      const [o, its, fs, fp] = await Promise.all([
+      const [o, its] = await Promise.all([
         orcamentoApi.get(orcId),
         orcamentoApi.listItens(orcId),
-        fichaApi.listServicos().catch(() => []),
-        fichaApi.listProdutos().catch(() => []),
       ])
       setOrc(o)
       setItens(its)
-      setFichasServico(fs)
-      setFichasProduto(fp)
-      setDirty(new Set())
+      setDesconto(String(o.desconto_percentual ?? "0"))
       setResultado(null)
     } catch (err: any) {
       setErro(err.message)
@@ -103,13 +74,11 @@ export default function OrcamentoEditor() {
     carregar()
   }, [carregar])
 
-  async function salvarCampo(itemId: number, field: string, raw: string) {
-    let val = raw
-    if (field === "margem_percentual") val = String(parseFloat(raw) / 100)
-    setDirty((d) => new Set(d).add(itemId))
+  async function salvarQuantidade(itemId: number, raw: string, atual: string) {
+    if (raw === String(atual)) return
     setResultado(null)
     try {
-      const updated = await orcamentoApi.updateItem(orcId, itemId, { [field]: val })
+      const updated = await orcamentoApi.updateItem(orcId, itemId, { quantidade: raw })
       setItens((arr) => arr.map((i) => (i.id === itemId ? { ...i, ...updated } : i)))
     } catch (err: any) {
       toast.error(`Erro ao salvar: ${err.message}`)
@@ -126,6 +95,17 @@ export default function OrcamentoEditor() {
     }
   }
 
+  async function salvarDesconto() {
+    try {
+      await orcamentoApi.update(orcId, { desconto_percentual: desconto })
+      setOrc((o: any) => ({ ...o, desconto_percentual: desconto }))
+      toast.success("Desconto atualizado — recalcule para aplicar")
+      setResultado(null)
+    } catch (err: any) {
+      toast.error(`Erro: ${err.message}`)
+    }
+  }
+
   async function calcular() {
     setCalculando(true)
     try {
@@ -133,7 +113,6 @@ export default function OrcamentoEditor() {
       setItens(r.itens ?? itens)
       setOrc((o: any) => ({ ...o, total_proposta: r.total_proposta, margem_liquida_real: r.margem_liquida_real }))
       setResultado(r)
-      setDirty(new Set())
       toast.success("Cálculo atualizado com sucesso")
     } catch (err: any) {
       toast.error(`Erro no cálculo: ${err.message}`)
@@ -143,8 +122,9 @@ export default function OrcamentoEditor() {
   }
 
   async function aprovar() {
-    if (!confirm("Aprovar este orçamento? O grid ficará somente leitura e os valores serão congelados.")) return
+    if (!confirm("Aprovar este orçamento? Os valores serão congelados (somente leitura).")) return
     try {
+      await orcamentoApi.update(orcId, { status: "enviado" })
       const atualizado = await orcamentoApi.update(orcId, { status: "aprovado" })
       setOrc(atualizado)
       toast.success("Orçamento aprovado e congelado")
@@ -153,26 +133,13 @@ export default function OrcamentoEditor() {
     }
   }
 
-  async function exportarPdf() {
+  async function novaVersao() {
     try {
-      const token = auth.getAccessToken()
-      const resp = await fetch(`/api/v1/orcamentos/${orcId}/export/pdf`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}))
-        throw new Error((err as any).detail ?? `Erro ${resp.status}`)
-      }
-      const blob = await resp.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `proposta_${orc.numero_proposta}.pdf`
-      a.click()
-      URL.revokeObjectURL(url)
-      toast.success("PDF gerado com sucesso")
+      const nova = await orcamentoApi.reabrir(orcId)
+      toast.success(`Nova versão (v${nova.versao}) criada`)
+      navigate(`/orcamentos/${nova.id}`)
     } catch (err: any) {
-      toast.error(`Erro ao gerar PDF: ${err.message}`)
+      toast.error(`Erro: ${err.message}`)
     }
   }
 
@@ -193,13 +160,12 @@ export default function OrcamentoEditor() {
 
   const calculado = resultado !== null || itens.some((i) => parseFloat(i.preco_venda_unitario) > 0)
 
-  const painel = {
-    faturavel: resultado ? fmtBRL(resultado.subtotal_faturavel) : orc.total_proposta ? fmtBRL(orc.total_proposta) : "R$ —",
-    diluir: resultado ? fmtBRL(resultado.total_nao_faturavel) : "R$ —",
-    fatork: resultado ? `${(parseFloat(String(resultado.fator_k_percentual)) || 0).toFixed(2)}%` : "—",
-    mlr: resultado ? fmtPct(resultado.margem_liquida_real) : orc.margem_liquida_real ? fmtPct(orc.margem_liquida_real) : "—",
-    total: resultado ? fmtBRL(resultado.total_proposta) : orc.total_proposta ? fmtBRL(orc.total_proposta) : "R$ —",
-  }
+  // Painel: apenas MLR (verde) e Total (primária) coloridos.
+  const subtotalFat = resultado ? fmtBRL(resultado.subtotal_faturavel) : "—"
+  const totalDiluir = resultado ? fmtBRL(resultado.total_nao_faturavel) : "—"
+  const fatorK = resultado ? `${(parseFloat(String(resultado.fator_k_percentual)) || 0).toFixed(2)}%` : "—"
+  const mlr = resultado ? fmtPct(resultado.margem_liquida_real) : orc.margem_liquida_real ? fmtPct(orc.margem_liquida_real) : "—"
+  const total = resultado ? fmtBRL(resultado.total_proposta) : orc.total_proposta ? fmtBRL(orc.total_proposta) : "R$ —"
 
   return (
     <>
@@ -209,12 +175,13 @@ export default function OrcamentoEditor() {
             <Button asChild variant="ghost" size="icon">
               <Link to="/orcamentos" aria-label="Voltar"><ArrowLeftIcon className="size-4" /></Link>
             </Button>
-            <h2 className="text-xl font-semibold">{orc.numero_proposta}</h2>
+            <h2 className="text-xl font-semibold">{orc.numero}</h2>
             <StatusBadge status={orc.status} />
+            {orc.versao > 1 && <Badge variant="secondary">V{orc.versao}</Badge>}
             {orc.beneficio_reidi && <Badge variant="success">REIDI</Badge>}
             <Badge variant="secondary">{orc.uf_execucao}</Badge>
           </div>
-          {orc.descricao_obra && <p className="text-muted-foreground mt-1 text-sm">{orc.descricao_obra}</p>}
+          {orc.obra && <p className="text-muted-foreground mt-1 text-sm">{orc.obra}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
           {!readonly ? (
@@ -227,176 +194,147 @@ export default function OrcamentoEditor() {
               </Button>
             </>
           ) : (
-            <Button size="sm" variant="secondary" onClick={() => toast.info("Nova versão: disponível na Fase 3")}>
+            <Button size="sm" variant="secondary" onClick={novaVersao}>
               <ArrowsClockwiseIcon className="size-4" /> Nova Versão
             </Button>
           )}
-          <Button size="sm" variant="ghost" onClick={exportarPdf}>
-            <DownloadSimpleIcon className="size-4" /> Exportar
-          </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[1fr_280px]">
-        <div>
+        <div className="space-y-4">
+          {BLOCOS.map((b) => {
+            const linhas = itens.filter((i) => i.bloco === b.key)
+            return (
+              <Card key={b.key} className="overflow-hidden py-0">
+                <div className={`flex items-center justify-between px-4 py-2 text-xs font-bold tracking-wide ${b.cor}`}>
+                  <span>{b.titulo}</span>
+                  {!readonly && (
+                    <Button size="sm" variant="ghost" className="h-6 px-2" onClick={() => setAddBloco(b.key)}>
+                      <PlusIcon className="size-3.5" /> Adicionar
+                    </Button>
+                  )}
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead className="w-12">Und</TableHead>
+                        <TableHead className="w-24 text-right">QTD</TableHead>
+                        {b.faturavel && <TableHead className="w-20 text-right">Margem</TableHead>}
+                        {b.faturavel && <TableHead className="w-24">MOD FAT</TableHead>}
+                        <TableHead className="w-28 text-right">Custo Unit</TableHead>
+                        <TableHead className="w-28 text-right">Preço Total</TableHead>
+                        {!readonly && <TableHead className="w-10"></TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {linhas.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={9} className="text-muted-foreground py-4 text-center text-sm">
+                            Nenhum item neste bloco.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        linhas.map((it) => {
+                          const hasPrices = parseFloat(it.preco_venda_total) > 0
+                          return (
+                            <TableRow key={it.id}>
+                              <TableCell className="max-w-48">
+                                <div className="truncate text-sm font-medium" title={it.descricao}>{it.descricao}</div>
+                                {it.flag_aprovacao && <Badge variant="warning" className="mt-1">APROVAÇÃO</Badge>}
+                              </TableCell>
+                              {/* Unidade READONLY (definida no cadastro) */}
+                              <TableCell className="text-muted-foreground text-xs">{it.unidade}</TableCell>
+                              <TableCell className="text-right">
+                                {readonly ? (
+                                  <span className="text-sm">{fmtNum(it.quantidade)}</span>
+                                ) : (
+                                  <Input
+                                    type="number"
+                                    defaultValue={it.quantidade}
+                                    min="0.0001"
+                                    step="0.01"
+                                    className="h-8 w-20 text-right"
+                                    onBlur={(e) => salvarQuantidade(it.id, e.target.value, it.quantidade)}
+                                  />
+                                )}
+                              </TableCell>
+                              {b.faturavel && (
+                                <TableCell className="text-muted-foreground text-right text-sm">
+                                  {Number(it.margem_lucro).toFixed(1)}%
+                                </TableCell>
+                              )}
+                              {b.faturavel && (
+                                <TableCell className="text-muted-foreground text-xs">{it.mod_fat}</TableCell>
+                              )}
+                              <TableCell className="text-right text-sm">{fmtBRL(it.custo_direto_unitario)}</TableCell>
+                              <TableCell className="text-right">
+                                {hasPrices ? (
+                                  <span className="text-primary text-sm font-semibold">{fmtBRL(it.preco_venda_total)}</span>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">—</span>
+                                )}
+                              </TableCell>
+                              {!readonly && (
+                                <TableCell>
+                                  <Button variant="ghost" size="icon" title="Remover" onClick={() => removerItem(it.id)}>
+                                    <TrashIcon className="text-destructive size-4" />
+                                  </Button>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          )
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
+            )
+          })}
+        </div>
+
+        {/* Painel financeiro — só MLR e Total coloridos; resto neutro. */}
+        <Card className="p-4">
           {!readonly && (
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-muted-foreground text-sm">
-                {dirty.size > 0 ? `${dirty.size} linha(s) alterada(s) — clique em Calcular` : ""}
-              </span>
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="secondary" onClick={() => setAddBloco("servicos")}>+ Serviço</Button>
-                <Button size="sm" variant="secondary" onClick={() => setAddBloco("produtos")}>+ Produto</Button>
-                <Button size="sm" variant="ghost" onClick={() => setAddBloco("operacional")}>+ Operacional</Button>
-                <Button size="sm" variant="ghost" className="text-warning" onClick={() => setAddBloco("excepcionais")}>
-                  <WarningIcon className="size-4" /> Manual
-                </Button>
+            <div className="mb-4 flex flex-col gap-2 border-b pb-4">
+              <label className="text-muted-foreground text-xs font-medium uppercase">Desconto (%)</label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={desconto}
+                  onChange={(e) => setDesconto(e.target.value)}
+                  className="h-8"
+                />
+                <Button size="sm" variant="secondary" onClick={salvarDesconto}>OK</Button>
               </div>
             </div>
           )}
-
-          <Card className="overflow-x-auto py-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-24">Bloco</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead className="w-12">Und</TableHead>
-                  <TableHead className="w-20 text-right">QTD</TableHead>
-                  <TableHead className="w-28">MOD FAT</TableHead>
-                  <TableHead className="w-20 text-right">Margem</TableHead>
-                  <TableHead className="w-24 text-right">Custo Unit</TableHead>
-                  <TableHead className="w-28 text-right">Preço Unit</TableHead>
-                  <TableHead className="w-28 text-right">Preço Total</TableHead>
-                  {!readonly && <TableHead className="w-10"></TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {itens.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={readonly ? 9 : 10} className="text-muted-foreground py-8 text-center">
-                      Nenhum item adicionado.{readonly ? "" : " Use os botões acima para inserir serviços, produtos ou custos operacionais."}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  itens.map((item) => {
-                    const naoFat = BLOCOS_NAO_FAT.has(item.bloco)
-                    const hasPrices = parseFloat(item.preco_venda_unitario) > 0
-                    const isDirty = dirty.has(item.id)
-                    return (
-                      <TableRow key={item.id} className={isDirty ? "bg-warning/10" : ""}>
-                        <TableCell>
-                          <BlocoBadge bloco={item.bloco} />
-                          {item.demanda_aprovacao && (
-                            <div className="mt-1"><Badge variant="warning">Aprovação</Badge></div>
-                          )}
-                        </TableCell>
-                        <TableCell className="max-w-44">
-                          <div className="truncate text-sm font-medium" title={item.descricao}>{item.descricao}</div>
-                          <div className="text-muted-foreground text-xs">{item.unidade_medida}</div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{item.unidade_medida}</TableCell>
-                        <TableCell className="text-right">
-                          {readonly ? (
-                            <span className="text-sm">{fmtNum(item.quantidade)}</span>
-                          ) : (
-                            <Input
-                              type="number"
-                              defaultValue={item.quantidade}
-                              min="0.0001"
-                              step="0.01"
-                              className="h-8 w-20 text-right"
-                              onBlur={(e) => e.target.value !== String(item.quantidade) && salvarCampo(item.id, "quantidade", e.target.value)}
-                            />
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {readonly || naoFat ? (
-                            <span className="text-muted-foreground text-xs">{item.mod_fat}</span>
-                          ) : (
-                            <Select defaultValue={item.mod_fat} onValueChange={(v) => salvarCampo(item.id, "mod_fat", v)}>
-                              <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                {MOD_FAT_OPTS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {readonly || naoFat ? (
-                            <span className="text-muted-foreground text-sm">{naoFat ? "Sombra" : fmtPct(item.margem_percentual)}</span>
-                          ) : (
-                            <div className="flex items-center justify-end gap-1">
-                              <Input
-                                type="number"
-                                defaultValue={(parseFloat(item.margem_percentual) * 100).toFixed(1)}
-                                min="0"
-                                max="99.9"
-                                step="0.1"
-                                className="h-8 w-16 text-right"
-                                onBlur={(e) => salvarCampo(item.id, "margem_percentual", e.target.value)}
-                              />
-                              <span className="text-xs">%</span>
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right text-sm">{fmtBRL(item.custo_direto_unitario)}</TableCell>
-                        <TableCell className="text-right">
-                          {hasPrices ? (
-                            <>
-                              <span className="text-sm font-medium">{fmtBRL(item.preco_final_unitario || item.preco_venda_unitario)}</span>
-                              {item.rateio_absorvido > 0 && (
-                                <div className="text-success text-xs">+{fmtBRL(item.rateio_absorvido)} K</div>
-                              )}
-                            </>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {hasPrices ? (
-                            <span className="text-primary text-sm font-semibold">{fmtBRL(item.preco_venda_total)}</span>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">—</span>
-                          )}
-                        </TableCell>
-                        {!readonly && (
-                          <TableCell>
-                            <Button variant="ghost" size="icon" title="Remover item" onClick={() => removerItem(item.id)}>
-                              <TrashIcon className="text-destructive size-4" />
-                            </Button>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    )
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-        </div>
-
-        <Card className="p-4">
           <dl className="space-y-3 text-sm">
             <div>
               <dt className="text-muted-foreground">Subtotal Faturável</dt>
-              <dd className="text-lg font-semibold">{painel.faturavel}</dd>
+              <dd className="text-foreground text-lg font-semibold">{subtotalFat}</dd>
             </div>
             <div className="border-t pt-3">
-              <dt className="text-destructive">Total a Diluir</dt>
-              <dd className="text-destructive text-lg font-semibold">{painel.diluir}</dd>
+              <dt className="text-muted-foreground">Total a Diluir</dt>
+              <dd className="text-foreground text-lg font-semibold">{totalDiluir}</dd>
             </div>
             <div className="border-t pt-3">
               <dt className="text-muted-foreground">Fator K</dt>
-              <dd className="text-lg font-semibold">{painel.fatork}</dd>
+              <dd className="text-foreground text-lg font-semibold">{fatorK}</dd>
             </div>
             <div className="border-t pt-3">
               <dt className="text-muted-foreground">Margem Líquida Real</dt>
-              <dd className="text-success text-lg font-semibold">{painel.mlr}</dd>
+              <dd className="text-success text-lg font-bold">{mlr}</dd>
             </div>
             <div className="border-t pt-3">
               <dt className="text-xs font-bold tracking-wide uppercase">Total da Proposta</dt>
-              <dd className="text-primary text-2xl font-bold">{painel.total}</dd>
+              <dd className="text-primary text-2xl font-bold">{total}</dd>
             </div>
           </dl>
           {!calculado && (
@@ -410,8 +348,6 @@ export default function OrcamentoEditor() {
       <AddItemModal
         bloco={addBloco}
         orcId={orcId}
-        fichasServico={fichasServico}
-        fichasProduto={fichasProduto}
         onOpenChange={(v) => !v && setAddBloco(null)}
         onAdded={(novo) => {
           setItens((arr) => [...arr, novo])

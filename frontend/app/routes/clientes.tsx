@@ -24,13 +24,6 @@ import {
 import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select"
-import {
   Table,
   TableBody,
   TableCell,
@@ -41,13 +34,11 @@ import {
 import { clienteApi, orcamentoApi } from "~/lib/api"
 import { fmtBRL } from "~/lib/format"
 
-const UFS = ["PR", "SP", "SC", "RS", "MG", "RJ", "GO", "DF", "BA", "PE", "CE"]
-
 interface Cliente {
   id: number
-  razao_social: string
-  cnpj?: string
-  uf_sede?: string
+  nome: string
+  tipo?: string
+  cnpj_cpf?: string
   contato_nome?: string
   contato_email?: string
   contato_telefone?: string
@@ -73,9 +64,9 @@ function ClienteModal({
   useEffect(() => {
     if (open) {
       setV({
-        razao_social: cliente?.razao_social ?? "",
-        cnpj: cliente?.cnpj ?? "",
-        uf_sede: cliente?.uf_sede ?? "",
+        nome: cliente?.nome ?? "",
+        tipo: cliente?.tipo ?? "",
+        cnpj_cpf: cliente?.cnpj_cpf ?? "",
         contato_nome: cliente?.contato_nome ?? "",
         contato_email: cliente?.contato_email ?? "",
         contato_telefone: cliente?.contato_telefone ?? "",
@@ -90,9 +81,9 @@ function ClienteModal({
     e.preventDefault()
     setSaving(true)
     const payload: Record<string, unknown> = {
-      razao_social: v.razao_social,
-      cnpj: v.cnpj || null,
-      uf_sede: v.uf_sede || null,
+      nome: v.nome,
+      tipo: v.tipo || null,
+      cnpj_cpf: v.cnpj_cpf || null,
       contato_nome: v.contato_nome || null,
       contato_email: v.contato_email || null,
       contato_telefone: v.contato_telefone || null,
@@ -124,21 +115,15 @@ function ClienteModal({
         <form onSubmit={submit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label>Razão Social / Nome *</Label>
-            <Input required placeholder="Ex: Motiva Rodovias S.A." value={v.razao_social ?? ""} onChange={(e) => set("razao_social", e.target.value)} />
+            <Input required placeholder="Ex: Motiva Rodovias S.A." value={v.nome ?? ""} onChange={(e) => set("nome", e.target.value)} />
           </div>
           <div className="flex flex-col gap-2">
             <Label>CNPJ / CPF</Label>
-            <Input placeholder="00.000.000/0001-00" value={v.cnpj ?? ""} onChange={(e) => set("cnpj", e.target.value)} />
+            <Input placeholder="00.000.000/0001-00" value={v.cnpj_cpf ?? ""} onChange={(e) => set("cnpj_cpf", e.target.value)} />
           </div>
           <div className="flex flex-col gap-2">
-            <Label>UF Sede</Label>
-            <Select value={v.uf_sede || "—"} onValueChange={(val) => set("uf_sede", val === "—" ? "" : val)}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="—">—</SelectItem>
-                {UFS.map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Label>Tipo</Label>
+            <Input placeholder="Público, Privado…" value={v.tipo ?? ""} onChange={(e) => set("tipo", e.target.value)} />
           </div>
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label>Nome do Contato</Label>
@@ -193,7 +178,7 @@ function OrcamentosClienteModal({
     <Dialog open={!!cliente} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Orçamentos — {cliente?.razao_social}</DialogTitle>
+          <DialogTitle>Orçamentos — {cliente?.nome}</DialogTitle>
         </DialogHeader>
         {erro ? (
           <p className="text-destructive">{erro}</p>
@@ -205,7 +190,7 @@ function OrcamentosClienteModal({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nº Proposta</TableHead>
+                <TableHead>Nº</TableHead>
                 <TableHead>Obra</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Total</TableHead>
@@ -215,8 +200,8 @@ function OrcamentosClienteModal({
             <TableBody>
               {orcs.map((o) => (
                 <TableRow key={o.id}>
-                  <TableCell className="text-primary font-mono text-xs">{o.numero_proposta}</TableCell>
-                  <TableCell className="text-muted-foreground text-xs">{o.descricao_obra ?? "—"}</TableCell>
+                  <TableCell className="text-primary font-mono text-xs">{o.numero}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{o.obra ?? "—"}</TableCell>
                   <TableCell><StatusBadge status={o.status} /></TableCell>
                   <TableCell className="text-right font-semibold">{fmtBRL(o.total_proposta)}</TableCell>
                   <TableCell>
@@ -262,7 +247,7 @@ export default function Clientes() {
     if (soAtivos) f = f.filter((c) => c.ativo)
     if (busca) {
       const q = busca.toLowerCase()
-      f = f.filter((c) => c.razao_social.toLowerCase().includes(q) || (c.cnpj ?? "").toLowerCase().includes(q))
+      f = f.filter((c) => c.nome.toLowerCase().includes(q) || (c.cnpj_cpf ?? "").toLowerCase().includes(q))
     }
     return f
   }, [todos, busca, soAtivos])
@@ -308,14 +293,13 @@ export default function Clientes() {
         }
       />
 
-      <Card className="py-0">
+      <Card className="overflow-x-auto py-0">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Razão Social</TableHead>
               <TableHead>CNPJ/CPF</TableHead>
               <TableHead>Contato</TableHead>
-              <TableHead>UF Sede</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Orçamentos</TableHead>
               <TableHead className="w-20"></TableHead>
@@ -323,26 +307,25 @@ export default function Clientes() {
           </TableHeader>
           <TableBody>
             {todos === null ? (
-              <TableRow><TableCell colSpan={7} className="text-muted-foreground py-8 text-center">Carregando…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-muted-foreground py-8 text-center">Carregando…</TableCell></TableRow>
             ) : erro ? (
-              <TableRow><TableCell colSpan={7} className="text-destructive py-8 text-center">{erro}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-destructive py-8 text-center">{erro}</TableCell></TableRow>
             ) : filtrados.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-muted-foreground py-8 text-center">Nenhum cliente encontrado.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-muted-foreground py-8 text-center">Nenhum cliente encontrado.</TableCell></TableRow>
             ) : (
               filtrados.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>
-                    <div className="font-medium">{c.razao_social}</div>
+                    <div className="font-medium">{c.nome}</div>
                     {c.contato_email && <div className="text-muted-foreground text-xs">{c.contato_email}</div>}
                   </TableCell>
-                  <TableCell className="text-xs">{c.cnpj ?? "—"}</TableCell>
+                  <TableCell className="text-xs">{c.cnpj_cpf ?? "—"}</TableCell>
                   <TableCell className="text-xs">
                     {c.contato_nome ?? "—"}
                     {c.contato_telefone && <div className="text-muted-foreground">{c.contato_telefone}</div>}
                   </TableCell>
-                  <TableCell>{c.uf_sede ? <Badge variant="secondary">{c.uf_sede}</Badge> : "—"}</TableCell>
                   <TableCell>
-                    {c.ativo ? <Badge variant="success">Ativo</Badge> : <Badge variant="destructive">Inativo</Badge>}
+                    {c.ativo ? <Badge variant="success">ATIVO</Badge> : <Badge variant="destructive">INATIVO</Badge>}
                   </TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" onClick={() => setVerOrcs(c)}>Ver →</Button>

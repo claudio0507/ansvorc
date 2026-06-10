@@ -198,7 +198,7 @@ export default function Dashboard() {
                   {recentes.map((o) => (
                     <TableRow key={o.id}>
                       <TableCell className="text-primary font-mono text-xs">
-                        {o.numero_proposta}
+                        {o.numero}
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={o.status} />

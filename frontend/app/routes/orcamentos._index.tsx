@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate } from "react-router"
 import { toast } from "sonner"
-import { PlusIcon, PencilSimpleIcon, TrashIcon } from "@phosphor-icons/react"
+import { PlusIcon, PencilSimpleIcon, TrashIcon, MagnifyingGlassIcon } from "@phosphor-icons/react"
 
 import { NovoOrcamentoModal } from "~/components/novo-orcamento-modal"
 import { PageHeader } from "~/components/page-header"
@@ -9,6 +9,7 @@ import { StatusBadge } from "~/components/status-badge"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
+import { Input } from "~/components/ui/input"
 import {
   Table,
   TableBody,
@@ -34,6 +35,7 @@ export default function OrcamentosLista() {
   const [clientesMap, setClientesMap] = useState<Record<number, string>>({})
   const [erro, setErro] = useState("")
   const [filtro, setFiltro] = useState("")
+  const [busca, setBusca] = useState("")
   const [modalOpen, setModalOpen] = useState(false)
 
   async function refresh() {
@@ -43,7 +45,7 @@ export default function OrcamentosLista() {
         orcamentoApi.list(),
         clienteApi.list().catch(() => [] as any[]),
       ])
-      setClientesMap(Object.fromEntries(clientes.map((c: any) => [c.id, c.razao_social])))
+      setClientesMap(Object.fromEntries(clientes.map((c: any) => [c.id, c.nome])))
       setOrcs(todos)
     } catch (err: any) {
       setErro(err.message)
@@ -56,8 +58,18 @@ export default function OrcamentosLista() {
 
   const filtrados = useMemo(() => {
     if (!orcs) return []
-    return filtro ? orcs.filter((o) => o.status === filtro) : orcs
-  }, [orcs, filtro])
+    let r = filtro ? orcs.filter((o) => o.status === filtro) : orcs
+    const q = busca.trim().toLowerCase()
+    if (q) {
+      r = r.filter(
+        (o) =>
+          String(o.numero ?? "").toLowerCase().includes(q) ||
+          String(o.obra ?? "").toLowerCase().includes(q) ||
+          String(clientesMap[o.cliente_id] ?? "").toLowerCase().includes(q)
+      )
+    }
+    return r
+  }, [orcs, filtro, busca, clientesMap])
 
   async function del(id: number) {
     if (!confirm("Excluir orçamento e todos os seus itens?")) return
@@ -76,9 +88,20 @@ export default function OrcamentosLista() {
         title="Orçamentos"
         subtitle="Gestão de propostas comerciais"
         actions={
-          <Button size="sm" onClick={() => setModalOpen(true)}>
-            <PlusIcon className="size-4" /> Novo Orçamento
-          </Button>
+          <>
+            <div className="relative">
+              <MagnifyingGlassIcon className="text-muted-foreground absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
+              <Input
+                className="w-56 pl-8"
+                placeholder="Buscar nº, cliente ou obra…"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+              />
+            </div>
+            <Button size="sm" onClick={() => setModalOpen(true)}>
+              <PlusIcon className="size-4" /> Novo Orçamento
+            </Button>
+          </>
         }
       />
 
@@ -121,12 +144,12 @@ export default function OrcamentosLista() {
             ) : (
               filtrados.map((o) => (
                 <TableRow key={o.id} className="cursor-pointer" onClick={() => navigate(`/orcamentos/${o.id}`)}>
-                  <TableCell className="text-primary font-mono text-xs">{o.numero_proposta}</TableCell>
+                  <TableCell className="text-primary font-mono text-xs">{o.numero}</TableCell>
                   <TableCell className="text-sm">{clientesMap[o.cliente_id] ?? `#${o.cliente_id}`}</TableCell>
-                  <TableCell className="text-muted-foreground text-xs">{o.descricao_obra ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{o.obra ?? "—"}</TableCell>
                   <TableCell><Badge variant="secondary">{o.uf_execucao}</Badge></TableCell>
                   <TableCell>
-                    {o.beneficio_reidi ? <Badge variant="success">Sim</Badge> : <Badge variant="secondary">Não</Badge>}
+                    {o.beneficio_reidi ? <Badge variant="success">SIM</Badge> : <Badge variant="secondary">NÃO</Badge>}
                   </TableCell>
                   <TableCell className="text-right font-semibold">{fmtBRL(o.total_proposta)}</TableCell>
                   <TableCell><StatusBadge status={o.status} /></TableCell>
