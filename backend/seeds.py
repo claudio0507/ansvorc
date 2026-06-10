@@ -218,6 +218,12 @@ def seed_usuarios(db):
     db.add_all(
         [
             Usuario(
+                nome="Sponsor",
+                email="sponsor@altanoroeste.com.br",
+                senha_hash=hash_senha("sponsor123"),
+                papel="sponsor",
+            ),
+            Usuario(
                 nome="Administrador",
                 email="admin@altanoroeste.com.br",
                 senha_hash=hash_senha("admin123"),
