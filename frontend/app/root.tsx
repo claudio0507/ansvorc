@@ -3,6 +3,7 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration, isRouteErrorResponse }
 import type { Route } from "./+types/root"
 import "./app.css"
 import { Toaster } from "~/components/ui/sonner"
+import { TooltipProvider } from "~/components/ui/tooltip"
 import { applyStoredTheme } from "~/lib/theme"
 
 // SPA: aplica tema salvo o quanto antes (CSP bloqueia inline script).
@@ -23,7 +24,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
+        <TooltipProvider>{children}</TooltipProvider>
         <Toaster position="bottom-right" richColors />
         <ScrollRestoration />
         <Scripts />
