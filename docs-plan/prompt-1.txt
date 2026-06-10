@@ -1,0 +1,24 @@
+# Diretrizes de Desenvolvimento e Design do Sistema
+
+## 1. Núcleo e Planejamento Estratégico
+O *core* (núcleo) de funcionamento do sistema já está muito bem definido na estrutura de texto passada no prompt de instruções, e essa base não deve ser alterada. O objetivo central na atual fase é planejar e organizar melhorias pontuais com foco em:
+* **Estrutura de dados:** Aprimorar a modelagem e a organização da informação.
+* **Funcionamento:** Otimizar a execução técnica e a arquitetura lógica.
+* **Melhores práticas:** Definir e adotar os padrões ideais de desenvolvimento para a construção do projeto.
+
+## 2. Metodologia de Testes e Segurança
+Durante a etapa de desenvolvimento do sistema, as seguintes regras devem ser aplicadas:
+* **Validação visual e modular:** É necessário estabelecer uma forma clara de visualizar o sistema para ir validando o progresso. Cada módulo deve ser testado individualmente à medida que for sendo construído.
+* **Acesso facilitado (Fase de Construção):** Durante o desenvolvimento, não é necessária a aplicação de senhas ou travas de segurança, garantindo assim agilidade e facilidade no acesso aos testes.
+* **Segurança e Acesso (Fase Final):** Somente após a validação completa do sistema, o projeto será concluído com a parametrização de usuários e a definição de seus respectivos níveis de acesso.
+
+## 3. Identidade Visual (UI/UX)
+A identidade visual deve seguir estritamente os padrões estabelecidos, mantendo a unidade e o tema específico do sistema do cliente. As seguintes diretrizes devem ser rigorosamente obedecidas:
+* **Estilo Geral:** Identidade visual inspirada no macOS.
+* **Tipografia:** Família San Francisco (SF Pro Display para cabeçalhos; SF Pro Text para exibição de dados).
+* **Paleta de Cores:**
+  * **Ação Primária:** Vermelho Alta Noroeste (`#c32a30`).
+  * **Fundos e Contrastes:** Escala de cinza padrão Apple.
+* **Componentes e Elementos Visuais:** 
+  * Bordas arredondadas (8px).
+  * Barra lateral (sidebar) translúcida utilizando o efeito *Glassmorphism/Vibrancy*.

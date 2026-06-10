@@ -1,38 +1,45 @@
+"""Models das Fichas Técnicas (BLOCO 2) — conforme docs/02 + docs/03.
+
+- Ficha de Equipe: cargos (bd_RH) + EPI + refeição/hospedagem por seguimento.
+- Ficha de Produto: BOM recursivo (material OU sub-produto).
+- Ficha de Serviço: equipe + frota + ferramental (+ produto opc) numa MESMA linha.
+"""
+
+from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import (
     DECIMAL,
     Boolean,
     CheckConstraint,
+    DateTime,
     ForeignKey,
     Integer,
     String,
-    Text,
+    func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.database import Base
 
-# ── Fichas de Equipe ─────────────────────────────────────────────────────────
+# ── Ficha de Equipe ──────────────────────────────────────────────────────────
 
 
 class FichaEquipe(Base):
-    """Cabeçalho de uma ficha de equipe operacional."""
+    """2.1 fichas_equipe — cabeçalho de equipe operacional por seguimento."""
 
     __tablename__ = "fichas_equipe"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    codigo: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)
-    nome: Mapped[str] = mapped_column(String(255), nullable=False)
-    descricao: Mapped[str | None] = mapped_column(Text, nullable=True)
-    producao_diaria: Mapped[Decimal] = mapped_column(
-        DECIMAL(12, 2), nullable=False, default=Decimal("1.00")
+    codigo: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
+    seguimento: Mapped[str] = mapped_column(String(50), nullable=False)
+    # EPS, HORIZONTAL, VERTICAL, APOIO
+    custo_dia_total: Mapped[Decimal] = mapped_column(
+        DECIMAL(12, 4), nullable=False, default=Decimal("0")
     )
-    # unidade de produção (m², m, un, dia…)
-    unidade_producao: Mapped[str] = mapped_column(
-        String(10), nullable=False, default="dia"
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
     )
-    possui_itens: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     itens: Mapped[list["FichaEquipeItem"]] = relationship(
@@ -41,7 +48,10 @@ class FichaEquipe(Base):
 
 
 class FichaEquipeItem(Base):
-    """Item de uma ficha de equipe: cargo RH + EPIs + ferramental."""
+    """2.2 fichas_equipe_itens — cargo + EPI + refeição/hospedagem por linha.
+
+    custo_dia_linha = (custo_mo + custo_epi + refeicao + hospedagem) × quantidade
+    """
 
     __tablename__ = "fichas_equipe_itens"
 
@@ -49,46 +59,47 @@ class FichaEquipeItem(Base):
     ficha_equipe_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("fichas_equipe.id", ondelete="CASCADE"), nullable=False
     )
-    # Tipo do recurso: RH | EPI | FERRAMENTAL
-    tipo_recurso: Mapped[str] = mapped_column(String(20), nullable=False)
-
-    # Exatamente um dos três FKs deve ser preenchido
-    rh_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("bd_RH.id"), nullable=True
-    )
+    rh_id: Mapped[int] = mapped_column(Integer, ForeignKey("bd_RH.id"), nullable=False)
+    quantidade: Mapped[int] = mapped_column(Integer, nullable=False)
+    custo_mo: Mapped[Decimal] = mapped_column(DECIMAL(10, 4), nullable=False)
     epi_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("bd_EPI.id"), nullable=True
     )
-    ferramental_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("bd_FERRAMENTAL.id"), nullable=True
+    custo_epi: Mapped[Decimal] = mapped_column(
+        DECIMAL(10, 4), nullable=False, default=Decimal("0")
     )
-
-    quantidade: Mapped[Decimal] = mapped_column(DECIMAL(12, 4), nullable=False)
-    # Custo unitário capturado no momento da adição (snapshot lookup)
-    custo_unitario_gravado: Mapped[Decimal] = mapped_column(
-        DECIMAL(12, 4), nullable=False
+    refeicao: Mapped[Decimal] = mapped_column(
+        DECIMAL(10, 4), nullable=False, default=Decimal("0")
     )
-    observacao: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    hospedagem: Mapped[Decimal] = mapped_column(
+        DECIMAL(10, 4), nullable=False, default=Decimal("0")
+    )
+    custo_dia_linha: Mapped[Decimal] = mapped_column(
+        DECIMAL(10, 4), nullable=False, default=Decimal("0")
+    )
 
     ficha: Mapped["FichaEquipe"] = relationship("FichaEquipe", back_populates="itens")
 
 
-# ── Fichas de Produto (BOM recursivo) ────────────────────────────────────────
+# ── Ficha de Produto (BOM recursivo) ─────────────────────────────────────────
 
 
 class FichaProduto(Base):
-    """Cabeçalho de uma ficha de produto (placa, kit, componente montado)."""
+    """2.3 fichas_produto — produto orçável (placa, kit, componente)."""
 
     __tablename__ = "fichas_produto"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    codigo: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)
-    nome: Mapped[str] = mapped_column(String(255), nullable=False)
-    descricao: Mapped[str | None] = mapped_column(Text, nullable=True)
-    unidade_medida: Mapped[str] = mapped_column(
-        String(10), nullable=False, default="un"
+    codigo: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
+    nome: Mapped[str] = mapped_column(String(200), nullable=False)
+    unidade: Mapped[str] = mapped_column(String(10), nullable=False)
+    custo_total: Mapped[Decimal] = mapped_column(
+        DECIMAL(12, 4), nullable=False, default=Decimal("0")
     )
-    possui_itens: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    possui_ficha: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     itens: Mapped[list["FichaProdutoItem"]] = relationship(
@@ -100,11 +111,7 @@ class FichaProduto(Base):
 
 
 class FichaProdutoItem(Base):
-    """Item de BOM: material bruto OU sub-produto (ficha filho).
-
-    Restrição: exatamente um de material_id ou componente_filho_id deve ser
-    preenchido — nunca ambos, nunca nenhum.
-    """
+    """2.4 fichas_produto_itens — material bruto OU sub-produto (BOM)."""
 
     __tablename__ = "fichas_produto_itens"
     __table_args__ = (
@@ -119,54 +126,47 @@ class FichaProdutoItem(Base):
     ficha_produto_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("fichas_produto.id", ondelete="CASCADE"), nullable=False
     )
-
-    # Folha da BOM: material bruto do bd_MATERIAIS
     material_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("bd_MATERIAIS.id"), nullable=True
     )
-    # Nó filho: outra ficha de produto (BOM aninhado)
     componente_filho_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("fichas_produto.id"), nullable=True
     )
-
     quantidade: Mapped[Decimal] = mapped_column(DECIMAL(12, 6), nullable=False)
-    # Snapshot do custo no momento da adição
-    custo_unitario_gravado: Mapped[Decimal] = mapped_column(
-        DECIMAL(12, 4), nullable=False
-    )
-    observacao: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    unidade: Mapped[str] = mapped_column(String(10), nullable=False)
+    custo_unitario: Mapped[Decimal] = mapped_column(DECIMAL(12, 4), nullable=False)
+    custo_total_linha: Mapped[Decimal] = mapped_column(DECIMAL(12, 4), nullable=False)
 
     ficha: Mapped["FichaProduto"] = relationship(
-        "FichaProduto",
-        foreign_keys=[ficha_produto_id],
-        back_populates="itens",
+        "FichaProduto", foreign_keys=[ficha_produto_id], back_populates="itens"
     )
     componente_filho: Mapped["FichaProduto | None"] = relationship(
-        "FichaProduto",
-        foreign_keys=[componente_filho_id],
+        "FichaProduto", foreign_keys=[componente_filho_id]
     )
 
 
-# ── Fichas de Serviço ─────────────────────────────────────────────────────────
+# ── Ficha de Serviço ─────────────────────────────────────────────────────────
 
 
 class FichaServico(Base):
-    """Cabeçalho de uma ficha de serviço (SH, vertical, horizontal)."""
+    """2.5 fichas_servico — serviço executável (vertical, horizontal, EPS)."""
 
     __tablename__ = "fichas_servico"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    codigo: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)
-    nome: Mapped[str] = mapped_column(String(255), nullable=False)
-    descricao: Mapped[str | None] = mapped_column(Text, nullable=True)
-    tipo_servico: Mapped[str] = mapped_column(String(30), nullable=False)
-    # VERTICAL, HORIZONTAL, SH, OUTROS
-    unidade_medida: Mapped[str] = mapped_column(String(10), nullable=False)
-    producao_diaria: Mapped[Decimal] = mapped_column(
-        DECIMAL(12, 2), nullable=False, default=Decimal("1.00")
+    codigo: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
+    nome: Mapped[str] = mapped_column(String(200), nullable=False)
+    seguimento: Mapped[str] = mapped_column(String(50), nullable=False)
+    produtividade_dia: Mapped[Decimal] = mapped_column(
+        DECIMAL(10, 2), CheckConstraint("produtividade_dia > 0"), nullable=False
     )
-    possui_recursos: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
+    unidade: Mapped[str] = mapped_column(String(10), nullable=False)
+    possui_ficha: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    custo_unitario: Mapped[Decimal] = mapped_column(
+        DECIMAL(12, 4), nullable=False, default=Decimal("0")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
     )
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
@@ -176,51 +176,34 @@ class FichaServico(Base):
 
 
 class FichaServicoRecurso(Base):
-    """Recurso vinculado a uma ficha de serviço.
+    """2.6 fichas_servico_recursos — equipe + frota + ferramental (+ produto opc).
 
-    Um recurso pode ser: equipe, frota, ferramental avulso ou produto/componente.
-    Exatamente um dos FKs de vínculo deve ser preenchido.
+    Uma linha agrega SIMULTANEAMENTE os recursos do serviço. Sem CHECK de
+    exclusividade (a versão anterior forçava exatamente um — errado p/ o spec).
+
+    custo_unitario do serviço =
+        (equipe.custo_dia_total + frota.custo_diario + ferramental.custo_diario)
+        / produtividade_dia + produto.custo_total
     """
 
     __tablename__ = "fichas_servico_recursos"
-    __table_args__ = (
-        CheckConstraint(
-            # SQLite-compatible: soma de booleanos implícitos via CASE
-            """(
-                CASE WHEN ficha_equipe_id IS NOT NULL THEN 1 ELSE 0 END +
-                CASE WHEN frota_id IS NOT NULL THEN 1 ELSE 0 END +
-                CASE WHEN ferramental_id IS NOT NULL THEN 1 ELSE 0 END +
-                CASE WHEN ficha_produto_id IS NOT NULL THEN 1 ELSE 0 END
-            ) = 1""",
-            name="chk_servico_recurso_exclusividade",
-        ),
-    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     ficha_servico_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("fichas_servico.id", ondelete="CASCADE"), nullable=False
     )
-
-    # Exatamente um dos quatro vínculos
-    ficha_equipe_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("fichas_equipe.id"), nullable=True
+    ficha_equipe_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("fichas_equipe.id"), nullable=False
     )
-    frota_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("bd_FROTAS.id"), nullable=True
+    frota_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("bd_FROTAS.id"), nullable=False
     )
-    ferramental_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("bd_FERRAMENTAL.id"), nullable=True
+    ferramental_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("bd_FERRAMENTAL.id"), nullable=False
     )
     ficha_produto_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("fichas_produto.id"), nullable=True
     )
-
-    quantidade: Mapped[Decimal] = mapped_column(DECIMAL(12, 4), nullable=False)
-    # Snapshot do custo no momento do vínculo
-    custo_unitario_gravado: Mapped[Decimal] = mapped_column(
-        DECIMAL(12, 4), nullable=False
-    )
-    observacao: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     ficha: Mapped["FichaServico"] = relationship(
         "FichaServico", back_populates="recursos"

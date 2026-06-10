@@ -1,106 +1,94 @@
+"""Schemas Pydantic das Fichas Técnicas — alinhados a docs/02 + docs/03.
+
+Custos (custo_mo, custo_epi, refeicao, hospedagem, custo_dia_linha, custo_total_linha,
+custo_dia_total, custo_unitario) são CALCULADOS no backend via lookups — nunca enviados
+pelo cliente nos Create.
+"""
+
+from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
-# ── Fichas de Equipe ─────────────────────────────────────────────────────────
+from backend.schemas.validators import (
+    normalizar_codigo,
+    normalizar_seguimento,
+    normalizar_texto,
+)
+
+# ── Ficha de Equipe ──────────────────────────────────────────────────────────
 
 
 class FichaEquipeItemCreate(BaseModel):
-    tipo_recurso: str  # RH | EPI | FERRAMENTAL
-    rh_id: int | None = None
+    rh_id: int
+    quantidade: int  # pessoas — inteiro
     epi_id: int | None = None
-    ferramental_id: int | None = None
-    quantidade: Decimal
-    observacao: str | None = None
 
-    @model_validator(mode="after")
-    def valida_recurso_exclusivo(self) -> "FichaEquipeItemCreate":
-        filled = sum(
-            [
-                self.rh_id is not None,
-                self.epi_id is not None,
-                self.ferramental_id is not None,
-            ]
-        )
-        if filled != 1:
-            raise ValueError(
-                "Exatamente um de rh_id, epi_id ou ferramental_id deve ser informado"
-            )
-        mapa = {
-            "RH": self.rh_id,
-            "EPI": self.epi_id,
-            "FERRAMENTAL": self.ferramental_id,
-        }
-        esperado = mapa.get(self.tipo_recurso)
-        if esperado is None:
-            raise ValueError(
-                f"tipo_recurso '{self.tipo_recurso}' não corresponde ao FK preenchido"
-            )
-        return self
+    @field_validator("quantidade")
+    @classmethod
+    def quantidade_positiva(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("quantidade deve ser inteiro positivo")
+        return v
 
 
 class FichaEquipeItemRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     ficha_equipe_id: int
-    tipo_recurso: str
-    rh_id: int | None
+    rh_id: int
+    quantidade: int
+    custo_mo: Decimal
     epi_id: int | None
-    ferramental_id: int | None
-    quantidade: Decimal
-    custo_unitario_gravado: Decimal
-    observacao: str | None
+    custo_epi: Decimal
+    refeicao: Decimal
+    hospedagem: Decimal
+    custo_dia_linha: Decimal
 
 
 class FichaEquipeCreate(BaseModel):
     codigo: str
-    nome: str
-    descricao: str | None = None
-    producao_diaria: Decimal = Decimal("1.00")
-    unidade_producao: str = "dia"
+    seguimento: str
+
+    _norm_codigo = field_validator("codigo")(normalizar_codigo)
+    _norm_seg = field_validator("seguimento")(normalizar_seguimento)
 
 
 class FichaEquipeUpdate(BaseModel):
-    nome: str | None = None
-    descricao: str | None = None
-    producao_diaria: Decimal | None = None
-    unidade_producao: str | None = None
+    seguimento: str | None = None
     ativo: bool | None = None
+
+    _norm_seg = field_validator("seguimento")(normalizar_seguimento)
 
 
 class FichaEquipeRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     codigo: str
-    nome: str
-    descricao: str | None
-    producao_diaria: Decimal
-    unidade_producao: str
-    possui_itens: bool
+    seguimento: str
+    custo_dia_total: Decimal
+    created_at: datetime | None = None
     ativo: bool
     itens: list[FichaEquipeItemRead] = []
 
 
-# ── Fichas de Produto ─────────────────────────────────────────────────────────
+# ── Ficha de Produto (BOM) ───────────────────────────────────────────────────
 
 
 class FichaProdutoItemCreate(BaseModel):
     material_id: int | None = None
     componente_filho_id: int | None = None
     quantidade: Decimal
-    observacao: str | None = None
 
     @model_validator(mode="after")
     def valida_bom_exclusividade(self) -> "FichaProdutoItemCreate":
         filled = sum(
-            [
-                self.material_id is not None,
-                self.componente_filho_id is not None,
-            ]
+            [self.material_id is not None, self.componente_filho_id is not None]
         )
         if filled != 1:
             raise ValueError(
-                "Exatamente um de material_id ou componente_filho_id deve ser informado — nunca ambos, nunca nenhum"
+                "Exatamente um de material_id ou componente_filho_id deve ser "
+                "informado — nunca ambos, nunca nenhum"
             )
         return self
 
@@ -112,22 +100,26 @@ class FichaProdutoItemRead(BaseModel):
     material_id: int | None
     componente_filho_id: int | None
     quantidade: Decimal
-    custo_unitario_gravado: Decimal
-    observacao: str | None
+    unidade: str
+    custo_unitario: Decimal
+    custo_total_linha: Decimal
 
 
 class FichaProdutoCreate(BaseModel):
     codigo: str
     nome: str
-    descricao: str | None = None
-    unidade_medida: str = "un"
+    unidade: str
+
+    _norm_codigo = field_validator("codigo")(normalizar_codigo)
+    _norm_nome = field_validator("nome")(normalizar_texto)
 
 
 class FichaProdutoUpdate(BaseModel):
     nome: str | None = None
-    descricao: str | None = None
-    unidade_medida: str | None = None
+    unidade: str | None = None
     ativo: bool | None = None
+
+    _norm_nome = field_validator("nome")(normalizar_texto)
 
 
 class FichaProdutoRead(BaseModel):
@@ -135,70 +127,64 @@ class FichaProdutoRead(BaseModel):
     id: int
     codigo: str
     nome: str
-    descricao: str | None
-    unidade_medida: str
-    possui_itens: bool
+    unidade: str
+    custo_total: Decimal
+    possui_ficha: bool
+    created_at: datetime | None = None
     ativo: bool
     itens: list[FichaProdutoItemRead] = []
 
 
-# ── Fichas de Serviço ─────────────────────────────────────────────────────────
+# ── Ficha de Serviço ─────────────────────────────────────────────────────────
 
 
 class FichaServicoRecursoCreate(BaseModel):
-    ficha_equipe_id: int | None = None
-    frota_id: int | None = None
-    ferramental_id: int | None = None
-    ficha_produto_id: int | None = None
-    quantidade: Decimal
-    observacao: str | None = None
+    """Uma linha vincula equipe + frota + ferramental SIMULTANEAMENTE (+ produto opc)."""
 
-    @model_validator(mode="after")
-    def valida_recurso_exclusivo(self) -> "FichaServicoRecursoCreate":
-        filled = sum(
-            [
-                self.ficha_equipe_id is not None,
-                self.frota_id is not None,
-                self.ferramental_id is not None,
-                self.ficha_produto_id is not None,
-            ]
-        )
-        if filled != 1:
-            raise ValueError(
-                "Exatamente um de ficha_equipe_id, frota_id, ferramental_id ou ficha_produto_id deve ser informado"
-            )
-        return self
+    ficha_equipe_id: int
+    frota_id: int
+    ferramental_id: int
+    ficha_produto_id: int | None = None
 
 
 class FichaServicoRecursoRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     ficha_servico_id: int
-    ficha_equipe_id: int | None
-    frota_id: int | None
-    ferramental_id: int | None
+    ficha_equipe_id: int
+    frota_id: int
+    ferramental_id: int
     ficha_produto_id: int | None
-    quantidade: Decimal
-    custo_unitario_gravado: Decimal
-    observacao: str | None
 
 
 class FichaServicoCreate(BaseModel):
     codigo: str
     nome: str
-    descricao: str | None = None
-    tipo_servico: str
-    unidade_medida: str
-    producao_diaria: Decimal = Decimal("1.00")
+    seguimento: str
+    produtividade_dia: Decimal
+    unidade: str
+
+    _norm_codigo = field_validator("codigo")(normalizar_codigo)
+    _norm_nome = field_validator("nome")(normalizar_texto)
+    _norm_seg = field_validator("seguimento")(normalizar_seguimento)
+
+    @field_validator("produtividade_dia")
+    @classmethod
+    def prod_positiva(cls, v: Decimal) -> Decimal:
+        if v <= 0:
+            raise ValueError("produtividade_dia deve ser maior que zero")
+        return v
 
 
 class FichaServicoUpdate(BaseModel):
     nome: str | None = None
-    descricao: str | None = None
-    tipo_servico: str | None = None
-    unidade_medida: str | None = None
-    producao_diaria: Decimal | None = None
+    seguimento: str | None = None
+    produtividade_dia: Decimal | None = None
+    unidade: str | None = None
     ativo: bool | None = None
+
+    _norm_nome = field_validator("nome")(normalizar_texto)
+    _norm_seg = field_validator("seguimento")(normalizar_seguimento)
 
 
 class FichaServicoRead(BaseModel):
@@ -206,10 +192,11 @@ class FichaServicoRead(BaseModel):
     id: int
     codigo: str
     nome: str
-    descricao: str | None
-    tipo_servico: str
-    unidade_medida: str
-    producao_diaria: Decimal
-    possui_recursos: bool
+    seguimento: str
+    produtividade_dia: Decimal
+    unidade: str
+    possui_ficha: bool
+    custo_unitario: Decimal
+    created_at: datetime | None = None
     ativo: bool
     recursos: list[FichaServicoRecursoRead] = []

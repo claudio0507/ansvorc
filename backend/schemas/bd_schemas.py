@@ -1,20 +1,35 @@
+"""Schemas Pydantic dos Bancos de Dados — alinhados a docs/02.
+
+Campos monetários sempre Decimal. Texto/código/seguimento normalizados.
+"""
+
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, field_validator
+
+from backend.schemas.validators import (
+    normalizar_seguimento,
+    normalizar_texto,
+    normalizar_uf,
+)
 
 # ── bd_BDI ──────────────────────────────────────────────────────────────────
 
 
 class BdBDIBase(BaseModel):
     modalidade: str
-    adm_percentual: Decimal = Decimal("0.1300")
-    custo_financeiro_percentual: Decimal = Decimal("0.0150")
-    pis_cofins_percentual: Decimal = Decimal("0.0365")
-    issqn_pr_percentual: Decimal = Decimal("0.0350")
-    issqn_sp_percentual: Decimal = Decimal("0.0500")
-    icms_percentual: Decimal = Decimal("0.0000")
+    uf: str
+    icms: Decimal = Decimal("0")
+    cofins: Decimal = Decimal("0")
+    pis: Decimal = Decimal("0")
+    issqn: Decimal = Decimal("0")
+    custo_financeiro: Decimal = Decimal("0.0150")
+    irpj: Decimal = Decimal("0")
+    csll: Decimal = Decimal("0")
+    despesas_adm: Decimal = Decimal("0.1300")
     ativo: bool = True
-    descricao: str | None = None
+
+    _norm_uf = field_validator("uf")(normalizar_uf)
 
 
 class BdBDICreate(BdBDIBase):
@@ -23,14 +38,18 @@ class BdBDICreate(BdBDIBase):
 
 class BdBDIUpdate(BaseModel):
     modalidade: str | None = None
-    adm_percentual: Decimal | None = None
-    custo_financeiro_percentual: Decimal | None = None
-    pis_cofins_percentual: Decimal | None = None
-    issqn_pr_percentual: Decimal | None = None
-    issqn_sp_percentual: Decimal | None = None
-    icms_percentual: Decimal | None = None
+    uf: str | None = None
+    icms: Decimal | None = None
+    cofins: Decimal | None = None
+    pis: Decimal | None = None
+    issqn: Decimal | None = None
+    custo_financeiro: Decimal | None = None
+    irpj: Decimal | None = None
+    csll: Decimal | None = None
+    despesas_adm: Decimal | None = None
     ativo: bool | None = None
-    descricao: str | None = None
+
+    _norm_uf = field_validator("uf")(normalizar_uf)
 
 
 class BdBDIRead(BdBDIBase):
@@ -42,20 +61,17 @@ class BdBDIRead(BdBDIBase):
 
 
 class BdRHBase(BaseModel):
-    codigo: str
     cargo: str
-    categoria: str
-    salario_base: Decimal
-    encargos_percentual: Decimal = Decimal("0.7200")
-    horas_mes: Decimal = Decimal("220.00")
-    unidade_medida: str = "h"
+    custo_diario: Decimal
     ativo: bool = True
 
-    @field_validator("salario_base", "encargos_percentual", "horas_mes")
+    _norm_cargo = field_validator("cargo")(normalizar_texto)
+
+    @field_validator("custo_diario")
     @classmethod
-    def must_be_positive(cls, v: Decimal) -> Decimal:
-        if v <= 0:
-            raise ValueError("deve ser positivo")
+    def custo_positivo(cls, v: Decimal) -> Decimal:
+        if v < 0:
+            raise ValueError("custo_diario não pode ser negativo")
         return v
 
 
@@ -65,12 +81,10 @@ class BdRHCreate(BdRHBase):
 
 class BdRHUpdate(BaseModel):
     cargo: str | None = None
-    categoria: str | None = None
-    salario_base: Decimal | None = None
-    encargos_percentual: Decimal | None = None
-    horas_mes: Decimal | None = None
-    unidade_medida: str | None = None
+    custo_diario: Decimal | None = None
     ativo: bool | None = None
+
+    _norm_cargo = field_validator("cargo")(normalizar_texto)
 
 
 class BdRHRead(BdRHBase):
@@ -82,12 +96,11 @@ class BdRHRead(BdRHBase):
 
 
 class BdEPIBase(BaseModel):
-    codigo: str
-    descricao: str
-    unidade_medida: str
-    custo_unitario: Decimal
-    vida_util_dias: int | None = None
+    item: str
+    custo_diario: Decimal
     ativo: bool = True
+
+    _norm_item = field_validator("item")(normalizar_texto)
 
 
 class BdEPICreate(BdEPIBase):
@@ -95,11 +108,11 @@ class BdEPICreate(BdEPIBase):
 
 
 class BdEPIUpdate(BaseModel):
-    descricao: str | None = None
-    unidade_medida: str | None = None
-    custo_unitario: Decimal | None = None
-    vida_util_dias: int | None = None
+    item: str | None = None
+    custo_diario: Decimal | None = None
     ativo: bool | None = None
+
+    _norm_item = field_validator("item")(normalizar_texto)
 
 
 class BdEPIRead(BdEPIBase):
@@ -111,12 +124,11 @@ class BdEPIRead(BdEPIBase):
 
 
 class BdFerramentalBase(BaseModel):
-    codigo: str
-    descricao: str
-    unidade_medida: str
-    custo_unitario: Decimal
-    vida_util_dias: int | None = None
+    seguimento: str
+    custo_diario: Decimal
     ativo: bool = True
+
+    _norm_seg = field_validator("seguimento")(normalizar_seguimento)
 
 
 class BdFerramentalCreate(BdFerramentalBase):
@@ -124,11 +136,11 @@ class BdFerramentalCreate(BdFerramentalBase):
 
 
 class BdFerramentalUpdate(BaseModel):
-    descricao: str | None = None
-    unidade_medida: str | None = None
-    custo_unitario: Decimal | None = None
-    vida_util_dias: int | None = None
+    seguimento: str | None = None
+    custo_diario: Decimal | None = None
     ativo: bool | None = None
+
+    _norm_seg = field_validator("seguimento")(normalizar_seguimento)
 
 
 class BdFerramentalRead(BdFerramentalBase):
@@ -140,13 +152,11 @@ class BdFerramentalRead(BdFerramentalBase):
 
 
 class BdFrotasBase(BaseModel):
-    codigo: str
-    descricao: str
-    tipo: str
-    custo_diaria: Decimal
-    custo_km: Decimal | None = None
-    unidade_medida: str = "dia"
+    seguimento: str
+    custo_diario: Decimal
     ativo: bool = True
+
+    _norm_seg = field_validator("seguimento")(normalizar_seguimento)
 
 
 class BdFrotasCreate(BdFrotasBase):
@@ -154,12 +164,11 @@ class BdFrotasCreate(BdFrotasBase):
 
 
 class BdFrotasUpdate(BaseModel):
-    descricao: str | None = None
-    tipo: str | None = None
-    custo_diaria: Decimal | None = None
-    custo_km: Decimal | None = None
-    unidade_medida: str | None = None
+    seguimento: str | None = None
+    custo_diario: Decimal | None = None
     ativo: bool | None = None
+
+    _norm_seg = field_validator("seguimento")(normalizar_seguimento)
 
 
 class BdFrotasRead(BdFrotasBase):
@@ -171,14 +180,13 @@ class BdFrotasRead(BdFrotasBase):
 
 
 class BdMateriaisBase(BaseModel):
-    codigo: str
-    descricao: str
-    categoria: str
-    unidade_medida: str
-    custo_unitario: Decimal
-    fornecedor: str | None = None
-    icms_incide: bool = True
+    material: str
+    unidade: str
+    destinacao: str | None = None
+    valor_unitario: Decimal
     ativo: bool = True
+
+    _norm_material = field_validator("material")(normalizar_texto)
 
 
 class BdMateriaisCreate(BdMateriaisBase):
@@ -186,13 +194,13 @@ class BdMateriaisCreate(BdMateriaisBase):
 
 
 class BdMateriaisUpdate(BaseModel):
-    descricao: str | None = None
-    categoria: str | None = None
-    unidade_medida: str | None = None
-    custo_unitario: Decimal | None = None
-    fornecedor: str | None = None
-    icms_incide: bool | None = None
+    material: str | None = None
+    unidade: str | None = None
+    destinacao: str | None = None
+    valor_unitario: Decimal | None = None
     ativo: bool | None = None
+
+    _norm_material = field_validator("material")(normalizar_texto)
 
 
 class BdMateriaisRead(BdMateriaisBase):
@@ -204,12 +212,13 @@ class BdMateriaisRead(BdMateriaisBase):
 
 
 class BdEstruturaBase(BaseModel):
-    codigo: str
-    descricao: str
+    item: str
+    unidade: str
     tipo: str
-    unidade_medida: str
-    custo_unitario: Decimal
+    valor_unitario: Decimal
     ativo: bool = True
+
+    _norm_item = field_validator("item")(normalizar_texto)
 
 
 class BdEstruturaCreate(BdEstruturaBase):
@@ -217,11 +226,13 @@ class BdEstruturaCreate(BdEstruturaBase):
 
 
 class BdEstruturaUpdate(BaseModel):
-    descricao: str | None = None
+    item: str | None = None
+    unidade: str | None = None
     tipo: str | None = None
-    unidade_medida: str | None = None
-    custo_unitario: Decimal | None = None
+    valor_unitario: Decimal | None = None
     ativo: bool | None = None
+
+    _norm_item = field_validator("item")(normalizar_texto)
 
 
 class BdEstruturaRead(BdEstruturaBase):
@@ -233,12 +244,13 @@ class BdEstruturaRead(BdEstruturaBase):
 
 
 class BdDespesasBase(BaseModel):
-    codigo: str
-    descricao: str
-    tipo: str
-    percentual: Decimal | None = None
-    valor_fixo: Decimal | None = None
+    seguimento: str
+    epc: Decimal = Decimal("0")
+    refeicao: Decimal = Decimal("0")
+    hospedagem: Decimal = Decimal("0")
     ativo: bool = True
+
+    _norm_seg = field_validator("seguimento")(normalizar_seguimento)
 
 
 class BdDespesasCreate(BdDespesasBase):
@@ -246,11 +258,13 @@ class BdDespesasCreate(BdDespesasBase):
 
 
 class BdDespesasUpdate(BaseModel):
-    descricao: str | None = None
-    tipo: str | None = None
-    percentual: Decimal | None = None
-    valor_fixo: Decimal | None = None
+    seguimento: str | None = None
+    epc: Decimal | None = None
+    refeicao: Decimal | None = None
+    hospedagem: Decimal | None = None
     ativo: bool | None = None
+
+    _norm_seg = field_validator("seguimento")(normalizar_seguimento)
 
 
 class BdDespesasRead(BdDespesasBase):

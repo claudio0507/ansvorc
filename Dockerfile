@@ -1,3 +1,17 @@
+# ── Stage 0: build do frontend (React Router SPA → estático) ───────────────────
+FROM node:20-slim AS frontend-builder
+
+WORKDIR /fe
+
+# Instala deps com cache eficiente
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+# Build estático (ssr:false → build/client)
+COPY frontend/ ./
+RUN npm run build
+
+
 # ── Stage 1: build deps ────────────────────────────────────────────────────────
 FROM python:3.12-slim AS builder
 
@@ -38,7 +52,8 @@ COPY --from=builder /install /usr/local
 
 # Copia código da aplicação
 COPY backend/ ./backend/
-COPY frontend/ ./frontend/
+# Frontend: apenas o build estático (SPA) gerado no stage frontend-builder
+COPY --from=frontend-builder /fe/build/client ./frontend/
 COPY scripts/entrypoint.sh ./entrypoint.sh
 
 # Usuário não-root para segurança

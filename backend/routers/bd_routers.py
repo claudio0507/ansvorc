@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
@@ -58,8 +59,11 @@ def _get_or_404(db: Session, model, id: int):
 
 
 @router.get("/bd-bdi", response_model=list[BdBDIRead], tags=["bd_BDI"])
-def listar_bdi(db: Session = Depends(get_db)):
-    return db.query(BdBDI).all()
+def listar_bdi(uf: str | None = None, db: Session = Depends(get_db)):
+    q = db.query(BdBDI)
+    if uf:
+        q = q.filter(BdBDI.uf == uf.strip().upper())
+    return q.all()
 
 
 @router.post(
@@ -71,7 +75,15 @@ def listar_bdi(db: Session = Depends(get_db)):
 def criar_bdi(payload: BdBDICreate, db: Session = Depends(get_db)):
     obj = BdBDI(**payload.model_dump())
     db.add(obj)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Já existe BDI para modalidade '{payload.modalidade}' e UF "
+            f"'{payload.uf}'.",
+        )
     db.refresh(obj)
     return obj
 
@@ -192,8 +204,11 @@ def deletar_epi(id: int, db: Session = Depends(get_db)):
 @router.get(
     "/bd-ferramental", response_model=list[BdFerramentalRead], tags=["bd_FERRAMENTAL"]
 )
-def listar_ferramental(db: Session = Depends(get_db)):
-    return db.query(BdFerramental).all()
+def listar_ferramental(seguimento: str | None = None, db: Session = Depends(get_db)):
+    q = db.query(BdFerramental)
+    if seguimento:
+        q = q.filter(BdFerramental.seguimento == seguimento.strip().upper())
+    return q.all()
 
 
 @router.post(
@@ -246,8 +261,11 @@ def deletar_ferramental(id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/bd-frotas", response_model=list[BdFrotasRead], tags=["bd_FROTAS"])
-def listar_frotas(db: Session = Depends(get_db)):
-    return db.query(BdFrotas).all()
+def listar_frotas(seguimento: str | None = None, db: Session = Depends(get_db)):
+    q = db.query(BdFrotas)
+    if seguimento:
+        q = q.filter(BdFrotas.seguimento == seguimento.strip().upper())
+    return q.all()
 
 
 @router.post(
@@ -404,8 +422,11 @@ def deletar_estrutura(id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/bd-despesas", response_model=list[BdDespesasRead], tags=["bd_DESPESAS"])
-def listar_despesas(db: Session = Depends(get_db)):
-    return db.query(BdDespesas).all()
+def listar_despesas(seguimento: str | None = None, db: Session = Depends(get_db)):
+    q = db.query(BdDespesas)
+    if seguimento:
+        q = q.filter(BdDespesas.seguimento == seguimento.strip().upper())
+    return q.all()
 
 
 @router.post(

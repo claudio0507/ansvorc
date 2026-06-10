@@ -1,0 +1,64 @@
+1. Visão Geral e Papéis (Role-Based Access)
+O sistema é um ERP de orçamentação técnica focado em engenharia viária. Possui três atores principais:
+
+Gestor de BD: Permissão de escrita apenas nas tabelas de insumos brutos (RH, Materiais, Frotas).
+
+Parametrizador: Permissão para criar "Composições/Fichas Técnicas" usando a arquitetura recursiva.
+
+Orçamentista: Acesso de leitura às Fichas e permissão de escrita para criar "Orçamentos" e aplicar margens comerciais.
+
+2. Modelo de Dados (Arquitetura Relacional / BOM Recursiva)
+O banco de dados deve suportar árvores de componentes (Bill of Materials).
+
+categorias_insumo: Define tipos (RH, Frotas, Materiais, EPI, Ferramental).
+
+insumos: Os itens atómicos com preço unitário atualizado.
+
+composicoes: Cabeçalhos das Fichas Técnicas (Equipes, Produtos, Serviços). Possui producao_diaria para rateio.
+
+composicao_itens: Tabela associativa recursiva. Um item aponta para um insumo_id OU para uma composicao_filha_id, permitindo fichas aninhadas.
+
+orcamentos: Cabeçalho da proposta. Grava as variáveis globais uf_execucao (Estado) e beneficio_reidi (Booleano).
+
+orcamento_itens: Tabela de Snapshot. Grava os itens inseridos e congela de forma imutável o custo_direto_unitario, bdi_aplicado e preco_venda_unitario no momento da aprovação.
+
+3. Variáveis de Estado (Gatilhos Fiscais)
+As regras tributárias são aplicadas em cascata através de três variáveis:
+
+Estado (UF): Definido no Orçamento. Altera a alíquota de ISS (ex: PR = 3.5%, SP = 5.0%).
+
+REIDI (Sim/Não): Definido no Orçamento. Se "Sim", zera obrigatoriamente as alíquotas de PIS e COFINS em todos os cálculos subsequentes.
+
+MOD FAT (Modalidade de Faturamento): Definido linha a linha nos itens. Controla a incidência de ICMS e ISS (ex: BDI-MO, BDI-MAT+MO, BDI+ICMS, FAT DIR SIMP).
+
+4. Motor de Cálculo (Business Logic / Backend)
+O motor matemático deve ser executado no servidor (Backend) para garantir a integridade. A precificação ocorre em duas etapas:
+
+ETAPA 1: BDI Sombra (Carga de Recuperação Tributária)
+
+Aplica-se aos blocos de "Estrutura Operacional" e "Custos Excepcionais" (Itens Não Faturáveis).
+
+Eles não recebem margem de lucro, mas o seu custo direto DEVE ser acrescido de: (Despesas Administrativas 13% + PIS/COFINS + ISS).
+
+Objetivo: Garantir que o valor a ser diluído pague os próprios impostos.
+
+ETAPA 2: Rateio Top-Down (Fator K) e Precificação
+
+O sistema calcula o Preço Total Base dos itens Faturáveis (Serviços e Produtos) aplicando o BDI completo: Custo * ( ( (1+Adm) * (1+CstFin) * (1+Margem) ) / (1-Impostos) ).
+
+Soma-se todos os itens Não Faturáveis (já com o BDI Sombra) = Total a Diluir.
+
+O Fator K distribui o Total a Diluir sobre os itens faturáveis de forma proporcional ao "peso (%)" do seu Preço Total Base no subtotal faturável.
+
+O Preço Unitário Final da linha é a soma do seu Preço Base + o seu Rateio absorvido.
+
+5. UI / UX e Interatividade (Frontend)
+A interface do Orçamentista deve conter:
+
+Seleção em Cascata: Para inserção de itens, utilizar dropdowns encadeados (Bloco -> Seguimento -> Item de Catálogo) para evitar sobrecarga de dados.
+
+Edição na Grelha: A grelha (tabela) deve permitir a alteração direta dos campos Quantidade, MOD FAT e Margem de Lucro % linha a linha.
+
+Itens Manuais: Um botão para adicionar "Custos Excepcionais" (Verbas manuais fora do catálogo). Estes itens recebem automaticamente a flag visual "Demanda Aprovação".
+
+Painel de Margem Líquida Real: O rodapé deve recalcular dinamicamente o Lucro Líquido Absoluto (apenas a porção de lucro dos itens faturáveis) e mostrar a percentagem de Margem Líquida Real sobre a Proposta Total (que diminui conforme se injetam custos operacionais).

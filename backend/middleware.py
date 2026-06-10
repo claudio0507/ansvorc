@@ -51,6 +51,10 @@ def _eh_publica(path: str) -> bool:
         return True
     if any(path.startswith(p) for p in _PUBLICAS_PREFIX):
         return True
+    # Frontend SPA: assets e rotas de aplicação (não-API) são servidos
+    # estaticamente; a autenticação ocorre no cliente e nas chamadas /api/v1/*.
+    if not path.startswith("/api/v1/"):
+        return True
     if settings.DEBUG:
         if path in _PUBLICAS_EXACT_DEBUG:
             return True

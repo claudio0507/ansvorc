@@ -3,6 +3,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -64,8 +65,39 @@ def health():
     return {"status": "ok", "version": settings.APP_VERSION}
 
 
-# Serve o frontend como arquivos estáticos — deve vir por último para não
-# sobrepor as rotas da API. Só monta se o diretório existir (dev sem build).
-_FRONTEND = Path(__file__).parent.parent / "frontend"
-if _FRONTEND.exists():
-    app.mount("/", StaticFiles(directory=str(_FRONTEND), html=True), name="frontend")
+# Serve o frontend SPA (React Router, build estático). Os assets têm hash e
+# vivem em /assets; rotas de aplicação (deep links) caem no fallback index.html.
+# Deve vir por último para não sobrepor as rotas da API.
+#
+# Resolve o diretório do build em dois cenários:
+#   - dev local: `frontend/build/client` (saída do `npm run build`)
+#   - container: `frontend/` (Dockerfile copia build/client → /app/frontend)
+_FRONTEND_ROOT = Path(__file__).parent.parent / "frontend"
+_FRONTEND_DEV = _FRONTEND_ROOT / "build" / "client"
+_FRONTEND = _FRONTEND_DEV if (_FRONTEND_DEV / "index.html").exists() else _FRONTEND_ROOT
+_INDEX = _FRONTEND / "index.html"
+
+if _INDEX.exists():
+    _ASSETS = _FRONTEND / "assets"
+    if _ASSETS.exists():
+        app.mount("/assets", StaticFiles(directory=str(_ASSETS)), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def spa_fallback(full_path: str):
+        # Arquivo estático na raiz (favicon, .well-known, etc.)?
+        if full_path:
+            candidate = (_FRONTEND / full_path).resolve()
+            if _FRONTEND.resolve() in candidate.parents and candidate.is_file():
+                return FileResponse(str(candidate))
+        # SPA: qualquer outra rota (incl. "/") devolve o index.html
+        return FileResponse(str(_INDEX))
+
+else:
+    # Sem build do frontend (dev/API pura): mantém status JSON na raiz.
+    @app.get("/", tags=["health"])
+    def root():
+        return {
+            "app": settings.APP_NAME,
+            "version": settings.APP_VERSION,
+            "status": "ok",
+        }
