@@ -68,7 +68,13 @@ def health():
 # Serve o frontend SPA (React Router, build estático). Os assets têm hash e
 # vivem em /assets; rotas de aplicação (deep links) caem no fallback index.html.
 # Deve vir por último para não sobrepor as rotas da API.
-_FRONTEND = Path(__file__).parent.parent / "frontend" / "build" / "client"
+#
+# Resolve o diretório do build em dois cenários:
+#   - dev local: `frontend/build/client` (saída do `npm run build`)
+#   - container: `frontend/` (Dockerfile copia build/client → /app/frontend)
+_FRONTEND_ROOT = Path(__file__).parent.parent / "frontend"
+_FRONTEND_DEV = _FRONTEND_ROOT / "build" / "client"
+_FRONTEND = _FRONTEND_DEV if (_FRONTEND_DEV / "index.html").exists() else _FRONTEND_ROOT
 _INDEX = _FRONTEND / "index.html"
 
 if _INDEX.exists():
