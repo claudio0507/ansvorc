@@ -1,10 +1,15 @@
+"""Routers das Fichas Técnicas — CRUD + itens/recursos com custos calculados.
+
+Custos das fichas são SEMPRE calculados no backend (services/ficha_calc.py) a partir
+de lookups nos bancos de dados — nunca enviados pelo cliente.
+"""
+
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
-from backend.models.bd_models import BdEPI, BdFerramental, BdFrotas, BdMateriais, BdRH
 from backend.models.ficha_models import (
     FichaEquipe,
     FichaEquipeItem,
@@ -30,6 +35,7 @@ from backend.schemas.ficha_schemas import (
     FichaServicoRecursoRead,
     FichaServicoUpdate,
 )
+from backend.services import ficha_calc
 
 router = APIRouter()
 
@@ -43,57 +49,8 @@ def _get_or_404(db: Session, model, id: int):
     return obj
 
 
-# ── Lookup helpers ────────────────────────────────────────────────────────────
-
-
-def _custo_diario_rh(rh: BdRH) -> Decimal:
-    """custo_diario = salario_base * (1 + encargos) / (horas_mes / 8)."""
-    custo_hora = rh.salario_base * (1 + rh.encargos_percentual) / rh.horas_mes
-    return (custo_hora * Decimal("8")).quantize(Decimal("0.0001"))
-
-
-def _custo_diario_epi(epi: BdEPI) -> Decimal:
-    """custo_diario = custo_unitario / vida_util_dias (ou custo_unitario se sem vida útil)."""
-    if epi.vida_util_dias:
-        return (epi.custo_unitario / Decimal(str(epi.vida_util_dias))).quantize(
-            Decimal("0.0001")
-        )
-    return epi.custo_unitario
-
-
-def _custo_diario_ferramental(ferr: BdFerramental) -> Decimal:
-    if ferr.vida_util_dias:
-        return (ferr.custo_unitario / Decimal(str(ferr.vida_util_dias))).quantize(
-            Decimal("0.0001")
-        )
-    return ferr.custo_unitario
-
-
-def _detecta_ciclo_bom(db: Session, ficha_pai_id: int, candidato_filho_id: int) -> bool:
-    """Retorna True se adicionar candidato_filho dentro de ficha_pai criaria ciclo.
-
-    Percorre a árvore de componentes filhos do candidato: se em algum nível
-    encontrar ficha_pai_id, há ciclo.
-    """
-    visitados: set[int] = set()
-    fila = [candidato_filho_id]
-    while fila:
-        atual = fila.pop()
-        if atual == ficha_pai_id:
-            return True
-        if atual in visitados:
-            continue
-        visitados.add(atual)
-        filhos = (
-            db.query(FichaProdutoItem.componente_filho_id)
-            .filter(
-                FichaProdutoItem.ficha_produto_id == atual,
-                FichaProdutoItem.componente_filho_id.is_not(None),
-            )
-            .all()
-        )
-        fila.extend(f[0] for f in filhos)
-    return False
+def _422(detail: str):
+    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
 
 
 # ── Fichas de Equipe ─────────────────────────────────────────────────────────
@@ -102,8 +59,11 @@ def _detecta_ciclo_bom(db: Session, ficha_pai_id: int, candidato_filho_id: int) 
 @router.get(
     "/fichas-equipe", response_model=list[FichaEquipeRead], tags=["fichas_equipe"]
 )
-def listar_fichas_equipe(db: Session = Depends(get_db)):
-    return db.query(FichaEquipe).all()
+def listar_fichas_equipe(seguimento: str | None = None, db: Session = Depends(get_db)):
+    q = db.query(FichaEquipe)
+    if seguimento:
+        q = q.filter(FichaEquipe.seguimento == seguimento.strip().upper())
+    return q.all()
 
 
 @router.post(
@@ -136,6 +96,14 @@ def atualizar_ficha_equipe(
     obj = _get_or_404(db, FichaEquipe, id)
     for field, value in payload.model_dump(exclude_none=True).items():
         setattr(obj, field, value)
+    # Seguimento pode mudar refeição/hospedagem — recalcula itens.
+    for item in obj.itens:
+        custos = ficha_calc.calcular_item_equipe(
+            db, obj.seguimento, item.rh_id, item.epi_id, item.quantidade
+        )
+        for k, v in custos.items():
+            setattr(item, k, v)
+    ficha_calc.recalcular_equipe(db, obj)
     db.commit()
     db.refresh(obj)
     return obj
@@ -162,32 +130,24 @@ def adicionar_item_equipe(
     id: int, payload: FichaEquipeItemCreate, db: Session = Depends(get_db)
 ):
     ficha = _get_or_404(db, FichaEquipe, id)
-
-    # Lookup automático do custo
-    if payload.tipo_recurso == "RH":
-        rh = _get_or_404(db, BdRH, payload.rh_id)
-        custo = _custo_diario_rh(rh)
-    elif payload.tipo_recurso == "EPI":
-        epi = _get_or_404(db, BdEPI, payload.epi_id)
-        custo = _custo_diario_epi(epi)
-    elif payload.tipo_recurso == "FERRAMENTAL":
-        ferr = _get_or_404(db, BdFerramental, payload.ferramental_id)
-        custo = _custo_diario_ferramental(ferr)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"tipo_recurso inválido: '{payload.tipo_recurso}'. Use RH, EPI ou FERRAMENTAL.",
+    try:
+        custos = ficha_calc.calcular_item_equipe(
+            db, ficha.seguimento, payload.rh_id, payload.epi_id, payload.quantidade
         )
+    except ValueError as e:
+        _422(str(e))
 
     item = FichaEquipeItem(
         ficha_equipe_id=id,
-        custo_unitario_gravado=custo,
-        **payload.model_dump(),
+        rh_id=payload.rh_id,
+        epi_id=payload.epi_id,
+        quantidade=payload.quantidade,
+        **custos,
     )
     db.add(item)
-
-    # Seta flag possui_itens
-    ficha.possui_itens = True
+    db.flush()
+    db.refresh(ficha)
+    ficha_calc.recalcular_equipe(db, ficha)
     db.commit()
     db.refresh(item)
     return item
@@ -199,7 +159,7 @@ def adicionar_item_equipe(
     tags=["fichas_equipe"],
 )
 def remover_item_equipe(ficha_id: int, item_id: int, db: Session = Depends(get_db)):
-    _get_or_404(db, FichaEquipe, ficha_id)
+    ficha = _get_or_404(db, FichaEquipe, ficha_id)
     item = (
         db.query(FichaEquipeItem)
         .filter(
@@ -212,16 +172,8 @@ def remover_item_equipe(ficha_id: int, item_id: int, db: Session = Depends(get_d
         raise HTTPException(status_code=404, detail="Item não encontrado nesta ficha")
     db.delete(item)
     db.flush()
-
-    # Atualiza flag após flush (item já removido da sessão)
-    restantes = (
-        db.query(FichaEquipeItem)
-        .filter(FichaEquipeItem.ficha_equipe_id == ficha_id)
-        .count()
-    )
-    ficha = db.get(FichaEquipe, ficha_id)
-    ficha.possui_itens = restantes > 0
-
+    db.refresh(ficha)
+    ficha_calc.recalcular_equipe(db, ficha)
     db.commit()
 
 
@@ -292,45 +244,35 @@ def adicionar_item_produto(
 ):
     ficha = _get_or_404(db, FichaProduto, id)
 
-    if payload.material_id is not None:
-        mat = _get_or_404(db, BdMateriais, payload.material_id)
-        custo = mat.custo_unitario
-
-    else:
+    if payload.componente_filho_id is not None:
         filho_id = payload.componente_filho_id
-
-        # Proteção anti-self-reference
         if filho_id == id:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Uma ficha não pode referenciar a si mesma",
-            )
-
-        # Proteção anti-ciclo BOM
-        if _detecta_ciclo_bom(db, ficha_pai_id=id, candidato_filho_id=filho_id):
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Referência circular detectada na BOM — ciclo não permitido",
-            )
-
+            _422("Uma ficha não pode referenciar a si mesma")
+        if ficha_calc.detectar_ciclo_bom(db, id, filho_id):
+            _422("Referência circular detectada na BOM — ciclo não permitido")
         _get_or_404(db, FichaProduto, filho_id)
-        custo_filho = (
-            db.query(FichaProdutoItem)
-            .filter(FichaProdutoItem.ficha_produto_id == filho_id)
-            .all()
-        )
-        custo = sum(
-            (i.custo_unitario_gravado * i.quantidade for i in custo_filho),
-            Decimal("0"),
-        )
 
+    try:
+        custo_unit, unidade = ficha_calc.custo_unitario_componente(
+            db, payload.material_id, payload.componente_filho_id
+        )
+    except ValueError as e:
+        _422(str(e))
+
+    custo_total_linha = (custo_unit * payload.quantidade).quantize(Decimal("0.0001"))
     item = FichaProdutoItem(
         ficha_produto_id=id,
-        custo_unitario_gravado=custo,
-        **payload.model_dump(),
+        material_id=payload.material_id,
+        componente_filho_id=payload.componente_filho_id,
+        quantidade=payload.quantidade,
+        unidade=unidade,
+        custo_unitario=custo_unit,
+        custo_total_linha=custo_total_linha,
     )
     db.add(item)
-    ficha.possui_itens = True
+    db.flush()
+    db.refresh(ficha)
+    ficha_calc.recalcular_produto(db, ficha)
     db.commit()
     db.refresh(item)
     return item
@@ -342,7 +284,7 @@ def adicionar_item_produto(
     tags=["fichas_produto"],
 )
 def remover_item_produto(ficha_id: int, item_id: int, db: Session = Depends(get_db)):
-    _get_or_404(db, FichaProduto, ficha_id)
+    ficha = _get_or_404(db, FichaProduto, ficha_id)
     item = (
         db.query(FichaProdutoItem)
         .filter(
@@ -355,14 +297,8 @@ def remover_item_produto(ficha_id: int, item_id: int, db: Session = Depends(get_
         raise HTTPException(status_code=404, detail="Item não encontrado nesta ficha")
     db.delete(item)
     db.flush()
-
-    restantes = (
-        db.query(FichaProdutoItem)
-        .filter(FichaProdutoItem.ficha_produto_id == ficha_id)
-        .count()
-    )
-    ficha = db.get(FichaProduto, ficha_id)
-    ficha.possui_itens = restantes > 0
+    db.refresh(ficha)
+    ficha_calc.recalcular_produto(db, ficha)
     db.commit()
 
 
@@ -372,8 +308,11 @@ def remover_item_produto(ficha_id: int, item_id: int, db: Session = Depends(get_
 @router.get(
     "/fichas-servico", response_model=list[FichaServicoRead], tags=["fichas_servico"]
 )
-def listar_fichas_servico(db: Session = Depends(get_db)):
-    return db.query(FichaServico).all()
+def listar_fichas_servico(seguimento: str | None = None, db: Session = Depends(get_db)):
+    q = db.query(FichaServico)
+    if seguimento:
+        q = q.filter(FichaServico.seguimento == seguimento.strip().upper())
+    return q.all()
 
 
 @router.post(
@@ -406,6 +345,7 @@ def atualizar_ficha_servico(
     obj = _get_or_404(db, FichaServico, id)
     for field, value in payload.model_dump(exclude_none=True).items():
         setattr(obj, field, value)
+    ficha_calc.recalcular_servico(db, obj)
     db.commit()
     db.refresh(obj)
     return obj
@@ -432,40 +372,24 @@ def adicionar_recurso_servico(
     id: int, payload: FichaServicoRecursoCreate, db: Session = Depends(get_db)
 ):
     ficha = _get_or_404(db, FichaServico, id)
-
-    # Lookup automático do custo conforme tipo de recurso
-    if payload.ficha_equipe_id is not None:
-        equipe = _get_or_404(db, FichaEquipe, payload.ficha_equipe_id)
-        # Custo da equipe = soma dos itens gravados
-        itens = equipe.itens
-        custo = sum(
-            (i.custo_unitario_gravado * i.quantidade for i in itens),
-            Decimal("0"),
+    # Valida existência dos vínculos (calcular_custo_servico lança ValueError)
+    try:
+        ficha_calc.calcular_custo_servico(
+            db,
+            ficha.produtividade_dia,
+            payload.ficha_equipe_id,
+            payload.frota_id,
+            payload.ferramental_id,
+            payload.ficha_produto_id,
         )
+    except ValueError as e:
+        _422(str(e))
 
-    elif payload.frota_id is not None:
-        frota = _get_or_404(db, BdFrotas, payload.frota_id)
-        custo = frota.custo_diaria
-
-    elif payload.ferramental_id is not None:
-        ferr = _get_or_404(db, BdFerramental, payload.ferramental_id)
-        custo = _custo_diario_ferramental(ferr)
-
-    else:  # ficha_produto_id
-        produto = _get_or_404(db, FichaProduto, payload.ficha_produto_id)
-        itens_prod = produto.itens
-        custo = sum(
-            (i.custo_unitario_gravado * i.quantidade for i in itens_prod),
-            Decimal("0"),
-        )
-
-    recurso = FichaServicoRecurso(
-        ficha_servico_id=id,
-        custo_unitario_gravado=custo,
-        **payload.model_dump(),
-    )
+    recurso = FichaServicoRecurso(ficha_servico_id=id, **payload.model_dump())
     db.add(recurso)
-    ficha.possui_recursos = True
+    db.flush()
+    db.refresh(ficha)
+    ficha_calc.recalcular_servico(db, ficha)
     db.commit()
     db.refresh(recurso)
     return recurso
@@ -479,7 +403,7 @@ def adicionar_recurso_servico(
 def remover_recurso_servico(
     ficha_id: int, recurso_id: int, db: Session = Depends(get_db)
 ):
-    _get_or_404(db, FichaServico, ficha_id)
+    ficha = _get_or_404(db, FichaServico, ficha_id)
     recurso = (
         db.query(FichaServicoRecurso)
         .filter(
@@ -494,12 +418,6 @@ def remover_recurso_servico(
         )
     db.delete(recurso)
     db.flush()
-
-    restantes = (
-        db.query(FichaServicoRecurso)
-        .filter(FichaServicoRecurso.ficha_servico_id == ficha_id)
-        .count()
-    )
-    ficha = db.get(FichaServico, ficha_id)
-    ficha.possui_recursos = restantes > 0
+    db.refresh(ficha)
+    ficha_calc.recalcular_servico(db, ficha)
     db.commit()
