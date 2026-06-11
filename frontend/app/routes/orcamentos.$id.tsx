@@ -31,7 +31,7 @@ import { fmtBRL, fmtNum, fmtPct } from "~/lib/format"
 const BLOCOS: { key: string; titulo: string; cor: string; faturavel: boolean }[] = [
   { key: "servicos", titulo: "1. SERVIÇOS", cor: "bg-primary/10 text-primary", faturavel: true },
   { key: "produtos", titulo: "2. PRODUTOS", cor: "bg-secondary text-secondary-foreground", faturavel: true },
-  { key: "operacional", titulo: "3. ESTRUTURA OPERACIONAL", cor: "bg-warning/15 text-warning", faturavel: false },
+  { key: "operacional", titulo: "3. ESTRUTURA OPERACIONAL", cor: "bg-muted text-muted-foreground", faturavel: false },
   { key: "excepcionais", titulo: "4. CUSTOS EXCEPCIONAIS", cor: "bg-destructive/10 text-destructive", faturavel: false },
 ]
 

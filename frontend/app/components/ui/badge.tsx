@@ -11,15 +11,16 @@ const badgeVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
         secondary:
-          "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
+          "bg-secondary text-secondary-foreground border-border [a]:hover:bg-secondary/80",
         destructive:
-          "bg-destructive/10 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20",
+          "bg-destructive/10 text-destructive border-destructive/25 [a]:hover:bg-destructive/20",
+        /* Discord Dark: verde/amarelo → neutros monocromáticos */
         success:
-          "bg-success/15 text-success [a]:hover:bg-success/25",
+          "bg-secondary text-secondary-foreground border-border [a]:hover:bg-secondary/80",
         warning:
-          "bg-warning/15 text-warning [a]:hover:bg-warning/25",
+          "bg-transparent text-muted-foreground border-border [a]:hover:bg-muted",
         outline:
-          "border-border bg-input/20 text-foreground dark:bg-input/30 [a]:hover:bg-muted [a]:hover:text-muted-foreground",
+          "border-border text-muted-foreground [a]:hover:bg-muted [a]:hover:text-foreground",
         ghost:
           "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
         link: "text-primary underline-offset-4 hover:underline",

@@ -8,6 +8,37 @@
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: 'DM Sans Variable', sans-serif;
+
+    /* ═════════════════════════════════════════════════════════════════
+       Discord Dark Design System · acento único #c32a30 · monocromático
+       Escada de 3 superfícies + tokens shadcn (oklch) compatíveis
+       ═════════════════════════════════════════════════════════════════ */
+
+    /* Colors — shadcn oklch bridge */
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    /* Sidebar */
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -16,133 +47,160 @@
     --color-sidebar-primary: var(--sidebar-primary);
     --color-sidebar-foreground: var(--sidebar-foreground);
     --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
+
+    /* Charts */
     --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-success: var(--success);
-    --color-success-foreground: var(--success-foreground);
-    --color-warning: var(--warning);
-    --color-warning-foreground: var(--warning-foreground);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    /* Radius ladder — Discord-scale */
+    --radius-xs:  calc(var(--radius) * 0.333);
+    --radius-sm:  calc(var(--radius) * 0.500);
+    --radius-md:  calc(var(--radius) * 0.750);
+    --radius-lg:  var(--radius);
+    --radius-xl:  calc(var(--radius) * 1.500);
+    --radius-2xl: calc(var(--radius) * 2.000);
+    --radius-3xl: calc(var(--radius) * 2.500);
+    --radius-4xl: calc(var(--radius) * 3.000);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   LIGHT MODE
+   ═══════════════════════════════════════════════════════════════════ */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.148 0.004 228.8);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.148 0.004 228.8);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.148 0.004 228.8);
-    /* Customização obrigatória: vermelho Alta Noroeste #c32a30 */
-    --primary: oklch(0.536 0.189 24.67);
+    --radius: 8px;
+
+    /* oklch bridge (light) */
+    --background:    oklch(0.97 0.002 250);
+    --foreground:    oklch(0.18 0.003 250);
+    --card:          oklch(1 0 0);
+    --card-foreground: oklch(0.18 0.003 250);
+    --popover:       oklch(1 0 0);
+    --popover-foreground: oklch(0.18 0.003 250);
+
+    /* Acento único #c32a30 */
+    --primary:       oklch(0.536 0.189 24.67);
     --primary-foreground: oklch(0.985 0.005 24.67);
-    --secondary: oklch(0.967 0.001 286.375);
-    --secondary-foreground: oklch(0.21 0.006 285.885);
-    --muted: oklch(0.963 0.002 197.1);
-    --muted-foreground: oklch(0.56 0.021 213.5);
-    --accent: oklch(0.963 0.002 197.1);
-    --accent-foreground: oklch(0.218 0.008 223.9);
-    --destructive: oklch(0.577 0.245 27.325);
-    /* Cores de alerta essenciais (verde/âmbar) — únicas mantidas além do tema */
-    --success: oklch(0.627 0.17 149);
-    --success-foreground: oklch(0.985 0.01 149);
-    --warning: oklch(0.705 0.16 70);
-    --warning-foreground: oklch(0.27 0.05 70);
-    --border: oklch(0.925 0.005 214.3);
-    --input: oklch(0.925 0.005 214.3);
-    --ring: oklch(0.723 0.014 214.4);
-    --chart-1: oklch(0.872 0.007 219.6);
-    --chart-2: oklch(0.56 0.021 213.5);
-    --chart-3: oklch(0.45 0.017 213.2);
-    --chart-4: oklch(0.378 0.015 216);
-    --chart-5: oklch(0.275 0.011 216.9);
-    --radius: 0;
-    --sidebar: oklch(0.987 0.002 197.1);
-    --sidebar-foreground: oklch(0.148 0.004 228.8);
+
+    /* Superfícies neutras */
+    --secondary:     oklch(0.94 0.003 250);
+    --secondary-foreground: oklch(0.35 0.004 250);
+    --muted:         oklch(0.95 0.002 250);
+    --muted-foreground: oklch(0.50 0.003 250);
+    --accent:        oklch(0.94 0.003 250);
+    --accent-foreground: oklch(0.35 0.004 250);
+
+    /* Semânticos → neutros (sem verde/amarelo) */
+    --destructive:   oklch(0.536 0.189 24.67);
+    --destructive-foreground: oklch(0.985 0.005 24.67);
+    --success:       oklch(0.70 0.003 250);
+    --success-foreground: oklch(0.35 0.003 250);
+    --warning:       oklch(0.55 0.003 250);
+    --warning-foreground: oklch(0.25 0.003 250);
+
+    /* Bordas */
+    --border:        oklch(0.88 0.003 250);
+    --input:         oklch(0.88 0.003 250);
+    --ring:          oklch(0.536 0.189 24.67);
+
+    /* Charts neutros */
+    --chart-1: oklch(0.70 0.003 250);
+    --chart-2: oklch(0.55 0.003 250);
+    --chart-3: oklch(0.45 0.003 250);
+    --chart-4: oklch(0.38 0.003 250);
+    --chart-5: oklch(0.28 0.003 250);
+
+    /* Sidebar */
+    --sidebar:       oklch(0.97 0.002 250);
+    --sidebar-foreground: oklch(0.18 0.003 250);
     --sidebar-primary: oklch(0.536 0.189 24.67);
     --sidebar-primary-foreground: oklch(0.985 0.005 24.67);
-    --sidebar-accent: oklch(0.963 0.002 197.1);
-    --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
-    --sidebar-border: oklch(0.925 0.005 214.3);
-    --sidebar-ring: oklch(0.723 0.014 214.4);
+    --sidebar-accent: oklch(0.94 0.003 250);
+    --sidebar-accent-foreground: oklch(0.35 0.004 250);
+    --sidebar-border: oklch(0.88 0.003 250);
+    --sidebar-ring: oklch(0.536 0.189 24.67);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   DARK MODE — Discord Dark
+   Escada de 3 superfícies:
+     #111214 (bg) → #1e1f22 (surface) → #2b2d31 (card) → #313338 (elevated)
+   Texto monocromático: #e3e5e8 / #b5bac1 / #80848e
+   Acento único: #c32a30
+   ═══════════════════════════════════════════════════════════════════ */
 .dark {
-    --background: oklch(0.148 0.004 228.8);
-    --foreground: oklch(0.987 0.002 197.1);
-    --card: oklch(0.218 0.008 223.9);
-    --card-foreground: oklch(0.987 0.002 197.1);
-    --popover: oklch(0.218 0.008 223.9);
-    --popover-foreground: oklch(0.987 0.002 197.1);
-    /* Customização obrigatória: vermelho Alta Noroeste #c32a30 (mantido no dark) */
-    --primary: oklch(0.536 0.189 24.67);
+    /* oklch bridge (dark) */
+    --background:    oklch(0.13 0.003 250);   /* ≈ #111214 */
+    --foreground:    oklch(0.90 0.003 250);   /* ≈ #e3e5e8 */
+    --card:          oklch(0.19 0.004 250);   /* ≈ #2b2d31 */
+    --card-foreground: oklch(0.90 0.003 250);
+    --popover:       oklch(0.19 0.004 250);
+    --popover-foreground: oklch(0.90 0.003 250);
+
+    /* Acento único */
+    --primary:       oklch(0.536 0.189 24.67);
     --primary-foreground: oklch(0.985 0.005 24.67);
-    --secondary: oklch(0.274 0.006 286.033);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.275 0.011 216.9);
-    --muted-foreground: oklch(0.723 0.014 214.4);
-    --accent: oklch(0.275 0.011 216.9);
-    --accent-foreground: oklch(0.987 0.002 197.1);
-    --destructive: oklch(0.704 0.191 22.216);
-    /* Cores de alerta essenciais (verde/âmbar) — dark */
-    --success: oklch(0.696 0.17 149);
-    --success-foreground: oklch(0.16 0.02 149);
-    --warning: oklch(0.769 0.16 70);
-    --warning-foreground: oklch(0.27 0.05 70);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.56 0.021 213.5);
-    --chart-1: oklch(0.872 0.007 219.6);
-    --chart-2: oklch(0.56 0.021 213.5);
-    --chart-3: oklch(0.45 0.017 213.2);
-    --chart-4: oklch(0.378 0.015 216);
-    --chart-5: oklch(0.275 0.011 216.9);
-    --sidebar: oklch(0.218 0.008 223.9);
-    --sidebar-foreground: oklch(0.987 0.002 197.1);
+
+    /* Superfícies neutras */
+    --secondary:     oklch(0.21 0.004 250);   /* ≈ #313338 */
+    --secondary-foreground: oklch(0.75 0.005 250);
+    --muted:         oklch(0.20 0.004 250);
+    --muted-foreground: oklch(0.55 0.005 250); /* ≈ #80848e */
+    --accent:        oklch(0.21 0.004 250);
+    --accent-foreground: oklch(0.90 0.003 250);
+
+    /* Semânticos → todos neutros (sem verde, sem amarelo) */
+    --destructive:   oklch(0.536 0.189 24.67);    /* = acento */
+    --destructive-foreground: oklch(0.985 0.005 24.67);
+    --success:       oklch(0.70 0.003 250);        /* era verde → cinza */
+    --success-foreground: oklch(0.30 0.003 250);
+    --warning:       oklch(0.55 0.003 250);        /* era amarelo → cinza mudo */
+    --warning-foreground: oklch(0.25 0.003 250);
+
+    /* Bordas hairline */
+    --border:        rgba(255, 255, 255, 0.06);
+    --input:         rgba(255, 255, 255, 0.10);
+    --ring:          oklch(0.536 0.189 24.67);
+
+    /* Charts neutros */
+    --chart-1: oklch(0.75 0.003 250);
+    --chart-2: oklch(0.60 0.003 250);
+    --chart-3: oklch(0.50 0.003 250);
+    --chart-4: oklch(0.40 0.003 250);
+    --chart-5: oklch(0.30 0.003 250);
+
+    /* Sidebar — Discord-style */
+    --sidebar:       oklch(0.16 0.004 250);   /* ≈ #1e1f22 */
+    --sidebar-foreground: oklch(0.75 0.005 250);
     --sidebar-primary: oklch(0.536 0.189 24.67);
     --sidebar-primary-foreground: oklch(0.985 0.005 24.67);
-    --sidebar-accent: oklch(0.275 0.011 216.9);
-    --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.56 0.021 213.5);
+    --sidebar-accent: oklch(0.21 0.004 250);
+    --sidebar-accent-foreground: oklch(0.90 0.003 250);
+    --sidebar-border: rgba(255, 255, 255, 0.06);
+    --sidebar-ring: oklch(0.536 0.189 24.67);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   BASE LAYER
+   ═══════════════════════════════════════════════════════════════════ */
 @layer base {
   * {
     @apply border-border outline-ring/50;
     }
+
   body {
     @apply bg-background text-foreground;
+    font-family: 'DM Sans Variable', 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     }
+
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
     }
+
   html {
     @apply font-sans;
     }
