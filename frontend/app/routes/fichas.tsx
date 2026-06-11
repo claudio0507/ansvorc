@@ -42,7 +42,7 @@ const SECTIONS: Record<
   { title: string; list: () => Promise<any[]>; create: (b: any) => Promise<any>; del: (id: number) => Promise<any> }
 > = {
   equipes: { title: "Fichas de Equipe", list: fichaApi.listEquipes, create: fichaApi.createEquipe, del: fichaApi.deleteEquipe },
-  produtos: { title: "Fichas de Produto", list: fichaApi.listProdutos, create: fichaApi.createProduto, del: fichaApi.deleteProduto },
+  produtos: { title: "Ficha Técnica", list: fichaApi.listProdutos, create: fichaApi.createProduto, del: fichaApi.deleteProduto },
   servicos: { title: "Fichas de Serviço", list: fichaApi.listServicos, create: fichaApi.createServico, del: fichaApi.deleteServico },
 }
 

@@ -24,7 +24,7 @@ const TITLES: { prefix: string; title: string }[] = [
   { prefix: "/bds/estrutura", title: "Estrutura Operacional" },
   { prefix: "/bds/despesas", title: "Despesas" },
   { prefix: "/fichas/equipes", title: "Fichas de Equipe" },
-  { prefix: "/fichas/produtos", title: "Fichas de Produto" },
+  { prefix: "/fichas/produtos", title: "Ficha Técnica" },
   { prefix: "/fichas/servicos", title: "Fichas de Serviço" },
   { prefix: "/orcamentos", title: "Orçamentos" },
   { prefix: "/clientes", title: "Clientes" },
@@ -36,7 +36,7 @@ function pageTitle(path: string): string {
   const match = TITLES.filter((t) => path.startsWith(t.prefix)).sort(
     (a, b) => b.prefix.length - a.prefix.length
   )[0]
-  return match?.title ?? "Sinalys"
+  return match?.title ?? "orcOS"
 }
 
 export default function AppLayout() {
@@ -79,7 +79,7 @@ export default function AppLayout() {
             </Button>
           </div>
         </header>
-        <main className="bg-muted/40 flex-1 p-4 md:p-6">
+        <main className="bg-background flex-1 p-4 md:p-6">
           <Outlet />
         </main>
       </SidebarInset>

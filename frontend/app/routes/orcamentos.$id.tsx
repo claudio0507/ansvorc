@@ -34,14 +34,44 @@ import {
 import { orcamentoApi } from "~/lib/api"
 import { fmtBRL, fmtNum, fmtPct } from "~/lib/format"
 
-// Blocos agrupados (docs/05). BLOCO 5.2: TODAS as barras usam a mesma cor neutra
-// (bg-secondary) — apenas o texto do título diferencia o bloco.
-const COR_BLOCO = "bg-secondary text-secondary-foreground"
-const BLOCOS: { key: string; titulo: string; faturavel: boolean }[] = [
-  { key: "servicos", titulo: "1. SERVIÇOS", faturavel: true },
-  { key: "produtos", titulo: "2. PRODUTOS", faturavel: true },
-  { key: "operacional", titulo: "3. ESTRUTURA OPERACIONAL", faturavel: false },
-  { key: "excepcionais", titulo: "4. CUSTOS EXCEPCIONAIS", faturavel: false },
+// Blocos do orçamento (visual do design-system-preview): Serviços = acento vermelho
+// (bloco principal); Produtos/Operacional = neutro; Excepcionais = vermelho suave.
+// Cada barra tem um "pill" de 3px à esquerda.
+const BLOCOS: {
+  key: string
+  titulo: string
+  faturavel: boolean
+  bar: string
+  pill: string
+}[] = [
+  {
+    key: "servicos",
+    titulo: "1. SERVIÇOS",
+    faturavel: true,
+    bar: "bg-primary/10 text-primary",
+    pill: "bg-primary",
+  },
+  {
+    key: "produtos",
+    titulo: "2. PRODUTOS",
+    faturavel: true,
+    bar: "bg-secondary text-secondary-foreground",
+    pill: "bg-muted-foreground/60",
+  },
+  {
+    key: "operacional",
+    titulo: "3. ESTRUTURA OPERACIONAL",
+    faturavel: false,
+    bar: "bg-secondary text-muted-foreground",
+    pill: "bg-muted-foreground/50",
+  },
+  {
+    key: "excepcionais",
+    titulo: "4. CUSTOS EXCEPCIONAIS",
+    faturavel: false,
+    bar: "bg-primary/[0.06] text-primary/70",
+    pill: "bg-primary/40",
+  },
 ]
 const MOD_FAT_OPTS = ["BDI-MAT+MO", "BDI-MO", "BDI+ICMS", "FAT DIR SIMP"]
 
@@ -220,8 +250,11 @@ export default function OrcamentoEditor() {
             const linhas = itens.filter((i) => i.bloco === b.key)
             return (
               <Card key={b.key} className="overflow-hidden py-0">
-                <div className={`flex items-center justify-between px-3 py-1.5 text-[0.625rem] font-bold tracking-wide uppercase ${COR_BLOCO}`}>
-                  <span>{b.titulo}</span>
+                <div className={`flex items-center justify-between px-3 py-1.5 text-[0.625rem] font-bold tracking-wide uppercase ${b.bar}`}>
+                  <span className="flex items-center gap-2">
+                    <span className={`inline-block h-3 w-[3px] rounded-sm ${b.pill}`} />
+                    {b.titulo}
+                  </span>
                   {!readonly && (
                     <Button size="sm" variant="ghost" className="h-5 px-2 text-[0.625rem]" onClick={() => setAddBloco(b.key)}>
                       <PlusIcon className="size-3" /> Adicionar
@@ -234,8 +267,8 @@ export default function OrcamentoEditor() {
                       <TableRow>
                         <TableHead className="h-7 text-[0.625rem]">Descrição</TableHead>
                         <TableHead className="h-7 w-12 text-[0.625rem]">Und</TableHead>
-                        <TableHead className="h-7 w-20 text-right text-[0.625rem]">QTD</TableHead>
-                        {b.faturavel && <TableHead className="h-7 w-20 text-right text-[0.625rem]">Margem</TableHead>}
+                        <TableHead className="h-7 w-24 text-right text-[0.625rem]">QTD</TableHead>
+                        {b.faturavel && <TableHead className="h-7 w-16 text-right text-[0.625rem]">Margem</TableHead>}
                         {b.faturavel && <TableHead className="h-7 w-28 text-[0.625rem]">MOD FAT</TableHead>}
                         <TableHead className="h-7 w-24 text-right text-[0.625rem]">Custo Unit</TableHead>
                         <TableHead className="h-7 w-24 text-right text-[0.625rem]">Preço Total</TableHead>
@@ -263,14 +296,19 @@ export default function OrcamentoEditor() {
                               <TableCell className="text-muted-foreground px-2 py-0.5">{it.unidade}</TableCell>
                               <TableCell className="px-2 py-0.5 text-right">
                                 {readonly ? (
-                                  <span>{fmtNum(it.quantidade)}</span>
+                                  <span>
+                                    {Number(it.quantidade).toLocaleString("pt-BR", {
+                                      minimumFractionDigits: 1,
+                                      maximumFractionDigits: 1,
+                                    })}
+                                  </span>
                                 ) : (
                                   <Input
                                     type="number"
                                     defaultValue={it.quantidade}
                                     min="0"
                                     step="any"
-                                    className="h-7 w-16 text-right text-[0.6875rem]"
+                                    className="h-7 w-24 text-right text-[0.6875rem]"
                                     onBlur={(e) => salvarQuantidade(it.id, e.target.value, it.quantidade)}
                                   />
                                 )}
@@ -280,15 +318,18 @@ export default function OrcamentoEditor() {
                                   {readonly ? (
                                     <span>{Number(it.margem_lucro).toFixed(1)}%</span>
                                   ) : (
-                                    <Input
-                                      type="number"
-                                      defaultValue={Number(it.margem_lucro)}
-                                      min="0"
-                                      max="99.9"
-                                      step="0.1"
-                                      className="h-7 w-16 text-right text-[0.6875rem]"
-                                      onBlur={(e) => salvarCampo(it.id, "margem_lucro", e.target.value, Number(it.margem_lucro))}
-                                    />
+                                    <div className="flex items-center justify-end gap-0.5">
+                                      <Input
+                                        type="number"
+                                        defaultValue={Number(it.margem_lucro)}
+                                        min="0"
+                                        max="99.9"
+                                        step="0.1"
+                                        className="h-7 w-14 text-right text-[0.6875rem]"
+                                        onBlur={(e) => salvarCampo(it.id, "margem_lucro", e.target.value, Number(it.margem_lucro))}
+                                      />
+                                      <span className="text-muted-foreground">%</span>
+                                    </div>
                                   )}
                                 </TableCell>
                               )}

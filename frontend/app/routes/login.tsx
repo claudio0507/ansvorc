@@ -49,7 +49,7 @@ export default function Login() {
         papel: data.papel,
         id: data.usuario_id,
       })
-      toast.success("Bem-vindo ao Sinalys!")
+      toast.success("Bem-vindo ao orcOS!")
       navigate("/dashboard", { replace: true })
     } catch (err) {
       const e = err as ApiError
@@ -66,8 +66,11 @@ export default function Login() {
           <div className="bg-primary text-primary-foreground mb-4 flex size-14 items-center justify-center">
             <LogoMark />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Sinalys</h1>
-          <p className="text-muted-foreground text-sm">ERP de Orçamentação Viária</p>
+          <h1 className="text-2xl font-bold tracking-tight">orcOS</h1>
+          <p className="text-muted-foreground mt-0.5 text-xs font-medium tracking-[0.12em] uppercase">
+            ALTA NOROESTE
+          </p>
+          <p className="text-muted-foreground mt-1 text-sm">ERP de Orçamentação Viária</p>
         </div>
 
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
@@ -107,6 +110,10 @@ export default function Login() {
             {loading ? "Entrando…" : "Entrar"}
           </Button>
         </form>
+
+        <p className="text-muted-foreground/70 mt-6 text-center text-[0.625rem] tracking-wide">
+          Desenvolvido por Viaxis Tech HUB
+        </p>
       </div>
     </div>
   )

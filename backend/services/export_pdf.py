@@ -289,7 +289,7 @@ def _build_html(orc: Orcamento, itens: list[OrcamentoItem], cliente: Cliente) ->
 <!-- Cabeçalho -->
 <div class="header">
   <div class="header-left">
-    Alta Noroeste Sinalização Viária
+    orcOS — ALTA NOROESTE
     <div class="subtitle">Proposta Comercial de Obra Viária</div>
   </div>
   <div class="header-right">
@@ -384,6 +384,10 @@ def _build_html(orc: Orcamento, itens: list[OrcamentoItem], cliente: Cliente) ->
     <div class="total-proposta">{_fmt_brl(orc.total_proposta)}</div>
     <div class="margem-label">Margem Líquida Real: {margem_pct}</div>
   </div>
+</div>
+
+<div class="creditos" style="text-align:center;font-size:8px;color:#999;margin-top:24px;">
+  Desenvolvido por Viaxis Tech HUB
 </div>
 
 </body>

@@ -70,7 +70,7 @@ function buildSections(): NavSection[] {
       show: podeVer("fichas"),
       items: [
         { to: "/fichas/equipes", label: "Equipes", icon: UsersIcon },
-        { to: "/fichas/produtos", label: "Produtos (BOM)", icon: StackIcon },
+        { to: "/fichas/produtos", label: "Ficha Técnica", icon: StackIcon },
         { to: "/fichas/servicos", label: "Serviços", icon: WrenchIcon },
         { to: "/produtos-componentes", label: "Produtos/Componentes", icon: CubeIcon },
         { to: "/parametros", label: "Parâmetros", icon: SlidersHorizontalIcon },
@@ -111,9 +111,12 @@ export function AppSidebar() {
           <div className="bg-sidebar-primary text-sidebar-primary-foreground flex size-8 shrink-0 items-center justify-center">
             <LogoMark />
           </div>
-          <span className="text-base font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
-            Sinalys
-          </span>
+          <div className="flex flex-col leading-none group-data-[collapsible=icon]:hidden">
+            <span className="text-base font-semibold tracking-tight">orcOS</span>
+            <span className="text-muted-foreground text-[0.625rem] font-medium tracking-[0.1em] uppercase">
+              ALTA NOROESTE
+            </span>
+          </div>
         </div>
       </SidebarHeader>
 

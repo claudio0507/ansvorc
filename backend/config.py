@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     )
 
     DATABASE_URL: str = "sqlite:///./sinalys.db"
-    APP_NAME: str = "Sinalys"
+    APP_NAME: str = "orcOS"
     APP_VERSION: str = "1.0.0"
     # False por padrão; testes e dev local definem DEBUG=true no .env
     DEBUG: bool = False
