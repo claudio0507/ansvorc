@@ -3,403 +3,408 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sinalys — Design System Preview</title>
-  <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <title>Sinalys — Design System Preview (tema real)</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --primary: #c32a30;
-      --primary-hover: #a02026;
-      --success: #4ade80;
-      --warning: #fbbf24;
-      --danger: #f87171;
-      --info: #60a5fa;
-      --font: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    /* ═══════════════════════════════════════════════════════════════════
+       Tokens REAIS do app.css (shadcn + preset b7CSeriVu)
+       Extraídos de frontend/app/app.css
+       ═══════════════════════════════════════════════════════════════════ */
+    
+    :root, .light {
+      --font: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --radius: 0;
+      
+      /* Light */
+      --background: oklch(1 0 0);
+      --foreground: oklch(0.148 0.004 228.8);
+      --card: oklch(1 0 0);
+      --card-fg: oklch(0.148 0.004 228.8);
+      --primary: oklch(0.536 0.189 24.67);       /* #c32a30 */
+      --primary-fg: oklch(0.985 0.005 24.67);
+      --secondary: oklch(0.967 0.001 286.375);
+      --secondary-fg: oklch(0.21 0.006 285.885);
+      --muted: oklch(0.963 0.002 197.1);
+      --muted-fg: oklch(0.56 0.021 213.5);
+      --accent: oklch(0.963 0.002 197.1);
+      --accent-fg: oklch(0.218 0.008 223.9);
+      --destructive: oklch(0.577 0.245 27.325);
+      --destructive-fg: oklch(0.985 0.01 27.325);
+      --success: oklch(0.627 0.17 149);
+      --success-fg: oklch(0.985 0.01 149);
+      --warning: oklch(0.705 0.16 70);
+      --warning-fg: oklch(0.27 0.05 70);
+      --border: oklch(0.925 0.005 214.3);
+      --input: oklch(0.925 0.005 214.3);
+      --ring: oklch(0.723 0.014 214.4);
+      
+      /* Conversão aproximada pra HEX (pra compatibilidade) */
+      --bg: #ffffff;
+      --text: #1a1d23;
+      --text-muted: #64748b;
+      --card-bg: #ffffff;
+      --border-hex: #e2e8f0;
+      --primary-hex: #c32a30;
+      --success-hex: #16a34a;
+      --warning-hex: #ca8a04;
+      --destructive-hex: #dc2626;
+      --secondary-hex: #f1f5f9;
+      --secondary-fg-hex: #334155;
+      --muted-hex: #f8fafc;
     }
 
-    /* DARK THEME */
-    .theme-dark {
-      --bg-page: #0b0f19;
-      --bg-card: rgba(18, 22, 36, 0.85);
-      --bg-card-solid: #121624;
-      --bg-input: rgba(255,255,255,0.05);
-      --border: rgba(255,255,255,0.08);
-      --text-primary: #f9fafb;
-      --text-secondary: #9ca3af;
-      --text-muted: #6b7280;
-      --shadow: 0 8px 32px rgba(0,0,0,0.4);
-      --glass-bg: rgba(18, 22, 36, 0.6);
-      --glass-blur: blur(16px) saturate(180%);
-    }
-
-    /* LIGHT THEME */
-    .theme-light {
-      --bg-page: #f1f5f9;
-      --bg-card: #ffffff;
-      --bg-card-solid: #ffffff;
-      --bg-input: #f8fafc;
-      --border: rgba(0,0,0,0.08);
-      --text-primary: #0f172a;
-      --text-secondary: #475569;
+    .dark {
+      --background: oklch(0.148 0.004 228.8);
+      --foreground: oklch(0.987 0.002 197.1);
+      --card: oklch(0.218 0.008 223.9);
+      --card-fg: oklch(0.987 0.002 197.1);
+      --primary: oklch(0.536 0.189 24.67);
+      --primary-fg: oklch(0.985 0.005 24.67);
+      --secondary: oklch(0.274 0.006 286.033);
+      --secondary-fg: oklch(0.985 0 0);
+      --muted: oklch(0.275 0.011 216.9);
+      --muted-fg: oklch(0.723 0.014 214.4);
+      --accent: oklch(0.275 0.011 216.9);
+      --accent-fg: oklch(0.987 0.002 197.1);
+      --destructive: oklch(0.704 0.191 22.216);
+      --destructive-fg: oklch(0.985 0.01 27.325);
+      --success: oklch(0.696 0.17 149);
+      --success-fg: oklch(0.16 0.02 149);
+      --warning: oklch(0.769 0.16 70);
+      --warning-fg: oklch(0.27 0.05 70);
+      --border: rgba(255,255,255,0.1);
+      --input: rgba(255,255,255,0.15);
+      --ring: oklch(0.56 0.021 213.5);
+      
+      --bg: #14171f;
+      --text: #f8fafc;
       --text-muted: #94a3b8;
-      --shadow: 0 4px 16px rgba(0,0,0,0.08);
-      --glass-bg: rgba(255,255,255,0.7);
-      --glass-blur: blur(12px) saturate(150%);
+      --card-bg: #1e2230;
+      --border-hex: rgba(255,255,255,0.08);
+      --primary-hex: #c32a30;
+      --success-hex: #22c55e;
+      --warning-hex: #eab308;
+      --destructive-hex: #ef4444;
+      --secondary-hex: #2a2f3d;
+      --secondary-fg-hex: #f8fafc;
+      --muted-hex: #1e2230;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: var(--font); background: var(--bg-page); color: var(--text-primary); transition: all 0.3s ease; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.5;
+      transition: background 0.2s, color 0.2s;
+    }
 
-    .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
 
-    /* HEADER */
+    /* ── HEADER ── */
     .header {
-      display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px;
-      padding-bottom: 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 32px; padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-hex);
     }
-    .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
-    .header .subtitle { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
-    .theme-toggle {
-      padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
-      background: var(--bg-card); color: var(--text-primary); cursor: pointer;
-      font-family: var(--font); font-size: 13px; font-weight: 500;
+    .header h1 { font-size: 20px; font-weight: 700; }
+    .header .sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .theme-btn {
+      padding: 6px 14px; border: 1px solid var(--border-hex); border-radius: 6px;
+      background: var(--card-bg); color: var(--text); cursor: pointer;
+      font-family: var(--font); font-size: 12px; font-weight: 500;
     }
 
-    /* SECTIONS */
-    .section { margin-bottom: 40px; }
-    .section-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: 16px; }
-
-    /* CARDS */
-    .card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
-      padding: 20px; box-shadow: var(--shadow); backdrop-filter: var(--glass-blur);
-      transition: all 0.2s ease;
+    /* ── SECTIONS ── */
+    .section { margin-bottom: 36px; }
+    .section-title {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;
     }
-    .theme-light .card { backdrop-filter: none; }
-    .card:hover { transform: translateY(-1px); box-shadow: 0 12px 40px rgba(0,0,0,0.12); }
 
-    /* BADGES */
+    /* ── BADGES (shadcn real: rounded-full, 10px font, sem uppercase) ── */
     .badge {
-      display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 6px;
-      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+      display: inline-flex; align-items: center; gap: 4px;
+      height: 20px; padding: 2px 8px; border-radius: 9999px;
+      font-size: 10px; font-weight: 500; white-space: nowrap;
+      border: 1px solid transparent;
     }
-    .badge-success { background: rgba(74,222,128,0.15); color: var(--success); }
-    .badge-warning { background: rgba(251,191,36,0.15); color: var(--warning); }
-    .badge-danger { background: rgba(248,113,113,0.15); color: var(--danger); }
-    .badge-info { background: rgba(96,165,250,0.15); color: var(--info); }
-    .badge-dark { background: #374151; color: #f9fafb; }
-    .theme-light .badge-dark { background: #e2e8f0; color: #0f172a; }
-    .badge-primary { background: rgba(195,42,48,0.12); color: var(--primary); }
+    .badge-default { background: var(--primary-hex); color: white; }
+    .badge-secondary { background: var(--secondary-hex); color: var(--secondary-fg-hex); }
+    .badge-success { background: oklch(0.627 0.17 149 / 0.15); color: var(--success-hex); }
+    .dark .badge-success { background: oklch(0.696 0.17 149 / 0.2); color: #4ade80; }
+    .badge-warning { background: oklch(0.705 0.16 70 / 0.15); color: var(--warning-hex); }
+    .dark .badge-warning { background: oklch(0.769 0.16 70 / 0.2); color: #facc15; }
+    .badge-destructive { background: oklch(0.577 0.245 27.325 / 0.1); color: var(--destructive-hex); }
+    .dark .badge-destructive { background: oklch(0.704 0.191 22.216 / 0.2); color: #f87171; }
+    .badge-outline { border-color: var(--border-hex); background: rgba(255,255,255,0.05); }
+    .badge-ghost { background: transparent; color: var(--text-muted); }
 
-    /* BUTTONS */
+    /* ── BUTTONS ── */
     .btn {
-      display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px;
-      font-size: 13px; font-weight: 600; border: none; cursor: pointer; font-family: var(--font);
-      transition: all 0.15s ease;
+      display: inline-flex; align-items: center; gap: 6px; height: 36px;
+      padding: 0 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
+      border: none; cursor: pointer; font-family: var(--font);
     }
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-secondary { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); }
-    .btn-ghost { background: transparent; color: var(--text-secondary); }
+    .btn-primary { background: var(--primary-hex); color: white; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-secondary { background: var(--secondary-hex); color: var(--secondary-fg-hex); border: 1px solid var(--border-hex); }
+    .btn-ghost { background: transparent; color: var(--text); border: 1px solid transparent; }
+    .btn-ghost:hover { background: var(--muted-hex); }
 
-    /* INPUTS */
-    .input {
-      width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
-      background: var(--bg-input); color: var(--text-primary); font-family: var(--font); font-size: 13px;
-      outline: none; transition: border-color 0.15s;
+    /* ── INPUT ── */
+    .form-group { margin-bottom: 12px; }
+    .form-label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 5px; }
+    .form-input {
+      width: 100%; height: 36px; padding: 0 10px; border-radius: 6px;
+      border: 1px solid var(--border-hex); background: var(--bg);
+      color: var(--text); font-family: var(--font); font-size: 13px;
+      outline: none;
     }
-    .input:focus { border-color: var(--primary); }
-    .input::placeholder { color: var(--text-muted); }
+    .form-input:focus { border-color: var(--primary-hex); }
 
-    /* TABLE */
-    .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { padding: 12px 16px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); background: var(--bg-card); border-bottom: 1px solid var(--border); white-space: nowrap; }
-    td { padding: 12px 16px; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
+    /* ── CARDS (shadcn real: rounded-lg, ring-1, text-xs, sem glass) ── */
+    .card {
+      background: var(--card-bg); border-radius: 8px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
+      padding: 16px; font-size: 12px;
+    }
+    .dark .card { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+    .card-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+    .card-desc { font-size: 12px; color: var(--text-muted); }
+
+    /* ── TABLE (shadcn real: text-xs, border-b rows) ── */
+    .table-wrap { overflow-x: auto; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th {
+      height: 40px; padding: 0 8px; text-align: left; font-weight: 500;
+      color: var(--text); white-space: nowrap; border-bottom: 1px solid var(--border-hex);
+    }
+    td {
+      padding: 8px; border-bottom: 1px solid var(--border-hex);
+      white-space: nowrap; color: var(--text-muted);
+    }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: rgba(255,255,255,0.02); }
-    .theme-light tr:hover td { background: rgba(0,0,0,0.02); }
+    tr:hover td { background: var(--muted-hex); }
 
-    /* FINANCIAL PANEL */
-    .financial-panel {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 24px;
+    /* ── BLOCO HEADER (colorido, igual ao PR) ── */
+    .bloco-header {
+      padding: 10px 14px; border-radius: 6px; font-size: 11px;
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 10px;
     }
-    .financial-panel .card {
-      text-align: center; padding: 16px;
-    }
-    .financial-panel .label {
-      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px;
-    }
-    .financial-panel .value {
-      font-size: 22px; font-weight: 700; color: var(--text-primary);
-    }
-    .financial-panel .value-success { color: var(--success); }
-    .financial-panel .value-primary { color: var(--primary); }
-    .financial-panel .value-muted { color: var(--text-muted); font-weight: 500; }
+    .bloco-servicos { background: oklch(0.536 0.189 24.67 / 0.08); color: var(--primary-hex); }
+    .bloco-produtos { background: var(--secondary-hex); color: var(--secondary-fg-hex); }
+    .bloco-operacional { background: oklch(0.705 0.16 70 / 0.12); color: var(--warning-hex); }
+    .bloco-excepcionais { background: oklch(0.577 0.245 27.325 / 0.08); color: var(--destructive-hex); }
 
-    /* GRID LAYOUT DEMO */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    /* ── FINANCIAL PANEL ── */
+    .fin-panel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .fin-item { text-align: center; }
+    .fin-label { font-size: 10px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .fin-value { font-size: 20px; font-weight: 700; }
+    .fin-value-neutral { color: var(--text); }
+    .fin-value-success { color: var(--success-hex); }
+    .dark .fin-value-success { color: #4ade80; }
+    .fin-value-primary { color: var(--primary-hex); }
+
+    /* ── KEY INFO ── */
+    .token-info {
+      background: var(--muted-hex); border: 1px solid var(--border-hex);
+      border-radius: 8px; padding: 16px; margin-top: 40px;
+      font-size: 11px; color: var(--text-muted); line-height: 1.8;
+    }
+    .token-info strong { color: var(--text); font-weight: 600; }
+
     @media (max-width: 768px) {
-      .grid-2, .grid-3, .financial-panel { grid-template-columns: 1fr; }
+      .fin-panel { grid-template-columns: 1fr 1fr; }
     }
-
-    /* ORC BLOCO */
-    .bloco-header { padding: 12px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
-    .bloco-servicos { background: rgba(195,42,48,0.08); color: var(--primary); }
-    .bloco-produtos { background: rgba(96,165,250,0.08); color: var(--info); }
-    .bloco-operacional { background: rgba(251,191,36,0.08); color: var(--warning); }
-    .bloco-excepcionais { background: rgba(248,113,113,0.08); color: var(--danger); }
-
-    /* SIDEBAR */
-    .sidebar { width: 240px; background: var(--bg-card); border-right: 1px solid var(--border); padding: 20px; height: 100vh; position: fixed; left: 0; top: 0; }
-    .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer; margin-bottom: 4px; }
-    .sidebar-item:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
-    .sidebar-item.active { background: rgba(195,42,48,0.1); color: var(--primary); font-weight: 600; }
-    .theme-light .sidebar-item:hover { background: rgba(0,0,0,0.04); }
-    .sidebar-logo { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 24px; letter-spacing: -0.5px; }
-
-    .main-with-sidebar { margin-left: 240px; padding: 24px; }
-    @media (max-width: 768px) {
-      .sidebar { display: none; }
-      .main-with-sidebar { margin-left: 0; }
-    }
-
-    .preview-wrapper { display: flex; min-height: 100vh; }
   </style>
 </head>
-<body class="theme-dark">
+<body class="dark">
 
-<div class="preview-wrapper">
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-logo">Sinalys</div>
-    <div class="sidebar-item active">Dashboard</div>
-    <div class="sidebar-item">Orçamentos</div>
-    <div class="sidebar-item">Fichas Técnicas</div>
-    <div class="sidebar-item">Bancos de Dados</div>
-    <div class="sidebar-item">Clientes</div>
-    <div class="sidebar-item" style="margin-top: auto; border-top: 1px solid var(--border); padding-top: 16px;">
-      <span style="font-size: 12px; color: var(--text-muted);">Sponsor</span>
+<div class="container">
+  <!-- ── HEADER ── -->
+  <div class="header">
+    <div>
+      <h1>Sinalys — Design System</h1>
+      <div class="sub">Tema real: shadcn + b7CSeriVu (app.css)</div>
+    </div>
+    <button class="theme-btn" onclick="document.body.classList.toggle('dark')">Alternar tema</button>
+  </div>
+
+  <!-- ── 1. BADGES ── -->
+  <div class="section">
+    <div class="section-title">Badges · rounded-full · 10px · sem uppercase</div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <span class="badge badge-default">Rascunho</span>
+      <span class="badge badge-secondary">Enviado</span>
+      <span class="badge badge-success">Aprovado</span>
+      <span class="badge badge-warning">Pendente</span>
+      <span class="badge badge-destructive">Rejeitado</span>
+      <span class="badge badge-outline">Inativo</span>
+      <span class="badge badge-ghost">Ghost</span>
     </div>
   </div>
 
-  <!-- MAIN -->
-  <div class="main-with-sidebar">
-    <div class="header">
-      <div>
-        <h1>Design System Preview</h1>
-        <div class="subtitle">Sinalys — Alta Noroeste Sinalização Viária</div>
-      </div>
-      <button class="theme-toggle" onclick="toggleTheme()">Alternar Tema</button>
+  <!-- ── 2. BOTÕES ── -->
+  <div class="section">
+    <div class="section-title">Botões · h-36px · rounded-md · font-medium</div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <button class="btn btn-primary">+ Novo Orçamento</button>
+      <button class="btn btn-secondary">Cancelar</button>
+      <button class="btn btn-ghost">Ver Detalhes</button>
     </div>
+  </div>
 
-    <div class="container">
-      <!-- BADGES -->
-      <div class="section">
-        <div class="section-title">Badges</div>
-        <div class="card" style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <span class="badge badge-success">Aprovado</span>
-          <span class="badge badge-warning">Rascunho</span>
-          <span class="badge badge-danger">Reprovado</span>
-          <span class="badge badge-info">Calculado</span>
-          <span class="badge badge-dark">Dark Badge</span>
-          <span class="badge badge-primary">BDI</span>
-        </div>
+  <!-- ── 3. FORMULÁRIO ── -->
+  <div class="section">
+    <div class="section-title">Formulários · h-36px · rounded-md · text-sm</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 500px;">
+      <div class="form-group">
+        <label class="form-label">Código</label>
+        <input class="form-input" placeholder="EQ-001" value="EQ-001">
       </div>
-
-      <!-- BUTTONS -->
-      <div class="section">
-        <div class="section-title">Botões</div>
-        <div class="card" style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <button class="btn btn-primary">+ Novo Orçamento</button>
-          <button class="btn btn-secondary">Cancelar</button>
-          <button class="btn btn-ghost">Ver Detalhes</button>
-        </div>
-      </div>
-
-      <!-- INPUTS -->
-      <div class="section">
-        <div class="section-title">Formulários</div>
-        <div class="card grid-2">
-          <div>
-            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Código</label>
-            <input class="input" type="text" placeholder="EQ-001" value="EQ-001">
-          </div>
-          <div>
-            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Seguimento</label>
-            <select class="input" style="cursor: pointer;">
-              <option>EPS</option>
-              <option>HORIZONTAL</option>
-              <option>VERTICAL</option>
-              <option>APOIO</option>
-            </select>
-          </div>
-          <div>
-            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Custo Diário</label>
-            <input class="input" type="number" placeholder="0,00" value="185.50">
-          </div>
-          <div>
-            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Status</label>
-            <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
-              <span class="badge badge-success">Ativo</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TABLE -->
-      <div class="section">
-        <div class="section-title">Tabela — BDI por UF</div>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Modalidade</th>
-                <th>UF</th>
-                <th>ICMS</th>
-                <th>COFINS</th>
-                <th>PIS</th>
-                <th>ISSQN</th>
-                <th>Cst Fin</th>
-                <th>IRPJ</th>
-                <th>CSLL</th>
-                <th>Desp Adm</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style="font-weight: 600; color: var(--text-primary);">BDI-MAT+MO</td>
-                <td><span class="badge badge-dark">PR</span></td>
-                <td>0,0000</td>
-                <td>0,0300</td>
-                <td>0,0065</td>
-                <td>0,0350</td>
-                <td>0,0150</td>
-                <td>0,0200</td>
-                <td>0,0108</td>
-                <td>0,1300</td>
-              </tr>
-              <tr>
-                <td style="font-weight: 600; color: var(--text-primary);">BDI-MO</td>
-                <td><span class="badge badge-dark">SP</span></td>
-                <td>0,0000</td>
-                <td>0,0000</td>
-                <td>0,0000</td>
-                <td>0,0500</td>
-                <td>0,0150</td>
-                <td>0,0200</td>
-                <td>0,0108</td>
-                <td>0,1300</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ORÇAMENTO BLOCOS -->
-      <div class="section">
-        <div class="section-title">Orçamento — Blocos Agrupados</div>
-        <div class="card">
-          <div class="bloco-header bloco-servicos">1. Serviços</div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr><th>Item</th><th>QTD</th><th>Un</th><th>Custo Unit</th><th>Custo Total</th></tr>
-              </thead>
-              <tbody>
-                <tr><td style="font-weight: 600;">SV-001 — Sinalização Horizontal</td><td>1.200,00</td><td>m²</td><td>R$ 45,80</td><td>R$ 54.960,00</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="bloco-header bloco-produtos" style="margin-top: 20px;">2. Produtos</div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr><th>Item</th><th>QTD</th><th>Un</th><th>Custo Unit</th><th>Custo Total</th></tr>
-              </thead>
-              <tbody>
-                <tr><td style="font-weight: 600;">PR-002 — Tinta Termoplástica</td><td>500,00</td><td>kg</td><td>R$ 18,50</td><td>R$ 9.250,00</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="bloco-header bloco-operacional" style="margin-top: 20px;">3. Estrutura Operacional (BDI Sombra)</div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr><th>Item</th><th>QTD</th><th>Un</th><th>Custo Unit</th><th>Custo Total</th></tr>
-              </thead>
-              <tbody>
-                <tr><td style="font-weight: 600;">Base de Apoio</td><td>1,00</td><td>un</td><td>R$ 3.500,00</td><td>R$ 3.500,00</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- FINANCIAL PANEL -->
-      <div class="section">
-        <div class="section-title">Painel Financeiro</div>
-        <div class="card">
-          <div class="financial-panel">
-            <div class="card">
-              <div class="label">Custo Total</div>
-              <div class="value value-muted">R$ 67.710,00</div>
-            </div>
-            <div class="card">
-              <div class="label">BDI Sombra</div>
-              <div class="value value-muted">R$ 12.187,80</div>
-            </div>
-            <div class="card">
-              <div class="label">Margem Líquida Real</div>
-              <div class="value value-success">R$ 8.405,80</div>
-            </div>
-            <div class="card">
-              <div class="label">Total da Proposta</div>
-              <div class="value value-primary">R$ 88.303,60</div>
-            </div>
-          </div>
-          <div style="margin-top: 16px; text-align: center; font-size: 12px; color: var(--text-muted);">
-            Apenas <strong style="color: var(--success);">Margem Líquida Real</strong> (verde) e <strong style="color: var(--primary);">Total da Proposta</strong> (#c32a30) possuem cores destacadas
-          </div>
-        </div>
-      </div>
-
-      <!-- CARDS GRID -->
-      <div class="section">
-        <div class="section-title">Cards</div>
-        <div class="grid-3">
-          <div class="card">
-            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Orçamentos Ativos</div>
-            <div style="font-size: 32px; font-weight: 700; color: var(--primary);">24</div>
-          </div>
-          <div class="card">
-            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Fichas de Equipe</div>
-            <div style="font-size: 32px; font-weight: 700; color: var(--text-primary);">12</div>
-          </div>
-          <div class="card">
-            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Clientes</div>
-            <div style="font-size: 32px; font-weight: 700; color: var(--text-primary);">8</div>
-          </div>
-        </div>
+      <div class="form-group">
+        <label class="form-label">Seguimento</label>
+        <select class="form-input" style="cursor:pointer;">
+          <option>EPS</option>
+          <option>HORIZONTAL</option>
+          <option>VERTICAL</option>
+          <option>APOIO</option>
+        </select>
       </div>
     </div>
+  </div>
+
+  <!-- ── 4. TABELA BDI ── -->
+  <div class="section">
+    <div class="section-title">Tabela · text-xs · border-b rows · hover muted/50</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Modalidade</th><th>UF</th><th>ICMS</th><th>COFINS</th><th>PIS</th><th>ISSQN</th><th>Cst Fin</th><th>IRPJ</th><th>CSLL</th><th>Desp Adm</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight: 500; color: var(--text);">BDI-MAT+MO</td>
+            <td><span class="badge badge-outline">PR</span></td>
+            <td>0,0000</td><td>0,0300</td><td>0,0065</td><td>0,0350</td><td>0,0150</td><td>0,0200</td><td>0,0108</td><td>0,1300</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 500; color: var(--text);">BDI-MO</td>
+            <td><span class="badge badge-outline">SP</span></td>
+            <td>0,0000</td><td>0,0000</td><td>0,0000</td><td>0,0500</td><td>0,0150</td><td>0,0200</td><td>0,0108</td><td>0,1300</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 500; color: var(--text);">BDI+ICMS</td>
+            <td><span class="badge badge-outline">PR</span></td>
+            <td>0,1800</td><td>0,0300</td><td>0,0065</td><td>0,0350</td><td>0,0150</td><td>0,0200</td><td>0,0108</td><td>0,1300</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── 5. BLOCOS DE ORÇAMENTO ── -->
+  <div class="section">
+    <div class="section-title">Orçamento · 4 blocos agrupados · bds.tsx BLOCOS</div>
+    <div class="card">
+      <div class="bloco-header bloco-servicos">1. Serviços</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Item</th><th>QTD</th><th>Un</th><th>Custo Unit</th><th>Custo Total</th></tr></thead>
+          <tbody>
+            <tr><td style="font-weight: 500; color: var(--text);">SV-001 Sinalização Horizontal</td><td>1.200</td><td>m²</td><td>R$ 45,80</td><td>R$ 54.960,00</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="bloco-header bloco-produtos" style="margin-top: 16px;">2. Produtos</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Item</th><th>QTD</th><th>Un</th><th>Custo Unit</th><th>Custo Total</th></tr></thead>
+          <tbody>
+            <tr><td style="font-weight: 500; color: var(--text);">PR-002 Tinta Termoplástica</td><td>500</td><td>kg</td><td>R$ 18,50</td><td>R$ 9.250,00</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="bloco-header bloco-operacional" style="margin-top: 16px;">3. Estrutura Operacional (BDI Sombra)</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Item</th><th>QTD</th><th>Un</th><th>Custo Unit</th><th>Custo Total</th></tr></thead>
+          <tbody>
+            <tr><td style="font-weight: 500; color: var(--text);">Base de Apoio</td><td>1</td><td>un</td><td>R$ 3.500,00</td><td>R$ 3.500,00</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 6. PAINEL FINANCEIRO ── -->
+  <div class="section">
+    <div class="section-title">Painel Financeiro · só MLR (verde) e Total (#c32a30) coloridos</div>
+    <div class="card">
+      <div class="fin-panel">
+        <div class="fin-item">
+          <div class="fin-label">Custo Total</div>
+          <div class="fin-value fin-value-neutral">R$ 67.710</div>
+        </div>
+        <div class="fin-item">
+          <div class="fin-label">BDI Sombra</div>
+          <div class="fin-value fin-value-neutral">R$ 12.188</div>
+        </div>
+        <div class="fin-item">
+          <div class="fin-label">Margem Líquida Real</div>
+          <div class="fin-value fin-value-success">R$ 8.406</div>
+        </div>
+        <div class="fin-item">
+          <div class="fin-label">Total Proposta</div>
+          <div class="fin-value fin-value-primary">R$ 88.304</div>
+        </div>
+      </div>
+      <div style="margin-top: 12px; text-align: center; font-size: 11px; color: var(--text-muted);">
+        Apenas <strong style="color: #4ade80;">Margem Líquida Real</strong> e <strong style="color: var(--primary-hex);">Total da Proposta</strong> possuem cor.
+        Os demais valores são neutros.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 7. CARDS ── -->
+  <div class="section">
+    <div class="section-title">Cards · rounded-lg · ring-1 · text-xs · sem glass</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+      <div class="card">
+        <div class="card-desc" style="text-transform: uppercase; letter-spacing: 0.5px;">Orçamentos Ativos</div>
+        <div style="font-size: 28px; font-weight: 700; color: var(--primary-hex); margin-top: 4px;">24</div>
+      </div>
+      <div class="card">
+        <div class="card-desc" style="text-transform: uppercase; letter-spacing: 0.5px;">Fichas de Equipe</div>
+        <div style="font-size: 28px; font-weight: 700; margin-top: 4px;">12</div>
+      </div>
+      <div class="card">
+        <div class="card-desc" style="text-transform: uppercase; letter-spacing: 0.5px;">Clientes</div>
+        <div style="font-size: 28px; font-weight: 700; margin-top: 4px;">8</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TOKENS ── -->
+  <div class="token-info">
+    <strong>Tokens reais (extraídos de frontend/app/app.css):</strong><br>
+    Fonte: <strong style="color: var(--primary-hex);">DM Sans Variable</strong> (NÃO SF Pro) ·
+    Primary: <strong style="color: var(--primary-hex);">oklch(0.536 0.189 24.67) ≈ #c32a30</strong> ·
+    Radius: <strong>0</strong> (exceto cards=8px, badges=9999px) ·
+    Badges: <strong>rounded-full · 10px · sem text-transform</strong> ·
+    Cards: <strong>rounded-lg · ring-1 · sem glass/backdrop-filter</strong> ·
+    Tabelas: <strong>text-xs · border-b rows · hover bg-muted/50</strong> ·
+    Tema: <strong>light/dark via classe .dark no body</strong>
   </div>
 </div>
-
-<script>
-  function toggleTheme() {
-    const body = document.body;
-    if (body.classList.contains('theme-dark')) {
-      body.classList.remove('theme-dark');
-      body.classList.add('theme-light');
-    } else {
-      body.classList.remove('theme-light');
-      body.classList.add('theme-dark');
-    }
-  }
-</script>
 
 </body>
 </html>
