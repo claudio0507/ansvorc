@@ -17,6 +17,13 @@ import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
 import { Input } from "~/components/ui/input"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select"
+import {
   Table,
   TableBody,
   TableCell,
@@ -27,13 +34,16 @@ import {
 import { orcamentoApi } from "~/lib/api"
 import { fmtBRL, fmtNum, fmtPct } from "~/lib/format"
 
-// Blocos agrupados (docs/05): cada um vira uma tabela com cabeçalho colorido.
-const BLOCOS: { key: string; titulo: string; cor: string; faturavel: boolean }[] = [
-  { key: "servicos", titulo: "1. SERVIÇOS", cor: "bg-primary/10 text-primary", faturavel: true },
-  { key: "produtos", titulo: "2. PRODUTOS", cor: "bg-secondary text-secondary-foreground", faturavel: true },
-  { key: "operacional", titulo: "3. ESTRUTURA OPERACIONAL", cor: "bg-muted text-muted-foreground", faturavel: false },
-  { key: "excepcionais", titulo: "4. CUSTOS EXCEPCIONAIS", cor: "bg-destructive/10 text-destructive", faturavel: false },
+// Blocos agrupados (docs/05). BLOCO 5.2: TODAS as barras usam a mesma cor neutra
+// (bg-secondary) — apenas o texto do título diferencia o bloco.
+const COR_BLOCO = "bg-secondary text-secondary-foreground"
+const BLOCOS: { key: string; titulo: string; faturavel: boolean }[] = [
+  { key: "servicos", titulo: "1. SERVIÇOS", faturavel: true },
+  { key: "produtos", titulo: "2. PRODUTOS", faturavel: true },
+  { key: "operacional", titulo: "3. ESTRUTURA OPERACIONAL", faturavel: false },
+  { key: "excepcionais", titulo: "4. CUSTOS EXCEPCIONAIS", faturavel: false },
 ]
+const MOD_FAT_OPTS = ["BDI-MAT+MO", "BDI-MO", "BDI+ICMS", "FAT DIR SIMP"]
 
 export default function OrcamentoEditor() {
   const { id } = useParams()
@@ -74,16 +84,19 @@ export default function OrcamentoEditor() {
     carregar()
   }, [carregar])
 
-  async function salvarQuantidade(itemId: number, raw: string, atual: string) {
-    if (raw === String(atual)) return
+  async function salvarCampo(itemId: number, campo: string, valor: string, atual: any) {
+    if (valor === String(atual)) return
     setResultado(null)
     try {
-      const updated = await orcamentoApi.updateItem(orcId, itemId, { quantidade: raw })
+      const updated = await orcamentoApi.updateItem(orcId, itemId, { [campo]: valor })
       setItens((arr) => arr.map((i) => (i.id === itemId ? { ...i, ...updated } : i)))
     } catch (err: any) {
       toast.error(`Erro ao salvar: ${err.message}`)
     }
   }
+
+  const salvarQuantidade = (id: number, v: string, atual: string) =>
+    salvarCampo(id, "quantidade", v, atual)
 
   async function removerItem(itemId: number) {
     try {
@@ -207,32 +220,33 @@ export default function OrcamentoEditor() {
             const linhas = itens.filter((i) => i.bloco === b.key)
             return (
               <Card key={b.key} className="overflow-hidden py-0">
-                <div className={`flex items-center justify-between px-4 py-2 text-xs font-bold tracking-wide ${b.cor}`}>
+                <div className={`flex items-center justify-between px-3 py-1.5 text-[0.625rem] font-bold tracking-wide uppercase ${COR_BLOCO}`}>
                   <span>{b.titulo}</span>
                   {!readonly && (
-                    <Button size="sm" variant="ghost" className="h-6 px-2" onClick={() => setAddBloco(b.key)}>
-                      <PlusIcon className="size-3.5" /> Adicionar
+                    <Button size="sm" variant="ghost" className="h-5 px-2 text-[0.625rem]" onClick={() => setAddBloco(b.key)}>
+                      <PlusIcon className="size-3" /> Adicionar
                     </Button>
                   )}
                 </div>
                 <div className="overflow-x-auto">
-                  <Table>
+                  <Table className="text-[0.6875rem]">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Descrição</TableHead>
-                        <TableHead className="w-12">Und</TableHead>
-                        <TableHead className="w-24 text-right">QTD</TableHead>
-                        {b.faturavel && <TableHead className="w-20 text-right">Margem</TableHead>}
-                        {b.faturavel && <TableHead className="w-24">MOD FAT</TableHead>}
-                        <TableHead className="w-28 text-right">Custo Unit</TableHead>
-                        <TableHead className="w-28 text-right">Preço Total</TableHead>
-                        {!readonly && <TableHead className="w-10"></TableHead>}
+                        <TableHead className="h-7 text-[0.625rem]">Descrição</TableHead>
+                        <TableHead className="h-7 w-12 text-[0.625rem]">Und</TableHead>
+                        <TableHead className="h-7 w-20 text-right text-[0.625rem]">QTD</TableHead>
+                        {b.faturavel && <TableHead className="h-7 w-20 text-right text-[0.625rem]">Margem</TableHead>}
+                        {b.faturavel && <TableHead className="h-7 w-28 text-[0.625rem]">MOD FAT</TableHead>}
+                        <TableHead className="h-7 w-24 text-right text-[0.625rem]">Custo Unit</TableHead>
+                        <TableHead className="h-7 w-24 text-right text-[0.625rem]">Preço Total</TableHead>
+                        <TableHead className="h-7 w-24 text-right text-[0.625rem]">Desc. Rateado</TableHead>
+                        {!readonly && <TableHead className="h-7 w-8"></TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {linhas.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={9} className="text-muted-foreground py-4 text-center text-sm">
+                          <TableCell colSpan={10} className="text-muted-foreground py-3 text-center">
                             Nenhum item neste bloco.
                           </TableCell>
                         </TableRow>
@@ -241,46 +255,75 @@ export default function OrcamentoEditor() {
                           const hasPrices = parseFloat(it.preco_venda_total) > 0
                           return (
                             <TableRow key={it.id}>
-                              <TableCell className="max-w-48">
-                                <div className="truncate text-sm font-medium" title={it.descricao}>{it.descricao}</div>
-                                {it.flag_aprovacao && <Badge variant="warning" className="mt-1">APROVAÇÃO</Badge>}
+                              <TableCell className="max-w-48 px-2 py-0.5">
+                                <div className="truncate font-medium" title={it.descricao}>{it.descricao}</div>
+                                {it.flag_aprovacao && <Badge variant="warning" className="mt-0.5">APROVAÇÃO</Badge>}
                               </TableCell>
                               {/* Unidade READONLY (definida no cadastro) */}
-                              <TableCell className="text-muted-foreground text-xs">{it.unidade}</TableCell>
-                              <TableCell className="text-right">
+                              <TableCell className="text-muted-foreground px-2 py-0.5">{it.unidade}</TableCell>
+                              <TableCell className="px-2 py-0.5 text-right">
                                 {readonly ? (
-                                  <span className="text-sm">{fmtNum(it.quantidade)}</span>
+                                  <span>{fmtNum(it.quantidade)}</span>
                                 ) : (
                                   <Input
                                     type="number"
                                     defaultValue={it.quantidade}
                                     min="0"
                                     step="any"
-                                    className="h-8 w-20 text-right"
+                                    className="h-7 w-16 text-right text-[0.6875rem]"
                                     onBlur={(e) => salvarQuantidade(it.id, e.target.value, it.quantidade)}
                                   />
                                 )}
                               </TableCell>
                               {b.faturavel && (
-                                <TableCell className="text-muted-foreground text-right text-sm">
-                                  {Number(it.margem_lucro).toFixed(1)}%
+                                <TableCell className="px-2 py-0.5 text-right">
+                                  {readonly ? (
+                                    <span>{Number(it.margem_lucro).toFixed(1)}%</span>
+                                  ) : (
+                                    <Input
+                                      type="number"
+                                      defaultValue={Number(it.margem_lucro)}
+                                      min="0"
+                                      max="99.9"
+                                      step="0.1"
+                                      className="h-7 w-16 text-right text-[0.6875rem]"
+                                      onBlur={(e) => salvarCampo(it.id, "margem_lucro", e.target.value, Number(it.margem_lucro))}
+                                    />
+                                  )}
                                 </TableCell>
                               )}
                               {b.faturavel && (
-                                <TableCell className="text-muted-foreground text-xs">{it.mod_fat}</TableCell>
+                                <TableCell className="px-2 py-0.5">
+                                  {readonly ? (
+                                    <span className="text-muted-foreground">{it.mod_fat}</span>
+                                  ) : (
+                                    <Select
+                                      defaultValue={it.mod_fat}
+                                      onValueChange={(v) => salvarCampo(it.id, "mod_fat", v, it.mod_fat)}
+                                    >
+                                      <SelectTrigger className="h-7 w-28 text-[0.6875rem]"><SelectValue /></SelectTrigger>
+                                      <SelectContent>
+                                        {MOD_FAT_OPTS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                </TableCell>
                               )}
-                              <TableCell className="text-right text-sm">{fmtBRL(it.custo_direto_unitario)}</TableCell>
-                              <TableCell className="text-right">
+                              <TableCell className="px-2 py-0.5 text-right">{fmtBRL(it.custo_direto_unitario)}</TableCell>
+                              <TableCell className="px-2 py-0.5 text-right">
                                 {hasPrices ? (
-                                  <span className="text-primary text-sm font-semibold">{fmtBRL(it.preco_venda_total)}</span>
+                                  <span className="text-primary font-semibold">{fmtBRL(it.preco_venda_total)}</span>
                                 ) : (
-                                  <span className="text-muted-foreground text-xs">—</span>
+                                  <span className="text-muted-foreground">—</span>
                                 )}
                               </TableCell>
+                              <TableCell className="text-muted-foreground px-2 py-0.5 text-right">
+                                {parseFloat(it.desconto_rateado) > 0 ? `- ${fmtBRL(it.desconto_rateado)}` : "—"}
+                              </TableCell>
                               {!readonly && (
-                                <TableCell>
-                                  <Button variant="ghost" size="icon" title="Remover" onClick={() => removerItem(it.id)}>
-                                    <TrashIcon className="text-destructive size-4" />
+                                <TableCell className="px-2 py-0.5">
+                                  <Button variant="ghost" size="icon" className="size-6" title="Remover" onClick={() => removerItem(it.id)}>
+                                    <TrashIcon className="text-destructive size-3.5" />
                                   </Button>
                                 </TableCell>
                               )}

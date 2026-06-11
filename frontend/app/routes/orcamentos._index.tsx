@@ -58,7 +58,19 @@ export default function OrcamentosLista() {
 
   const filtrados = useMemo(() => {
     if (!orcs) return []
-    let r = filtro ? orcs.filter((o) => o.status === filtro) : orcs
+    // BLOCO 5.3: mostrar apenas a versão mais recente de cada grupo.
+    // Grupo = número base (sem sufixo -vN). Mantém o de maior versão.
+    const baseNum = (n: string) => String(n ?? "").replace(/-v\d+$/i, "")
+    const maisRecentePorGrupo = new Map<string, any>()
+    for (const o of orcs) {
+      const k = baseNum(o.numero)
+      const atual = maisRecentePorGrupo.get(k)
+      if (!atual || (o.versao ?? 1) > (atual.versao ?? 1)) {
+        maisRecentePorGrupo.set(k, o)
+      }
+    }
+    let r = Array.from(maisRecentePorGrupo.values())
+    if (filtro) r = r.filter((o) => o.status === filtro)
     const q = busca.trim().toLowerCase()
     if (q) {
       r = r.filter(

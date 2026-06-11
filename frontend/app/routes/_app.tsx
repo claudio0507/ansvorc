@@ -28,6 +28,8 @@ const TITLES: { prefix: string; title: string }[] = [
   { prefix: "/fichas/servicos", title: "Fichas de Serviço" },
   { prefix: "/orcamentos", title: "Orçamentos" },
   { prefix: "/clientes", title: "Clientes" },
+  { prefix: "/produtos-componentes", title: "Produtos e Componentes" },
+  { prefix: "/parametros", title: "Parâmetros" },
 ]
 
 function pageTitle(path: string): string {

@@ -252,3 +252,54 @@ export const fichaApi = {
   removeRecurso: (sId: number, rId: number) =>
     api.delete(`/fichas-servico/${sId}/recursos/${rId}`),
 }
+
+// ── BLOCO 3: unidades de medida + parâmetros ─────────────────────────────────
+
+export const unidadeApi = {
+  list: () => api.get<any[]>("/unidades-medida"),
+  create: (body: unknown) => api.post("/unidades-medida", body),
+  update: (id: number, b: unknown) => api.put(`/unidades-medida/${id}`, b),
+  delete: (id: number) => api.delete(`/unidades-medida/${id}`),
+}
+
+export const parametroApi = {
+  listSeguimentos: () => api.get<any[]>("/parametros/seguimentos"),
+  createSeguimento: (body: unknown) => api.post("/parametros/seguimentos", body),
+  updateSeguimento: (id: number, b: unknown) => api.put(`/parametros/seguimentos/${id}`, b),
+  deleteSeguimento: (id: number) => api.delete(`/parametros/seguimentos/${id}`),
+
+  listTipos: () => api.get<any[]>("/parametros/tipos-estrutura"),
+  createTipo: (body: unknown) => api.post("/parametros/tipos-estrutura", body),
+  updateTipo: (id: number, b: unknown) => api.put(`/parametros/tipos-estrutura/${id}`, b),
+  deleteTipo: (id: number) => api.delete(`/parametros/tipos-estrutura/${id}`),
+}
+
+// ── BLOCO 4: produtos, componentes, atribuição de fichas ─────────────────────
+
+export const componenteApi = {
+  list: () => api.get<any[]>("/componentes"),
+  get: (id: number) => api.get<any>(`/componentes/${id}`),
+  create: (body: unknown) => api.post<any>("/componentes", body),
+  update: (id: number, b: unknown) => api.put(`/componentes/${id}`, b),
+  delete: (id: number) => api.delete(`/componentes/${id}`),
+}
+
+export const produtoApi = {
+  list: () => api.get<any[]>("/produtos"),
+  get: (id: number) => api.get<any>(`/produtos/${id}`),
+  create: (body: unknown) => api.post<any>("/produtos", body),
+  update: (id: number, b: unknown) => api.put(`/produtos/${id}`, b),
+  delete: (id: number) => api.delete(`/produtos/${id}`),
+}
+
+export const itemFichaApi = {
+  list: (params?: { componente_id?: number; produto_id?: number }) => {
+    const qs = new URLSearchParams()
+    if (params?.componente_id) qs.set("componente_id", String(params.componente_id))
+    if (params?.produto_id) qs.set("produto_id", String(params.produto_id))
+    const s = qs.toString()
+    return api.get<any[]>(`/item-fichas${s ? `?${s}` : ""}`)
+  },
+  create: (body: unknown) => api.post("/item-fichas", body),
+  delete: (id: number) => api.delete(`/item-fichas/${id}`),
+}

@@ -32,7 +32,7 @@ import {
   TableRow,
 } from "~/components/ui/table"
 import { bdApi } from "~/lib/api"
-import { fmtBRL } from "~/lib/format"
+import { fmtBRL, fmtData } from "~/lib/format"
 
 const SEGUIMENTOS = ["EPS", "HORIZONTAL", "VERTICAL", "APOIO"]
 const UFS = ["PR", "SP", "SC", "RS", "MG", "RJ", "GO", "DF", "BA", "PE", "CE"]
@@ -435,25 +435,26 @@ export default function Bds() {
               {cfg.cols.map((c) => (
                 <TableHead key={c}>{c}</TableHead>
               ))}
+              <TableHead>Atualizado</TableHead>
               <TableHead className="w-10"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows === null ? (
               <TableRow>
-                <TableCell colSpan={cfg.cols.length + 1} className="text-muted-foreground py-8 text-center">
+                <TableCell colSpan={cfg.cols.length + 2} className="text-muted-foreground py-8 text-center">
                   Carregando…
                 </TableCell>
               </TableRow>
             ) : erro ? (
               <TableRow>
-                <TableCell colSpan={cfg.cols.length + 1} className="text-destructive py-8 text-center">
+                <TableCell colSpan={cfg.cols.length + 2} className="text-destructive py-8 text-center">
                   Erro: {erro}
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={cfg.cols.length + 1} className="text-muted-foreground py-8 text-center">
+                <TableCell colSpan={cfg.cols.length + 2} className="text-muted-foreground py-8 text-center">
                   Nenhum registro encontrado.
                 </TableCell>
               </TableRow>
@@ -463,6 +464,9 @@ export default function Bds() {
                   {cfg.row(r).map((cell, i) => (
                     <TableCell key={i}>{cell}</TableCell>
                   ))}
+                  <TableCell className="text-muted-foreground text-xs">
+                    {r.atualizado_em ? fmtData(r.atualizado_em) : "—"}
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" title="Excluir" onClick={() => del(r.id)}>
                       <TrashIcon className="text-destructive size-4" />

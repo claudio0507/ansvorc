@@ -132,7 +132,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 .dark {
     /* oklch bridge (dark) */
-    --background:    oklch(0.13 0.003 250);   /* ≈ #111214 */
+    --background:    oklch(0.18 0.004 264);   /* ≈ #1a1b1e (clareado p/ contraste) */
     --foreground:    oklch(0.90 0.003 250);   /* ≈ #e3e5e8 */
     --card:          oklch(0.19 0.004 250);   /* ≈ #2b2d31 */
     --card-foreground: oklch(0.90 0.003 250);

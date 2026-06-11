@@ -12,6 +12,8 @@ import {
   WrenchIcon,
   FileTextIcon,
   PercentIcon,
+  CubeIcon,
+  SlidersHorizontalIcon,
   type Icon,
 } from "@phosphor-icons/react"
 
@@ -70,6 +72,8 @@ function buildSections(): NavSection[] {
         { to: "/fichas/equipes", label: "Equipes", icon: UsersIcon },
         { to: "/fichas/produtos", label: "Produtos (BOM)", icon: StackIcon },
         { to: "/fichas/servicos", label: "Serviços", icon: WrenchIcon },
+        { to: "/produtos-componentes", label: "Produtos/Componentes", icon: CubeIcon },
+        { to: "/parametros", label: "Parâmetros", icon: SlidersHorizontalIcon },
       ],
     },
     {
