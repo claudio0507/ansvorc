@@ -39,6 +39,16 @@ from backend.schemas.bd_schemas import (
     BdRHRead,
     BdRHUpdate,
 )
+from backend.services.soft_delete import (
+    DependenciaError,
+    soft_delete,
+    verificar_bd_epi,
+    verificar_bd_estrutura,
+    verificar_bd_ferramental,
+    verificar_bd_frotas,
+    verificar_bd_materiais,
+    verificar_bd_rh,
+)
 
 router = APIRouter()
 
@@ -106,7 +116,7 @@ def atualizar_bdi(id: int, payload: BdBDIUpdate, db: Session = Depends(get_db)):
 @router.delete("/bd-bdi/{id}", status_code=status.HTTP_204_NO_CONTENT, tags=["bd_BDI"])
 def deletar_bdi(id: int, db: Session = Depends(get_db)):
     obj = _get_or_404(db, BdBDI, id)
-    db.delete(obj)
+    soft_delete(db, obj)
     db.commit()
 
 
@@ -150,8 +160,11 @@ def atualizar_rh(id: int, payload: BdRHUpdate, db: Session = Depends(get_db)):
 @router.delete("/bd-rh/{id}", status_code=status.HTTP_204_NO_CONTENT, tags=["bd_RH"])
 def deletar_rh(id: int, db: Session = Depends(get_db)):
     obj = _get_or_404(db, BdRH, id)
-    db.delete(obj)
-    db.commit()
+    try:
+        soft_delete(db, obj, verificar_bd_rh)
+        db.commit()
+    except DependenciaError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 # ── bd_EPI ──────────────────────────────────────────────────────────────────
@@ -194,8 +207,11 @@ def atualizar_epi(id: int, payload: BdEPIUpdate, db: Session = Depends(get_db)):
 @router.delete("/bd-epi/{id}", status_code=status.HTTP_204_NO_CONTENT, tags=["bd_EPI"])
 def deletar_epi(id: int, db: Session = Depends(get_db)):
     obj = _get_or_404(db, BdEPI, id)
-    db.delete(obj)
-    db.commit()
+    try:
+        soft_delete(db, obj, verificar_bd_epi)
+        db.commit()
+    except DependenciaError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 # ── bd_FERRAMENTAL ──────────────────────────────────────────────────────────
@@ -253,8 +269,11 @@ def atualizar_ferramental(
 )
 def deletar_ferramental(id: int, db: Session = Depends(get_db)):
     obj = _get_or_404(db, BdFerramental, id)
-    db.delete(obj)
-    db.commit()
+    try:
+        soft_delete(db, obj, verificar_bd_ferramental)
+        db.commit()
+    except DependenciaError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 # ── bd_FROTAS ───────────────────────────────────────────────────────────────
@@ -302,8 +321,11 @@ def atualizar_frotas(id: int, payload: BdFrotasUpdate, db: Session = Depends(get
 )
 def deletar_frotas(id: int, db: Session = Depends(get_db)):
     obj = _get_or_404(db, BdFrotas, id)
-    db.delete(obj)
-    db.commit()
+    try:
+        soft_delete(db, obj, verificar_bd_frotas)
+        db.commit()
+    except DependenciaError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 # ── bd_MATERIAIS ─────────────────────────────────────────────────────────────
@@ -352,8 +374,11 @@ def atualizar_materiais(
 )
 def deletar_materiais(id: int, db: Session = Depends(get_db)):
     obj = _get_or_404(db, BdMateriais, id)
-    db.delete(obj)
-    db.commit()
+    try:
+        soft_delete(db, obj, verificar_bd_materiais)
+        db.commit()
+    except DependenciaError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 # ── bd_ESTRUTURA_OPERACIONAL ─────────────────────────────────────────────────
@@ -414,8 +439,11 @@ def atualizar_estrutura(
 )
 def deletar_estrutura(id: int, db: Session = Depends(get_db)):
     obj = _get_or_404(db, BdEstrutura, id)
-    db.delete(obj)
-    db.commit()
+    try:
+        soft_delete(db, obj, verificar_bd_estrutura)
+        db.commit()
+    except DependenciaError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 # ── bd_DESPESAS ──────────────────────────────────────────────────────────────
@@ -465,5 +493,5 @@ def atualizar_despesas(
 )
 def deletar_despesas(id: int, db: Session = Depends(get_db)):
     obj = _get_or_404(db, BdDespesas, id)
-    db.delete(obj)
+    soft_delete(db, obj)
     db.commit()

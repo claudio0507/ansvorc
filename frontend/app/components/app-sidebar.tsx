@@ -14,6 +14,7 @@ import {
   PercentIcon,
   CubeIcon,
   SlidersHorizontalIcon,
+  ChartBarIcon,
   type Icon,
 } from "@phosphor-icons/react"
 
@@ -86,6 +87,7 @@ function buildSections(): NavSection[] {
         ...(podeVer("clientes")
           ? [{ to: "/clientes", label: "Clientes", icon: UsersThreeIcon }]
           : []),
+        { to: "/bi-precos", label: "BI — Preços", icon: ChartBarIcon },
       ],
     },
   ]

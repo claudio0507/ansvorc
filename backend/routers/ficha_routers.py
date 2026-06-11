@@ -36,6 +36,13 @@ from backend.schemas.ficha_schemas import (
     FichaServicoUpdate,
 )
 from backend.services import ficha_calc
+from backend.services.soft_delete import (
+    DependenciaError,
+    soft_delete,
+    verificar_ficha_equipe,
+    verificar_ficha_produto,
+    verificar_ficha_servico,
+)
 
 router = APIRouter()
 
@@ -116,8 +123,11 @@ def atualizar_ficha_equipe(
 )
 def deletar_ficha_equipe(id: int, db: Session = Depends(get_db)):
     obj = _get_or_404(db, FichaEquipe, id)
-    db.delete(obj)
-    db.commit()
+    try:
+        soft_delete(db, obj, verificar_ficha_equipe)
+        db.commit()
+    except DependenciaError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 @router.post(
@@ -229,8 +239,11 @@ def atualizar_ficha_produto(
 )
 def deletar_ficha_produto(id: int, db: Session = Depends(get_db)):
     obj = _get_or_404(db, FichaProduto, id)
-    db.delete(obj)
-    db.commit()
+    try:
+        soft_delete(db, obj, verificar_ficha_produto)
+        db.commit()
+    except DependenciaError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 @router.post(
@@ -358,8 +371,11 @@ def atualizar_ficha_servico(
 )
 def deletar_ficha_servico(id: int, db: Session = Depends(get_db)):
     obj = _get_or_404(db, FichaServico, id)
-    db.delete(obj)
-    db.commit()
+    try:
+        soft_delete(db, obj, verificar_ficha_servico)
+        db.commit()
+    except DependenciaError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 @router.post(

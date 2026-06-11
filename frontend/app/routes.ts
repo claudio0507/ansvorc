@@ -14,5 +14,6 @@ export default [
     route("clientes", "routes/clientes.tsx"),
     route("produtos-componentes", "routes/produtos-componentes.tsx"),
     route("parametros", "routes/parametros.tsx"),
+    route("bi-precos", "routes/bi-precos.tsx"),
   ]),
 ] satisfies RouteConfig

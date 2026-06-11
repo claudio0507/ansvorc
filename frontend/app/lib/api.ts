@@ -336,3 +336,20 @@ export const configApi = {
     return resp.json()
   },
 }
+
+// ── BI ────────────────────────────────────────────────────────────────────
+
+export const biApi = {
+  async precos(tipo: string, itemId: number, meses: number) {
+    const token = getToken()
+    const resp = await fetch(
+      `${BASE}/api/v1/bi/precos?tipo=${tipo}&item_id=${itemId}&meses=${meses}`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    )
+    if (!resp.ok) {
+      const e = await resp.json().catch(() => ({}))
+      throw new Error((e as any).detail ?? `Erro ${resp.status}`)
+    }
+    return resp.json()
+  },
+}
