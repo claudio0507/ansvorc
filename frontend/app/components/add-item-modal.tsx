@@ -201,7 +201,7 @@ export function AddItemModal({
           </div>
           <div className="flex flex-col gap-2">
             <Label>Quantidade *</Label>
-            <Input type="number" required min="0.0001" step="0.01" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
+            <Input type="number" required min="0" step="any" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
           </div>
 
           {(isOperacional || isManual) && (

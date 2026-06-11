@@ -373,7 +373,7 @@ function ProdutoEditor({ fichaId, onClose }: { fichaId: number; onClose: () => v
           </div>
           <div className="flex flex-col gap-2">
             <Label>Quantidade</Label>
-            <Input type="number" min="0.000001" step="0.01" value={qtd} onChange={(e) => setQtd(e.target.value)} />
+            <Input type="number" min="0" step="any" value={qtd} onChange={(e) => setQtd(e.target.value)} />
           </div>
           <Button type="submit" disabled={saving}>
             <PlusIcon className="size-4" /> Adicionar

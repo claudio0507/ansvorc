@@ -56,7 +56,7 @@ def exportar_pdf(id: int, db: Session = Depends(get_db)) -> Response:
 
     pdf_bytes = gerar_pdf_proposta(orc, itens, cliente)
 
-    safe_num = re.sub(r"[^\w\-.]", "_", str(orc.numero_proposta or ""))
+    safe_num = re.sub(r"[^\w\-.]", "_", str(orc.numero or ""))
     filename = f"proposta_{safe_num}.pdf"
     return Response(
         content=pdf_bytes,
@@ -81,11 +81,11 @@ def listar_versoes(id: int, db: Session = Depends(get_db)) -> list[dict]:
     return [
         {
             "id": orc.id,
-            "numero_proposta": orc.numero_proposta,
+            "numero": orc.numero,
             "versao": orc.versao,
             "status": orc.status,
             "total_proposta": orc.total_proposta,
-            "criado_em": orc.criado_em,
+            "created_at": orc.created_at,
         }
     ]
 
@@ -111,7 +111,7 @@ def dashboard(db: Session = Depends(get_db)) -> dict:
     # Total orçado no mês
     resultado_mes = (
         db.query(func.sum(Orcamento.total_proposta))
-        .filter(Orcamento.criado_em >= primeiro_dia_mes)
+        .filter(Orcamento.created_at >= primeiro_dia_mes)
         .scalar()
     )
     total_orcado_mes: Decimal = (
@@ -152,14 +152,14 @@ def dashboard(db: Session = Depends(get_db)) -> dict:
     total_orcamentos: int = db.query(func.count(Orcamento.id)).scalar() or 0
 
     # Últimos 5 orçamentos
-    recentes = db.query(Orcamento).order_by(Orcamento.criado_em.desc()).limit(5).all()
+    recentes = db.query(Orcamento).order_by(Orcamento.created_at.desc()).limit(5).all()
     orcamentos_recentes = [
         {
             "id": o.id,
-            "numero_proposta": o.numero_proposta,
+            "numero": o.numero,
             "status": o.status,
             "total_proposta": o.total_proposta,
-            "criado_em": o.criado_em,
+            "created_at": o.created_at,
         }
         for o in recentes
     ]

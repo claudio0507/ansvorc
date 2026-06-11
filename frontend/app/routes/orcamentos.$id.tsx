@@ -254,8 +254,8 @@ export default function OrcamentoEditor() {
                                   <Input
                                     type="number"
                                     defaultValue={it.quantidade}
-                                    min="0.0001"
-                                    step="0.01"
+                                    min="0"
+                                    step="any"
                                     className="h-8 w-20 text-right"
                                     onBlur={(e) => salvarQuantidade(it.id, e.target.value, it.quantidade)}
                                   />

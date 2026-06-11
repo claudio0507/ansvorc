@@ -551,8 +551,9 @@ class TestCalcular:
         total_nf = Decimal(str(data["total_nao_faturavel"]))
         total = Decimal(str(data["total_proposta"]))
         assert total_nf > 0
-        # sem desconto, total = subtotal + nao_faturavel
-        assert abs(total - (subtotal + total_nf)) < Decimal("0.01")
+        # sem desconto, total ≈ subtotal + nao_faturavel (tolerância p/ rounding
+        # acumulado do rateio Fator K por linha — Decimal(4) × várias linhas)
+        assert abs(total - (subtotal + total_nf)) < Decimal("0.50")
         assert Decimal(str(data["fator_k_percentual"])) > 0
         fat = [i for i in data["itens"] if i["bloco"] in ("servicos", "produtos")]
         soma = sum(Decimal(str(i["peso_rateio"])) for i in fat)
@@ -568,8 +569,11 @@ class TestCalcular:
         total = Decimal(str(data["total_proposta"]))
         # total deve ser ~10% menor que o subtotal (sem itens não faturáveis)
         assert abs(total - subtotal * Decimal("0.90")) < Decimal("0.50")
+        # desconto FLAT por linha: desconto_rateado = preco_venda_total × 10%
         item = data["itens"][0]
-        assert Decimal(str(item["desconto_rateado"])) > 0
+        preco = Decimal(str(item["preco_venda_total"]))
+        desc = Decimal(str(item["desconto_rateado"]))
+        assert abs(desc - preco * Decimal("0.10")) < Decimal("0.01")
 
     def test_calcular_sem_itens_422(self, orcamento_id):
         assert (
@@ -584,3 +588,29 @@ class TestCalcular:
         assert Decimal(str(d["total_proposta"])) > 0
         assert Decimal(str(d["total_custo_direto"])) > 0
         assert Decimal(str(d["margem_liquida_real"])) > 0
+
+
+# ── Dashboard (BLOCO 1.1 — regressão do 500 por campo renomeado) ──────────────
+
+
+class TestDashboard:
+    def test_dashboard_vazio_200(self):
+        resp = client.get("/api/v1/dashboard")
+        assert resp.status_code == 200
+        d = resp.json()
+        for chave in (
+            "total_orcado_mes",
+            "margem_media",
+            "por_status",
+            "total_orcamentos",
+            "orcamentos_recentes",
+        ):
+            assert chave in d
+
+    def test_dashboard_com_orcamento(self, orcamento_id):
+        resp = client.get("/api/v1/dashboard")
+        assert resp.status_code == 200
+        d = resp.json()
+        assert d["total_orcamentos"] >= 1
+        # recentes usa os campos renomeados (numero / created_at)
+        assert any(o["numero"] for o in d["orcamentos_recentes"])

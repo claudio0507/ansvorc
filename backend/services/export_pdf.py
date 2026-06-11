@@ -50,21 +50,21 @@ def _fmt_qty(value: Decimal | None) -> str:
 
 def _build_html(orc: Orcamento, itens: list[OrcamentoItem], cliente: Cliente) -> str:
     hoje = datetime.date.today().strftime("%d/%m/%Y")
-    criado_em_str = orc.criado_em.strftime("%d/%m/%Y") if orc.criado_em else hoje
+    criado_em_str = orc.created_at.strftime("%d/%m/%Y") if orc.created_at else hoje
     reidi_label = "Sim (REIDI)" if orc.beneficio_reidi else "Não"
 
     # Escapa todos os dados vindos do banco para evitar injeção HTML no PDF
-    e_numero_proposta = escape(str(orc.numero_proposta or ""))
+    e_numero_proposta = escape(str(orc.numero or ""))
     e_versao = escape(str(orc.versao or ""))
-    e_descricao_obra = escape(str(orc.descricao_obra or "—"))
+    e_descricao_obra = escape(str(orc.obra or "—"))
     e_uf_execucao = escape(str(orc.uf_execucao or ""))
     e_status = escape(str(orc.status or "").capitalize())
-    e_razao_social = escape(str(cliente.razao_social or "—"))
-    e_cnpj = escape(str(cliente.cnpj or "—"))
+    e_razao_social = escape(str(cliente.nome or "—"))
+    e_cnpj = escape(str(cliente.cnpj_cpf or "—"))
     e_contato_nome = escape(str(cliente.contato_nome or "—"))
     e_contato_email = escape(str(cliente.contato_email or "—"))
     e_contato_telefone = escape(str(cliente.contato_telefone or "—"))
-    e_uf_sede = escape(str(cliente.uf_sede or "—"))
+    e_uf_sede = escape(str(cliente.tipo or "—"))
 
     # Agrupa itens por bloco preservando a ordem definida
     blocos: dict[str, list[OrcamentoItem]] = {}
@@ -82,12 +82,12 @@ def _build_html(orc: Orcamento, itens: list[OrcamentoItem], cliente: Cliente) ->
             <td colspan="8">{escape(label)}</td>
         </tr>"""
         for item in bloco_itens:
-            bdi_pct = _fmt_pct(item.bdi_taxa)
+            bdi_pct = _fmt_pct(item.bdi_aplicado)
             tabela_html += f"""
         <tr>
             <td class="center">{escape(label[:3].upper())}</td>
             <td>{escape(str(item.descricao or ""))}</td>
-            <td class="center">{escape(str(item.unidade_medida or ""))}</td>
+            <td class="center">{escape(str(item.unidade or ""))}</td>
             <td class="right">{_fmt_qty(item.quantidade)}</td>
             <td class="right">{_fmt_brl(item.custo_direto_unitario)}</td>
             <td class="center">{bdi_pct}</td>
@@ -323,7 +323,7 @@ def _build_html(orc: Orcamento, itens: list[OrcamentoItem], cliente: Cliente) ->
       <div class="dado-valor">{e_contato_telefone}</div>
     </div>
     <div class="dado">
-      <div class="dado-label">UF Sede</div>
+      <div class="dado-label">Tipo</div>
       <div class="dado-valor">{e_uf_sede}</div>
     </div>
   </div>

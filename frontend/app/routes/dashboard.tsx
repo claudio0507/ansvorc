@@ -207,7 +207,7 @@ export default function Dashboard() {
                         {fmtBRL(o.total_proposta)}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-xs">
-                        {fmtData(o.criado_em)}
+                        {fmtData(o.created_at)}
                       </TableCell>
                       <TableCell>
                         <Button asChild variant="ghost" size="sm">

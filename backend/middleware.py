@@ -41,7 +41,17 @@ _PUBLICAS_EXACT_DEBUG = ("/openapi.json",)
 _PUBLICAS_EXACT = ("/", "/health")
 
 # Extensões de arquivos estáticos — sempre públicas
-_EXTENSOES_ESTATICAS = (".css", ".js", ".ico", ".png", ".jpg", ".svg", ".woff2", ".woff", ".ttf")
+_EXTENSOES_ESTATICAS = (
+    ".css",
+    ".js",
+    ".ico",
+    ".png",
+    ".jpg",
+    ".svg",
+    ".woff2",
+    ".woff",
+    ".ttf",
+)
 
 
 def _eh_publica(path: str) -> bool:

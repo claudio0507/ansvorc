@@ -550,7 +550,7 @@ def calcular_orcamento(id: int, db: Session = Depends(get_db)):
     subtotal_faturavel = sum((r["preco_total_base"] for r in fat), Decimal("0"))
     total_antes_desc = subtotal_faturavel + total_nao_faturavel
 
-    # Passo 4 — Margem Líquida Real (sobre total antes do desconto)
+    # Passo 4 — base p/ Margem Líquida Real (calculada após aplicar o desconto)
     itens_mlr = [
         {
             "custo_direto": Decimal(r["item"].custo_direto_unitario),
@@ -561,38 +561,45 @@ def calcular_orcamento(id: int, db: Session = Depends(get_db)):
         }
         for r in fat
     ]
-    mlr = margem_liquida_real(itens_mlr, total_antes_desc)
 
-    # Passo 5 — Desconto sobre o total, rateado por peso de cada linha
+    # Passo 5/6 — Desconto FLAT por linha (BLOCO 2.1 do prompt-melhorias):
+    #   desconto_rateado = preco_venda_linha × (desconto% / 100)  [em TODAS as linhas]
+    #   preco_venda_final = preco_venda_linha − desconto_rateado
+    #   total_proposta = Σ (preco_venda_linha − desconto_rateado)
     desc_frac = Decimal(orc.desconto_percentual) / Decimal("100")
-    total_desconto = _q4(total_antes_desc * desc_frac)
+    total_desconto = Decimal("0")
+    total_com_desconto = Decimal("0")
 
-    # Passo 6 — Persistir nos itens (preço com rateio K embutido no preço final)
     for r in fat:
         item = r["item"]
         fkr = fk_por_id.get(item.id, {})
-        preco_final_linha = fkr.get("preco_final", r["preco_total_base"])
+        preco_linha = _q4(fkr.get("preco_final", r["preco_total_base"]))
         peso = fkr.get("peso_percentual", Decimal("0"))
+        desc_linha = _q4(preco_linha * desc_frac)
         item.bdi_aplicado = r["bdi"]
         item.peso_rateio = peso
-        # desconto rateado proporcional ao peso da linha no faturável
-        item.desconto_rateado = (
-            _q4(total_desconto * (peso / Decimal("100"))) if peso else Decimal("0")
-        )
-        item.preco_venda_total = _q4(preco_final_linha)
-        item.preco_venda_unitario = _q4(preco_final_linha / item.quantidade)
+        item.desconto_rateado = desc_linha
+        item.preco_venda_total = preco_linha
+        item.preco_venda_unitario = _q4(preco_linha / item.quantidade)
         item.lucro_absoluto = _q4(r["lucro_abs"])
+        total_desconto += desc_linha
+        total_com_desconto += preco_linha - desc_linha
 
+    # Itens não faturáveis: o custo carregado é DILUÍDO nos faturáveis via Fator K
+    # (já embutido em preco_final acima). Portanto NÃO somam de novo ao total —
+    # exibem desconto_rateado apenas para referência visual.
     for r in nfat:
         item = r["item"]
+        preco_linha = _q4(r["carregado"])
         item.bdi_aplicado = Decimal("0")
         item.preco_venda_unitario = Decimal(item.custo_direto_unitario)
-        item.preco_venda_total = _q4(r["carregado"])
+        item.preco_venda_total = preco_linha
         item.peso_rateio = Decimal("0")
-        item.desconto_rateado = Decimal("0")
+        item.desconto_rateado = _q4(preco_linha * desc_frac)
         item.lucro_absoluto = Decimal("0")
 
-    total_proposta = _q4(total_antes_desc - total_desconto)
+    total_proposta = _q4(total_com_desconto)
+    mlr = margem_liquida_real(itens_mlr, total_proposta)
     orc.total_custo_direto = _q4(total_custo_direto)
     orc.total_proposta = total_proposta
     orc.margem_liquida_real = mlr
