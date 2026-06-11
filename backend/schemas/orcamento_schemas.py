@@ -104,6 +104,7 @@ class OrcamentoCreate(BaseModel):
     uf_execucao: str = "PR"
     beneficio_reidi: bool = False
     desconto_percentual: Decimal = Decimal("0")
+    orcamentista_id: int | None = None  # BLOCO 2.4
 
     _norm_obra = field_validator("obra")(normalizar_texto)
     _valida_uf = field_validator("uf_execucao")(_check_uf)

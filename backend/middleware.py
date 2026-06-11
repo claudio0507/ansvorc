@@ -35,6 +35,9 @@ _RBAC: list[tuple[str, frozenset[str]]] = [
     ("/api/v1/componentes", frozenset({"parametrizador", "sponsor"})),
     ("/api/v1/produtos", frozenset({"parametrizador", "sponsor"})),
     ("/api/v1/item-fichas", frozenset({"parametrizador", "sponsor"})),
+    # Orçamentistas e config: lidos por orçamentista (criar orçamento) + parametrizador/sponsor
+    ("/api/v1/orcamentistas", frozenset({"orcamentista", "parametrizador", "sponsor"})),
+    ("/api/v1/config", _TODOS_PAPEIS),
 ]
 
 # Paths que exigem startswith

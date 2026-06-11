@@ -15,6 +15,7 @@ from backend.middleware import AuthMiddleware
 from backend.routers.auth_routers import _limiter
 from backend.routers.auth_routers import router as auth_router
 from backend.routers.bd_routers import router as bd_router
+from backend.routers.extra_routers import router as extra_router
 from backend.routers.ficha_routers import router as ficha_router
 from backend.routers.orcamento_routers import router as orcamento_router
 from backend.routers.param_routers import router as param_router
@@ -61,7 +62,14 @@ app.include_router(ficha_router, prefix="/api/v1")
 app.include_router(orcamento_router, prefix="/api/v1")
 app.include_router(param_router, prefix="/api/v1")
 app.include_router(produto_router, prefix="/api/v1")
+app.include_router(extra_router, prefix="/api/v1")
 app.include_router(relatorio_router, prefix="/api/v1")
+
+
+# Estáticos do backend (logo da empresa, etc.)
+_STATIC = Path(__file__).parent / "static"
+_STATIC.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
 
 
 @app.get("/health", tags=["health"])

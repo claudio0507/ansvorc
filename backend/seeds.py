@@ -287,6 +287,21 @@ def seed_parametros(db):
     )
 
 
+def seed_extra(db):
+    """Config do sistema + orçamentista exemplo (v2)."""
+    from backend.models.extra_models import ConfigSistema, UsuarioOrcamentista
+
+    db.add(ConfigSistema(nome_empresa="ALTA NOROESTE"))
+    db.add(
+        UsuarioOrcamentista(
+            nome_completo="Cláudio Rodrigo",
+            funcao="Orçamentista Sênior",
+            email="orc@altanoroeste.com.br",
+            telefone="(41) 9 9999-9999",
+        )
+    )
+
+
 def run():
     from backend.models.usuario_models import Usuario
 
@@ -306,6 +321,7 @@ def run():
         seed_estrutura(db)
         seed_despesas(db)
         seed_parametros(db)
+        seed_extra(db)
         seed_usuarios(db)
         db.commit()
 
