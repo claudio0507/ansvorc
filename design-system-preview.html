@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sinalys — Design System Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #c32a30;
+      --primary-hover: #a02026;
+      --success: #4ade80;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --info: #60a5fa;
+      --font: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    /* DARK THEME */
+    .theme-dark {
+      --bg-page: #0b0f19;
+      --bg-card: rgba(18, 22, 36, 0.85);
+      --bg-card-solid: #121624;
+      --bg-input: rgba(255,255,255,0.05);
+      --border: rgba(255,255,255,0.08);
+      --text-primary: #f9fafb;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --shadow: 0 8px 32px rgba(0,0,0,0.4);
+      --glass-bg: rgba(18, 22, 36, 0.6);
+      --glass-blur: blur(16px) saturate(180%);
+    }
+
+    /* LIGHT THEME */
+    .theme-light {
+      --bg-page: #f1f5f9;
+      --bg-card: #ffffff;
+      --bg-card-solid: #ffffff;
+      --bg-input: #f8fafc;
+      --border: rgba(0,0,0,0.08);
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --shadow: 0 4px 16px rgba(0,0,0,0.08);
+      --glass-bg: rgba(255,255,255,0.7);
+      --glass-blur: blur(12px) saturate(150%);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font); background: var(--bg-page); color: var(--text-primary); transition: all 0.3s ease; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+    /* HEADER */
+    .header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px;
+      padding-bottom: 16px; border-bottom: 1px solid var(--border);
+    }
+    .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+    .header .subtitle { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+    .theme-toggle {
+      padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-card); color: var(--text-primary); cursor: pointer;
+      font-family: var(--font); font-size: 13px; font-weight: 500;
+    }
+
+    /* SECTIONS */
+    .section { margin-bottom: 40px; }
+    .section-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: 16px; }
+
+    /* CARDS */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px; box-shadow: var(--shadow); backdrop-filter: var(--glass-blur);
+      transition: all 0.2s ease;
+    }
+    .theme-light .card { backdrop-filter: none; }
+    .card:hover { transform: translateY(-1px); box-shadow: 0 12px 40px rgba(0,0,0,0.12); }
+
+    /* BADGES */
+    .badge {
+      display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 6px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .badge-success { background: rgba(74,222,128,0.15); color: var(--success); }
+    .badge-warning { background: rgba(251,191,36,0.15); color: var(--warning); }
+    .badge-danger { background: rgba(248,113,113,0.15); color: var(--danger); }
+    .badge-info { background: rgba(96,165,250,0.15); color: var(--info); }
+    .badge-dark { background: #374151; color: #f9fafb; }
+    .theme-light .badge-dark { background: #e2e8f0; color: #0f172a; }
+    .badge-primary { background: rgba(195,42,48,0.12); color: var(--primary); }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; border: none; cursor: pointer; font-family: var(--font);
+      transition: all 0.15s ease;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); }
+    .btn-ghost { background: transparent; color: var(--text-secondary); }
+
+    /* INPUTS */
+    .input {
+      width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-input); color: var(--text-primary); font-family: var(--font); font-size: 13px;
+      outline: none; transition: border-color 0.15s;
+    }
+    .input:focus { border-color: var(--primary); }
+    .input::placeholder { color: var(--text-muted); }
+
+    /* TABLE */
+    .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { padding: 12px 16px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); background: var(--bg-card); border-bottom: 1px solid var(--border); white-space: nowrap; }
+    td { padding: 12px 16px; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .theme-light tr:hover td { background: rgba(0,0,0,0.02); }
+
+    /* FINANCIAL PANEL */
+    .financial-panel {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 24px;
+    }
+    .financial-panel .card {
+      text-align: center; padding: 16px;
+    }
+    .financial-panel .label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px;
+    }
+    .financial-panel .value {
+      font-size: 22px; font-weight: 700; color: var(--text-primary);
+    }
+    .financial-panel .value-success { color: var(--success); }
+    .financial-panel .value-primary { color: var(--primary); }
+    .financial-panel .value-muted { color: var(--text-muted); font-weight: 500; }
+
+    /* GRID LAYOUT DEMO */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    @media (max-width: 768px) {
+      .grid-2, .grid-3, .financial-panel { grid-template-columns: 1fr; }
+    }
+
+    /* ORC BLOCO */
+    .bloco-header { padding: 12px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+    .bloco-servicos { background: rgba(195,42,48,0.08); color: var(--primary); }
+    .bloco-produtos { background: rgba(96,165,250,0.08); color: var(--info); }
+    .bloco-operacional { background: rgba(251,191,36,0.08); color: var(--warning); }
+    .bloco-excepcionais { background: rgba(248,113,113,0.08); color: var(--danger); }
+
+    /* SIDEBAR */
+    .sidebar { width: 240px; background: var(--bg-card); border-right: 1px solid var(--border); padding: 20px; height: 100vh; position: fixed; left: 0; top: 0; }
+    .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px; color: var(--text-secondary); cursor: pointer; margin-bottom: 4px; }
+    .sidebar-item:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
+    .sidebar-item.active { background: rgba(195,42,48,0.1); color: var(--primary); font-weight: 600; }
+    .theme-light .sidebar-item:hover { background: rgba(0,0,0,0.04); }
+    .sidebar-logo { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 24px; letter-spacing: -0.5px; }
+
+    .main-with-sidebar { margin-left: 240px; padding: 24px; }
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main-with-sidebar { margin-left: 0; }
+    }
+
+    .preview-wrapper { display: flex; min-height: 100vh; }
+  </style>
+</head>
+<body class="theme-dark">
+
+<div class="preview-wrapper">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">Sinalys</div>
+    <div class="sidebar-item active">Dashboard</div>
+    <div class="sidebar-item">Orçamentos</div>
+    <div class="sidebar-item">Fichas Técnicas</div>
+    <div class="sidebar-item">Bancos de Dados</div>
+    <div class="sidebar-item">Clientes</div>
+    <div class="sidebar-item" style="margin-top: auto; border-top: 1px solid var(--border); padding-top: 16px;">
+      <span style="font-size: 12px; color: var(--text-muted);">Sponsor</span>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-with-sidebar">
+    <div class="header">
+      <div>
+        <h1>Design System Preview</h1>
+        <div class="subtitle">Sinalys — Alta Noroeste Sinalização Viária</div>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()">Alternar Tema</button>
+    </div>
+
+    <div class="container">
+      <!-- BADGES -->
+      <div class="section">
+        <div class="section-title">Badges</div>
+        <div class="card" style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <span class="badge badge-success">Aprovado</span>
+          <span class="badge badge-warning">Rascunho</span>
+          <span class="badge badge-danger">Reprovado</span>
+          <span class="badge badge-info">Calculado</span>
+          <span class="badge badge-dark">Dark Badge</span>
+          <span class="badge badge-primary">BDI</span>
+        </div>
+      </div>
+
+      <!-- BUTTONS -->
+      <div class="section">
+        <div class="section-title">Botões</div>
+        <div class="card" style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button class="btn btn-primary">+ Novo Orçamento</button>
+          <button class="btn btn-secondary">Cancelar</button>
+          <button class="btn btn-ghost">Ver Detalhes</button>
+        </div>
+      </div>
+
+      <!-- INPUTS -->
+      <div class="section">
+        <div class="section-title">Formulários</div>
+        <div class="card grid-2">
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Código</label>
+            <input class="input" type="text" placeholder="EQ-001" value="EQ-001">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Seguimento</label>
+            <select class="input" style="cursor: pointer;">
+              <option>EPS</option>
+              <option>HORIZONTAL</option>
+              <option>VERTICAL</option>
+              <option>APOIO</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Custo Diário</label>
+            <input class="input" type="number" placeholder="0,00" value="185.50">
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Status</label>
+            <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+              <span class="badge badge-success">Ativo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="section">
+        <div class="section-title">Tabela — BDI por UF</div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Modalidade</th>
+                <th>UF</th>
+                <th>ICMS</th>
+                <th>COFINS</th>
+                <th>PIS</th>
+                <th>ISSQN</th>
+                <th>Cst Fin</th>
+                <th>IRPJ</th>
+                <th>CSLL</th>
+                <th>Desp Adm</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-weight: 600; color: var(--text-primary);">BDI-MAT+MO</td>
+                <td><span class="badge badge-dark">PR</span></td>
+                <td>0,0000</td>
+                <td>0,0300</td>
+                <td>0,0065</td>
+                <td>0,0350</td>
+                <td>0,0150</td>
+                <td>0,0200</td>
+                <td>0,0108</td>
+                <td>0,1300</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600; color: var(--text-primary);">BDI-MO</td>
+                <td><span class="badge badge-dark">SP</span></td>
+                <td>0,0000</td>
+                <td>0,0000</td>
+                <td>0,0000</td>
+                <td>0,0500</td>
+                <td>0,0150</td>
+                <td>0,0200</td>
+                <td>0,0108</td>
+                <td>0,1300</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ORÇAMENTO BLOCOS -->
+      <div class="section">
+        <div class="section-title">Orçamento — Blocos Agrupados</div>
+        <div class="card">
+          <div class="bloco-header bloco-servicos">1. Serviços</div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr><th>Item</th><th>QTD</th><th>Un</th><th>Custo Unit</th><th>Custo Total</th></tr>
+              </thead>
+              <tbody>
+                <tr><td style="font-weight: 600;">SV-001 — Sinalização Horizontal</td><td>1.200,00</td><td>m²</td><td>R$ 45,80</td><td>R$ 54.960,00</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="bloco-header bloco-produtos" style="margin-top: 20px;">2. Produtos</div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr><th>Item</th><th>QTD</th><th>Un</th><th>Custo Unit</th><th>Custo Total</th></tr>
+              </thead>
+              <tbody>
+                <tr><td style="font-weight: 600;">PR-002 — Tinta Termoplástica</td><td>500,00</td><td>kg</td><td>R$ 18,50</td><td>R$ 9.250,00</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="bloco-header bloco-operacional" style="margin-top: 20px;">3. Estrutura Operacional (BDI Sombra)</div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr><th>Item</th><th>QTD</th><th>Un</th><th>Custo Unit</th><th>Custo Total</th></tr>
+              </thead>
+              <tbody>
+                <tr><td style="font-weight: 600;">Base de Apoio</td><td>1,00</td><td>un</td><td>R$ 3.500,00</td><td>R$ 3.500,00</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- FINANCIAL PANEL -->
+      <div class="section">
+        <div class="section-title">Painel Financeiro</div>
+        <div class="card">
+          <div class="financial-panel">
+            <div class="card">
+              <div class="label">Custo Total</div>
+              <div class="value value-muted">R$ 67.710,00</div>
+            </div>
+            <div class="card">
+              <div class="label">BDI Sombra</div>
+              <div class="value value-muted">R$ 12.187,80</div>
+            </div>
+            <div class="card">
+              <div class="label">Margem Líquida Real</div>
+              <div class="value value-success">R$ 8.405,80</div>
+            </div>
+            <div class="card">
+              <div class="label">Total da Proposta</div>
+              <div class="value value-primary">R$ 88.303,60</div>
+            </div>
+          </div>
+          <div style="margin-top: 16px; text-align: center; font-size: 12px; color: var(--text-muted);">
+            Apenas <strong style="color: var(--success);">Margem Líquida Real</strong> (verde) e <strong style="color: var(--primary);">Total da Proposta</strong> (#c32a30) possuem cores destacadas
+          </div>
+        </div>
+      </div>
+
+      <!-- CARDS GRID -->
+      <div class="section">
+        <div class="section-title">Cards</div>
+        <div class="grid-3">
+          <div class="card">
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Orçamentos Ativos</div>
+            <div style="font-size: 32px; font-weight: 700; color: var(--primary);">24</div>
+          </div>
+          <div class="card">
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Fichas de Equipe</div>
+            <div style="font-size: 32px; font-weight: 700; color: var(--text-primary);">12</div>
+          </div>
+          <div class="card">
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Clientes</div>
+            <div style="font-size: 32px; font-weight: 700; color: var(--text-primary);">8</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleTheme() {
+    const body = document.body;
+    if (body.classList.contains('theme-dark')) {
+      body.classList.remove('theme-dark');
+      body.classList.add('theme-light');
+    } else {
+      body.classList.remove('theme-light');
+      body.classList.add('theme-dark');
+    }
+  }
+</script>
+
+</body>
+</html>
