@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { PlusIcon, TrashIcon } from "@phosphor-icons/react"
+import { PencilSimpleIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react"
 
 import { PageHeader } from "~/components/page-header"
 import { Badge } from "~/components/ui/badge"
@@ -22,14 +22,16 @@ import { configApi, orcamentistaApi, parametroApi, unidadeApi } from "~/lib/api"
 interface ListaSimplesProps {
   load: () => Promise<any[]>
   create: (b: any) => Promise<any>
+  update: (id: number, b: any) => Promise<any>
   del: (id: number) => Promise<any>
   campos: { key: string; label: string; placeholder?: string }[]
   colunas: { key: string; label: string }[]
 }
 
-function CrudSimples({ load, create, del, campos, colunas }: ListaSimplesProps) {
+function CrudSimples({ load, create, update, del, campos, colunas }: ListaSimplesProps) {
   const [rows, setRows] = useState<any[] | null>(null)
   const [form, setForm] = useState<Record<string, string>>({})
+  const [editId, setEditId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
 
   async function refresh() {
@@ -49,9 +51,15 @@ function CrudSimples({ load, create, del, campos, colunas }: ListaSimplesProps) 
     e.preventDefault()
     setSaving(true)
     try {
-      await create(form)
+      if (editId !== null) {
+        await update(editId, form)
+        setEditId(null)
+        toast.success("Registro atualizado")
+      } else {
+        await create(form)
+        toast.success("Registro adicionado")
+      }
       setForm({})
-      toast.success("Registro adicionado")
       refresh()
     } catch (err: any) {
       toast.error(`Erro: ${err.message}`)
@@ -86,8 +94,13 @@ function CrudSimples({ load, create, del, campos, colunas }: ListaSimplesProps) 
           </div>
         ))}
         <Button type="submit" size="sm" disabled={saving}>
-          <PlusIcon className="size-4" /> Adicionar
+          <PlusIcon className="size-4" /> {editId !== null ? "Atualizar" : "Adicionar"}
         </Button>
+        {editId !== null && (
+          <Button type="button" size="sm" variant="ghost" onClick={() => { setEditId(null); setForm({}) }}>
+            Cancelar
+          </Button>
+        )}
       </form>
 
       <Card className="overflow-x-auto py-0">
@@ -116,6 +129,9 @@ function CrudSimples({ load, create, del, campos, colunas }: ListaSimplesProps) 
                     {r.ativo ? <Badge variant="success">ATIVO</Badge> : <Badge variant="secondary">INATIVO</Badge>}
                   </TableCell>
                   <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => { setEditId(r.id); setForm(campos.reduce((acc: any, c: any) => ({ ...acc, [c.key]: r[c.key] ?? "" }), {})) }}>
+                      <PencilSimpleIcon className="text-muted-foreground size-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => remover(r.id)}>
                       <TrashIcon className="text-destructive size-4" />
                     </Button>
@@ -219,6 +235,7 @@ export default function Parametros() {
           <CrudSimples
             load={parametroApi.listSeguimentos}
             create={(b) => parametroApi.createSeguimento(b)}
+            update={(id, b) => parametroApi.updateSeguimento(id, b)}
             del={parametroApi.deleteSeguimento}
             campos={[{ key: "nome", label: "Nome", placeholder: "EPS" }]}
             colunas={[{ key: "nome", label: "Nome" }]}
@@ -229,6 +246,7 @@ export default function Parametros() {
           <CrudSimples
             load={parametroApi.listTipos}
             create={(b) => parametroApi.createTipo(b)}
+            update={(id, b) => parametroApi.updateTipo(id, b)}
             del={parametroApi.deleteTipo}
             campos={[{ key: "nome", label: "Nome", placeholder: "Base_de_Apoio" }]}
             colunas={[{ key: "nome", label: "Nome" }]}
@@ -239,6 +257,7 @@ export default function Parametros() {
           <CrudSimples
             load={unidadeApi.list}
             create={(b) => unidadeApi.create(b)}
+            update={(id, b) => unidadeApi.update(id, b)}
             del={unidadeApi.delete}
             campos={[
               { key: "sigla", label: "Sigla", placeholder: "m²" },
@@ -255,6 +274,7 @@ export default function Parametros() {
           <CrudSimples
             load={orcamentistaApi.list}
             create={(b) => orcamentistaApi.create(b)}
+            update={(id, b) => orcamentistaApi.update(id, b)}
             del={orcamentistaApi.delete}
             campos={[
               { key: "nome_completo", label: "Nome Completo", placeholder: "João Silva" },

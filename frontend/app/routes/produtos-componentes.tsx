@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { PlusIcon, TrashIcon, LinkIcon } from "@phosphor-icons/react"
+import { PencilSimpleIcon, PlusIcon, TrashIcon, LinkIcon } from "@phosphor-icons/react"
 
 import { PageHeader } from "~/components/page-header"
 import { Badge } from "~/components/ui/badge"
@@ -31,11 +31,13 @@ type Tipo = "produto" | "componente"
 
 function NovoModal({
   tipo,
+  editItem,
   open,
   onOpenChange,
   onSaved,
 }: {
   tipo: Tipo
+  editItem?: any
   open: boolean
   onOpenChange: (v: boolean) => void
   onSaved: () => void
@@ -43,24 +45,44 @@ function NovoModal({
   const [v, setV] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const api = tipo === "produto" ? produtoApi : componenteApi
+  const isEdit = !!editItem
 
   useEffect(() => {
-    if (open) setV({})
-  }, [open])
+    if (open) {
+      if (editItem) {
+        setV({
+          nome: editItem.nome || "",
+          descricao: editItem.descricao || "",
+          caracteristicas: editItem.caracteristicas || "",
+          dimensoes: editItem.dimensoes || "",
+          setor: editItem.setor || "",
+          deposito_produtivo: editItem.deposito_produtivo || "",
+        })
+      } else {
+        setV({})
+      }
+    }
+  }, [open, editItem])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
+    const payload = {
+      nome: v.nome,
+      descricao: v.descricao || null,
+      caracteristicas: v.caracteristicas || null,
+      dimensoes: v.dimensoes || null,
+      setor: v.setor || null,
+      deposito_produtivo: v.deposito_produtivo || null,
+    }
     try {
-      await api.create({
-        nome: v.nome,
-        descricao: v.descricao || null,
-        caracteristicas: v.caracteristicas || null,
-        dimensoes: v.dimensoes || null,
-        setor: v.setor || null,
-        deposito_produtivo: v.deposito_produtivo || null,
-      })
-      toast.success("Registro criado")
+      if (isEdit) {
+        await api.update(editItem.id, payload)
+        toast.success("Registro atualizado")
+      } else {
+        await api.create(payload)
+        toast.success("Registro criado")
+      }
       onOpenChange(false)
       onSaved()
     } catch (err: any) {
@@ -74,7 +96,7 @@ function NovoModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Novo {tipo === "produto" ? "Produto" : "Componente"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Editar" : "Novo"} {tipo === "produto" ? "Produto" : "Componente"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2 sm:col-span-2">
@@ -99,7 +121,7 @@ function NovoModal({
           </div>
           <DialogFooter className="sm:col-span-2">
             <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" disabled={saving}>{saving ? "Criando…" : "Criar"}</Button>
+            <Button type="submit" disabled={saving}>{saving ? "Salvando…" : isEdit ? "Atualizar" : "Criar"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -201,6 +223,7 @@ function Aba({ tipo }: { tipo: Tipo }) {
   const api = tipo === "produto" ? produtoApi : componenteApi
   const [rows, setRows] = useState<any[] | null>(null)
   const [novoOpen, setNovoOpen] = useState(false)
+  const [editItem, setEditItem] = useState<any | null>(null)
   const [atribuir, setAtribuir] = useState<any | null>(null)
 
   async function refresh() {
@@ -262,6 +285,9 @@ function Aba({ tipo }: { tipo: Tipo }) {
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" title="Editar" onClick={() => { setEditItem(r); setNovoOpen(true) }}>
+                        <PencilSimpleIcon className="text-muted-foreground size-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" title="Atribuir ficha técnica" onClick={() => setAtribuir(r)}>
                         <LinkIcon className="size-4" />
                       </Button>
@@ -277,7 +303,7 @@ function Aba({ tipo }: { tipo: Tipo }) {
         </Table>
       </Card>
 
-      <NovoModal tipo={tipo} open={novoOpen} onOpenChange={setNovoOpen} onSaved={refresh} />
+      <NovoModal tipo={tipo} editItem={editItem} open={novoOpen} onOpenChange={(v) => { setNovoOpen(v); if (!v) setEditItem(null) }} onSaved={refresh} />
       <AtribuirFichaModal tipo={tipo} item={atribuir} onClose={() => { setAtribuir(null); refresh() }} />
     </>
   )

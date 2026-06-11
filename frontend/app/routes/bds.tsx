@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useParams } from "react-router"
 import { toast } from "sonner"
-import { MagnifyingGlassIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react"
+import { MagnifyingGlassIcon, PencilSimpleIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react"
 
 import { PageHeader } from "~/components/page-header"
 import { Badge } from "~/components/ui/badge"
@@ -60,6 +60,7 @@ interface BdConfig {
   list: (filtro?: string) => Promise<any[]>
   delete: (id: number) => Promise<any>
   create: (d: any) => Promise<any>
+  update: (id: number, d: any) => Promise<any>
   formFields: Field[]
   filter?: { kind: "uf" | "seguimento"; options: string[] }
 }
@@ -102,6 +103,7 @@ const BD_CONFIG: Record<string, BdConfig> = {
     list: (uf) => bdApi.listBDI(uf),
     delete: (id) => bdApi.deleteBDI(id),
     create: (d) => bdApi.createBDI(d),
+    update: (id, d) => bdApi.updateBDI(id, d),
     filter: { kind: "uf", options: UFS },
     formFields: [
       { name: "modalidade", label: "Modalidade", type: "select", required: true, options: MODALIDADES },
@@ -124,6 +126,7 @@ const BD_CONFIG: Record<string, BdConfig> = {
     list: () => bdApi.listRH() as Promise<any[]>,
     delete: (id) => bdApi.deleteRH(id),
     create: (d) => bdApi.createRH(d),
+    update: (id, d) => bdApi.updateRH(id, d),
     formFields: [
       { name: "cargo", label: "Cargo", type: "text", required: true, placeholder: "Encarregado" },
       { name: "custo_diario", label: "Custo Diário (R$)", type: "number", required: true, step: "0.01" },
@@ -137,6 +140,7 @@ const BD_CONFIG: Record<string, BdConfig> = {
     list: () => bdApi.listEPI() as Promise<any[]>,
     delete: (id) => bdApi.deleteEPI(id),
     create: (d) => bdApi.createEPI(d),
+    update: (id, d) => bdApi.updateEPI(id, d),
     formFields: [
       { name: "item", label: "Item", type: "text", required: true, placeholder: "Kit EPI Encarregado" },
       { name: "custo_diario", label: "Custo Diário (R$)", type: "number", required: true, step: "0.01" },
@@ -150,6 +154,7 @@ const BD_CONFIG: Record<string, BdConfig> = {
     list: (s) => bdApi.listFerr(s),
     delete: (id) => bdApi.deleteFerr(id),
     create: (d) => bdApi.createFerr(d),
+    update: (id, d) => bdApi.updateFerr(id, d),
     filter: { kind: "seguimento", options: SEG_FERR },
     formFields: [
       { name: "seguimento", label: "Seguimento", type: "select", required: true, options: SEG_FERR },
@@ -164,6 +169,7 @@ const BD_CONFIG: Record<string, BdConfig> = {
     list: (s) => bdApi.listFrotas(s),
     delete: (id) => bdApi.deleteFrota(id),
     create: (d) => bdApi.createFrota(d),
+    update: (id, d) => bdApi.updateFrota(id, d),
     filter: { kind: "seguimento", options: SEG_FROTA },
     formFields: [
       { name: "seguimento", label: "Seguimento", type: "select", required: true, options: SEG_FROTA },
@@ -184,6 +190,7 @@ const BD_CONFIG: Record<string, BdConfig> = {
     list: () => bdApi.listMat() as Promise<any[]>,
     delete: (id) => bdApi.deleteMat(id),
     create: (d) => bdApi.createMat(d),
+    update: (id, d) => bdApi.updateMat(id, d),
     formFields: [
       { name: "material", label: "Material", type: "text", required: true, placeholder: "Chapa de Aço 1,00" },
       { name: "unidade", label: "Unidade", type: "text", required: true, placeholder: "und, kg, L…" },
@@ -205,6 +212,7 @@ const BD_CONFIG: Record<string, BdConfig> = {
     list: () => bdApi.listEst() as Promise<any[]>,
     delete: (id) => bdApi.deleteEst(id),
     create: (d) => bdApi.createEst(d),
+    update: (id, d) => bdApi.updateEst(id, d),
     formFields: [
       { name: "item", label: "Item", type: "text", required: true },
       { name: "unidade", label: "Unidade", type: "text", required: true },
@@ -226,6 +234,7 @@ const BD_CONFIG: Record<string, BdConfig> = {
     list: (s) => bdApi.listDesp(s),
     delete: (id) => bdApi.deleteDesp(id),
     create: (d) => bdApi.createDesp(d),
+    update: (id, d) => bdApi.updateDesp(id, d),
     filter: { kind: "seguimento", options: SEGUIMENTOS },
     formFields: [
       { name: "seguimento", label: "Seguimento", type: "select", required: true, options: SEGUIMENTOS },
@@ -238,27 +247,34 @@ const BD_CONFIG: Record<string, BdConfig> = {
 
 function NovoModal({
   cfg,
+  editItem,
   open,
   onOpenChange,
   onSaved,
 }: {
   cfg: BdConfig
+  editItem?: any
   open: boolean
   onOpenChange: (v: boolean) => void
   onSaved: () => void
 }) {
   const [values, setValues] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
+  const isEdit = !!editItem
 
   useEffect(() => {
     if (open) {
       const init: Record<string, string> = {}
-      cfg.formFields.forEach(
-        (f) => (init[f.name] = f.value ?? (f.type === "select" ? f.options![0] : ""))
-      )
+      cfg.formFields.forEach((f) => {
+        if (editItem && editItem[f.name] !== undefined) {
+          init[f.name] = String(editItem[f.name] ?? "")
+        } else {
+          init[f.name] = f.value ?? (f.type === "select" ? f.options![0] : "")
+        }
+      })
       setValues(init)
     }
-  }, [open, cfg])
+  }, [open, cfg, editItem])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -266,8 +282,13 @@ function NovoModal({
     const payload: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(values)) payload[k] = v === "" ? null : v
     try {
-      await cfg.create(payload)
-      toast.success("Registro salvo com sucesso")
+      if (isEdit) {
+        await cfg.update(editItem.id, payload)
+        toast.success("Registro atualizado com sucesso")
+      } else {
+        await cfg.create(payload)
+        toast.success("Registro salvo com sucesso")
+      }
       onOpenChange(false)
       onSaved()
     } catch (err: any) {
@@ -281,7 +302,7 @@ function NovoModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Novo — {cfg.title}</DialogTitle>
+          <DialogTitle>{isEdit ? "Editar" : "Novo"} — {cfg.title}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {cfg.formFields.map((f) => (
@@ -323,7 +344,7 @@ function NovoModal({
               Cancelar
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? "Salvando…" : "Criar"}
+              {saving ? "Salvando…" : isEdit ? "Atualizar" : "Criar"}
             </Button>
           </DialogFooter>
         </form>
@@ -340,6 +361,7 @@ export default function Bds() {
   const [busca, setBusca] = useState("")
   const [filtroValor, setFiltroValor] = useState<string>("__all__")
   const [modalOpen, setModalOpen] = useState(false)
+  const [editItem, setEditItem] = useState<any>(null)
 
   async function refresh() {
     if (!cfg) return
@@ -421,7 +443,7 @@ export default function Bds() {
                 onChange={(e) => setBusca(e.target.value)}
               />
             </div>
-            <Button size="sm" onClick={() => setModalOpen(true)}>
+            <Button size="sm" onClick={() => { setEditItem(null); setModalOpen(true) }}>
               <PlusIcon className="size-4" /> Novo
             </Button>
           </>
@@ -468,6 +490,14 @@ export default function Bds() {
                     {r.atualizado_em ? fmtData(r.atualizado_em) : "—"}
                   </TableCell>
                   <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Editar"
+                      onClick={() => { setEditItem(r); setModalOpen(true) }}
+                    >
+                      <PencilSimpleIcon className="text-muted-foreground size-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" title="Excluir" onClick={() => del(r.id)}>
                       <TrashIcon className="text-destructive size-4" />
                     </Button>
@@ -479,7 +509,7 @@ export default function Bds() {
         </Table>
       </Card>
 
-      <NovoModal cfg={cfg} open={modalOpen} onOpenChange={setModalOpen} onSaved={refresh} />
+      <NovoModal cfg={cfg} editItem={editItem} open={modalOpen} onOpenChange={setModalOpen} onSaved={refresh} />
     </>
   )
 }
