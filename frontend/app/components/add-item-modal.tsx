@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select"
-import { bdApi, fichaApi, orcamentoApi } from "~/lib/api"
+import { bdApi, fichaApi, orcamentoApi, produtoApi } from "~/lib/api"
 
 const LABELS: Record<string, string> = {
   servicos: "Serviço",
@@ -60,7 +60,8 @@ export function AddItemModal({
   // Carrega catálogo conforme o bloco
   async function carregar() {
     if (isServico) setCatalogo(await fichaApi.listServicos(seguimento))
-    else if (isProduto) setCatalogo((await fichaApi.listProdutos()).filter((p) => p.possui_ficha))
+    // BLOCO 1.5 — produtos do orçamento vêm do cadastro `produtos` (não da ficha)
+    else if (isProduto) setCatalogo(await produtoApi.list())
     else if (isOperacional) setCatalogo((await bdApi.listEst()) as any[])
     else setCatalogo([])
   }
@@ -104,7 +105,7 @@ export function AddItemModal({
     e.preventDefault()
     if (!bloco) return
     if (isFaturavel && !refId) {
-      toast.error("Selecione uma ficha")
+      toast.error(isServico ? "Selecione uma ficha de serviço" : "Selecione um produto")
       return
     }
     setSaving(true)
@@ -117,7 +118,7 @@ export function AddItemModal({
       margem_lucro: isFaturavel ? margem : "0",
     }
     if (isServico) payload.ficha_servico_id = Number(refId)
-    if (isProduto) payload.ficha_produto_id = Number(refId)
+    if (isProduto) payload.produto_id = Number(refId)
     if (isOperacional || isManual) payload.custo_direto_unitario = custo
 
     try {
@@ -152,7 +153,7 @@ export function AddItemModal({
 
           {isFaturavel && (
             <div className="flex flex-col gap-2 sm:col-span-2">
-              <Label>Ficha {isServico ? "de Serviço" : "de Produto"} *</Label>
+              <Label>{isServico ? "Ficha de Serviço" : "Produto"} *</Label>
               <Select value={refId} onValueChange={onSelectRef}>
                 <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
                 <SelectContent>

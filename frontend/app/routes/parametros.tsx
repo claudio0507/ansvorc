@@ -16,7 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
-import { parametroApi, unidadeApi } from "~/lib/api"
+import { Label } from "~/components/ui/label"
+import { configApi, orcamentistaApi, parametroApi, unidadeApi } from "~/lib/api"
 
 interface ListaSimplesProps {
   load: () => Promise<any[]>
@@ -129,15 +130,89 @@ function CrudSimples({ load, create, del, campos, colunas }: ListaSimplesProps) 
   )
 }
 
+function EmpresaConfig() {
+  const [cfg, setCfg] = useState<any>(null)
+  const [nome, setNome] = useState("")
+  const [saving, setSaving] = useState(false)
+
+  async function load() {
+    try {
+      const c = await configApi.get()
+      setCfg(c)
+      setNome(c.nome_empresa ?? "")
+    } catch (e: any) {
+      toast.error(e.message)
+    }
+  }
+  useEffect(() => {
+    load()
+  }, [])
+
+  async function salvarNome() {
+    setSaving(true)
+    try {
+      const c = await configApi.update({ nome_empresa: nome })
+      setCfg(c)
+      toast.success("Nome da empresa atualizado")
+    } catch (e: any) {
+      toast.error(`Erro: ${e.message}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function enviarLogo(file: File) {
+    try {
+      const c = await configApi.uploadLogo(file)
+      setCfg(c)
+      toast.success("Logo atualizado")
+    } catch (e: any) {
+      toast.error(`Erro: ${e.message}`)
+    }
+  }
+
+  return (
+    <Card className="max-w-xl space-y-5 p-6">
+      <div className="flex flex-col gap-2">
+        <Label>Nome da Empresa (subtítulo do orcOS)</Label>
+        <div className="flex gap-2">
+          <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="ALTA NOROESTE" />
+          <Button size="sm" onClick={salvarNome} disabled={saving}>
+            Salvar
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 border-t pt-5">
+        <Label>Logotipo (PNG, máx 500KB, ~400×120)</Label>
+        {cfg?.logo_path && (
+          <img src={cfg.logo_path} alt="logo" className="h-12 max-w-[200px] object-contain" />
+        )}
+        <Input
+          type="file"
+          accept="image/png"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) enviarLogo(f)
+          }}
+        />
+        <p className="text-muted-foreground text-xs">Exibido na proposta, login e sidebar.</p>
+      </div>
+    </Card>
+  )
+}
+
 export default function Parametros() {
   return (
     <>
-      <PageHeader title="Parâmetros" subtitle="Segmentos, tipos de estrutura e unidades de medida" />
+      <PageHeader title="Parâmetros" subtitle="Segmentos, unidades, orçamentistas e identidade visual" />
       <Tabs defaultValue="seguimentos">
         <TabsList>
           <TabsTrigger value="seguimentos">Segmentos</TabsTrigger>
           <TabsTrigger value="tipos">Tipos de Estrutura</TabsTrigger>
           <TabsTrigger value="unidades">Unidades de Medida</TabsTrigger>
+          <TabsTrigger value="orcamentistas">Orçamentistas</TabsTrigger>
+          <TabsTrigger value="empresa">Empresa</TabsTrigger>
         </TabsList>
 
         <TabsContent value="seguimentos" className="mt-4">
@@ -174,6 +249,30 @@ export default function Parametros() {
               { key: "nome", label: "Nome" },
             ]}
           />
+        </TabsContent>
+
+        <TabsContent value="orcamentistas" className="mt-4">
+          <CrudSimples
+            load={orcamentistaApi.list}
+            create={(b) => orcamentistaApi.create(b)}
+            del={orcamentistaApi.delete}
+            campos={[
+              { key: "nome_completo", label: "Nome Completo", placeholder: "João Silva" },
+              { key: "funcao", label: "Função", placeholder: "Orçamentista Sênior" },
+              { key: "email", label: "E-mail", placeholder: "joao@empresa.com" },
+              { key: "telefone", label: "Telefone", placeholder: "(41) 9 9999-9999" },
+            ]}
+            colunas={[
+              { key: "nome_completo", label: "Nome" },
+              { key: "funcao", label: "Função" },
+              { key: "email", label: "E-mail" },
+              { key: "telefone", label: "Telefone" },
+            ]}
+          />
+        </TabsContent>
+
+        <TabsContent value="empresa" className="mt-4">
+          <EmpresaConfig />
         </TabsContent>
       </Tabs>
     </>

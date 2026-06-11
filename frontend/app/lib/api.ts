@@ -307,3 +307,32 @@ export const itemFichaApi = {
   create: (body: unknown) => api.post("/item-fichas", body),
   delete: (id: number) => api.delete(`/item-fichas/${id}`),
 }
+
+// ── BLOCO 2: orçamentistas + config (nome empresa / logo) ────────────────────
+
+export const orcamentistaApi = {
+  list: () => api.get<any[]>("/orcamentistas"),
+  create: (body: unknown) => api.post("/orcamentistas", body),
+  update: (id: number, b: unknown) => api.put(`/orcamentistas/${id}`, b),
+  delete: (id: number) => api.delete(`/orcamentistas/${id}`),
+}
+
+export const configApi = {
+  get: () => api.get<any>("/config"),
+  update: (body: unknown) => api.put<any>("/config", body),
+  uploadLogo: async (file: File) => {
+    const fd = new FormData()
+    fd.append("file", file)
+    const token = auth.getAccessToken()
+    const resp = await fetch("/api/v1/config/logo", {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: fd,
+    })
+    if (!resp.ok) {
+      const e = await resp.json().catch(() => ({}))
+      throw new Error((e as any).detail ?? `Erro ${resp.status}`)
+    }
+    return resp.json()
+  },
+}

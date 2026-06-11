@@ -8,6 +8,7 @@ import {
   ArrowsClockwiseIcon,
   TrashIcon,
   PlusIcon,
+  FileTextIcon,
 } from "@phosphor-icons/react"
 
 import { AddItemModal } from "~/components/add-item-modal"
@@ -244,6 +245,11 @@ export default function OrcamentoEditor() {
           {orc.obra && <p className="text-muted-foreground mt-1 text-sm">{orc.obra}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button asChild size="sm" variant="ghost">
+            <Link to={`/orcamentos/${orcId}/proposta`}>
+              <FileTextIcon className="size-4" /> Proposta
+            </Link>
+          </Button>
           {!readonly ? (
             <>
               <Button size="sm" onClick={calcular} disabled={calculando}>
