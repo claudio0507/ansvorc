@@ -29,6 +29,7 @@ from backend.seeds import (
     seed_ferramental,
     seed_frotas,
     seed_materiais,
+    seed_parametros,
     seed_rh,
 )
 
@@ -120,6 +121,7 @@ def run():
         seed_materiais(db)
         seed_estrutura(db)
         seed_despesas(db)
+        seed_parametros(db)
         credenciais = seed_usuarios_prod(db)
 
         db.commit()

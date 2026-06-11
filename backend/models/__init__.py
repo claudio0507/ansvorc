@@ -10,6 +10,12 @@ from backend.models.bd_models import (
 )
 from backend.models.ficha_models import FichaEquipe, FichaProduto, FichaServico
 from backend.models.orcamento_models import Cliente, Orcamento, OrcamentoItem
+from backend.models.param_models import (
+    ParametroSeguimento,
+    ParametroTipoEstrutura,
+    UnidadeMedida,
+)
+from backend.models.produto_models import Componente, ItemFicha, Produto
 from backend.models.usuario_models import Usuario
 
 __all__ = [
@@ -27,5 +33,11 @@ __all__ = [
     "Cliente",
     "Orcamento",
     "OrcamentoItem",
+    "UnidadeMedida",
+    "ParametroSeguimento",
+    "ParametroTipoEstrutura",
+    "Componente",
+    "Produto",
+    "ItemFicha",
     "Usuario",
 ]

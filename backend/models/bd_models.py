@@ -4,15 +4,35 @@ Campos, tipos e nomes seguem EXATAMENTE a especificação. Valores monetários s
 sempre DECIMAL (nunca float).
 """
 
+from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DECIMAL, Boolean, Integer, String, UniqueConstraint
+from sqlalchemy import (
+    DECIMAL,
+    Boolean,
+    DateTime,
+    Integer,
+    String,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.database import Base
 
 
-class BdBDI(Base):
+class TimestampMixin:
+    """Coluna atualizado_em comum aos BDs (BLOCO 3.2 — data da última atualização)."""
+
+    atualizado_em: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class BdBDI(Base, TimestampMixin):
     """1.1 bd_BDI — Parâmetros tributários por modalidade × UF."""
 
     __tablename__ = "bd_BDI"
@@ -51,7 +71,7 @@ class BdBDI(Base):
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
-class BdRH(Base):
+class BdRH(Base, TimestampMixin):
     """1.2 bd_RH — Cargos e custo diário de mão de obra."""
 
     __tablename__ = "bd_RH"
@@ -62,7 +82,7 @@ class BdRH(Base):
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
-class BdEPI(Base):
+class BdEPI(Base, TimestampMixin):
     """1.3 bd_EPI — Equipamentos de Proteção Individual (custo diário)."""
 
     __tablename__ = "bd_EPI"
@@ -73,7 +93,7 @@ class BdEPI(Base):
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
-class BdFerramental(Base):
+class BdFerramental(Base, TimestampMixin):
     """1.4 bd_FERRAMENTAL — Ferramentas por seguimento."""
 
     __tablename__ = "bd_FERRAMENTAL"
@@ -85,7 +105,7 @@ class BdFerramental(Base):
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
-class BdFrotas(Base):
+class BdFrotas(Base, TimestampMixin):
     """1.5 bd_FROTAS — Veículos e equipamentos por seguimento."""
 
     __tablename__ = "bd_FROTAS"
@@ -97,7 +117,7 @@ class BdFrotas(Base):
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
-class BdMateriais(Base):
+class BdMateriais(Base, TimestampMixin):
     """1.6 bd_MATERIAIS — Materiais e insumos físicos."""
 
     __tablename__ = "bd_MATERIAIS"
@@ -113,7 +133,7 @@ class BdMateriais(Base):
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
-class BdEstrutura(Base):
+class BdEstrutura(Base, TimestampMixin):
     """1.7 bd_ESTRUTURA_OPERACIONAL — Custos operacionais (BDI Sombra)."""
 
     __tablename__ = "bd_ESTRUTURA_OPERACIONAL"
@@ -127,7 +147,7 @@ class BdEstrutura(Base):
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
-class BdDespesas(Base):
+class BdDespesas(Base, TimestampMixin):
     """1.8 bd_DESPESAS — EPC, refeição e hospedagem por seguimento."""
 
     __tablename__ = "bd_DESPESAS"

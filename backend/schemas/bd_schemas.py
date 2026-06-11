@@ -3,6 +3,7 @@
 Campos monetários sempre Decimal. Texto/código/seguimento normalizados.
 """
 
+from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -55,6 +56,7 @@ class BdBDIUpdate(BaseModel):
 class BdBDIRead(BdBDIBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    atualizado_em: datetime | None = None
 
 
 # ── bd_RH ───────────────────────────────────────────────────────────────────
@@ -90,6 +92,7 @@ class BdRHUpdate(BaseModel):
 class BdRHRead(BdRHBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    atualizado_em: datetime | None = None
 
 
 # ── bd_EPI ──────────────────────────────────────────────────────────────────
@@ -118,6 +121,7 @@ class BdEPIUpdate(BaseModel):
 class BdEPIRead(BdEPIBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    atualizado_em: datetime | None = None
 
 
 # ── bd_FERRAMENTAL ──────────────────────────────────────────────────────────
@@ -146,6 +150,7 @@ class BdFerramentalUpdate(BaseModel):
 class BdFerramentalRead(BdFerramentalBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    atualizado_em: datetime | None = None
 
 
 # ── bd_FROTAS ───────────────────────────────────────────────────────────────
@@ -174,6 +179,7 @@ class BdFrotasUpdate(BaseModel):
 class BdFrotasRead(BdFrotasBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    atualizado_em: datetime | None = None
 
 
 # ── bd_MATERIAIS ─────────────────────────────────────────────────────────────
@@ -206,6 +212,7 @@ class BdMateriaisUpdate(BaseModel):
 class BdMateriaisRead(BdMateriaisBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    atualizado_em: datetime | None = None
 
 
 # ── bd_ESTRUTURA_OPERACIONAL ─────────────────────────────────────────────────
@@ -238,6 +245,7 @@ class BdEstruturaUpdate(BaseModel):
 class BdEstruturaRead(BdEstruturaBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    atualizado_em: datetime | None = None
 
 
 # ── bd_DESPESAS ──────────────────────────────────────────────────────────────
@@ -270,3 +278,4 @@ class BdDespesasUpdate(BaseModel):
 class BdDespesasRead(BdDespesasBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    atualizado_em: datetime | None = None

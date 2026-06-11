@@ -245,6 +245,48 @@ def seed_usuarios(db):
     )
 
 
+def seed_parametros(db):
+    from backend.models.param_models import (
+        ParametroSeguimento,
+        ParametroTipoEstrutura,
+        UnidadeMedida,
+    )
+
+    unidades = [
+        ("m", "Metro"),
+        ("mm", "Milímetro"),
+        ("m²", "Metro Quadrado"),
+        ("und", "Unidade"),
+        ("L", "Litro"),
+        ("mL", "Mililitro"),
+        ("kg", "Quilograma"),
+        ("dia", "Dia"),
+        ("mês", "Mês"),
+        ("h", "Hora"),
+        ("R$", "Real"),
+        ("vb", "Verba"),
+    ]
+    db.add_all([UnidadeMedida(sigla=s, nome=n) for s, n in unidades])
+    db.add_all(
+        [
+            ParametroSeguimento(nome=n)
+            for n in ("EPS", "HORIZONTAL", "VERTICAL", "APOIO")
+        ]
+    )
+    db.add_all(
+        [
+            ParametroTipoEstrutura(nome=n)
+            for n in (
+                "Base_de_Apoio",
+                "Moradia",
+                "Administrativo",
+                "Operacional",
+                "Logística",
+            )
+        ]
+    )
+
+
 def run():
     from backend.models.usuario_models import Usuario
 
@@ -263,6 +305,7 @@ def run():
         seed_materiais(db)
         seed_estrutura(db)
         seed_despesas(db)
+        seed_parametros(db)
         seed_usuarios(db)
         db.commit()
 
