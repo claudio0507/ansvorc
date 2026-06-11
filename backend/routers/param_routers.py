@@ -11,9 +11,8 @@ from backend.models.param_models import (
     UnidadeMedida,
 )
 from backend.schemas.param_schemas import (
-    ParametroCreate,
-    ParametroRead,
     ParametroUpdate,
+    ParametroRead,
     SeguimentoCreate,
     TipoEstruturaCreate,
     UnidadeMedidaCreate,
