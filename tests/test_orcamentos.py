@@ -614,3 +614,73 @@ class TestDashboard:
         assert d["total_orcamentos"] >= 1
         # recentes usa os campos renomeados (numero / created_at)
         assert any(o["numero"] for o in d["orcamentos_recentes"])
+
+
+# ── v2: desconto faturável-only, preço final, aprovar+observações+histórico ──
+
+
+class TestV2Calculo:
+    def _add(self, oid, bloco, mod_fat, margem, qty, fs=None, custo=None, desc="Item"):
+        payload = {
+            "bloco": bloco,
+            "descricao": desc,
+            "unidade": "un",
+            "quantidade": str(qty),
+            "mod_fat": mod_fat,
+            "margem_lucro": str(margem),
+        }
+        if fs:
+            payload["ficha_servico_id"] = fs
+        if custo is not None:
+            payload["custo_direto_unitario"] = str(custo)
+        r = client.post(f"/api/v1/orcamentos/{oid}/itens", json=payload)
+        assert r.status_code == 201, r.text
+        return r.json()["id"]
+
+    def test_desconto_so_faturaveis(
+        self, orcamento_id, bdi_rows, ficha_servico_id, estrutura_aloj
+    ):
+        self._add(orcamento_id, "servicos", "BDI-MAT+MO", 10, 100, fs=ficha_servico_id)
+        self._add(orcamento_id, "operacional", "-", 0, 1, desc="Alojamento Passo Fundo")
+        client.put(
+            f"/api/v1/orcamentos/{orcamento_id}", json={"desconto_percentual": "10.00"}
+        )
+        data = client.post(f"/api/v1/orcamentos/{orcamento_id}/calcular").json()
+        for it in data["itens"]:
+            if it["bloco"] in ("operacional", "excepcionais"):
+                # BLOCO 1.2 — não-faturáveis NÃO recebem desconto
+                assert Decimal(str(it["desconto_rateado"])) == Decimal("0")
+            if it["bloco"] in ("servicos", "produtos"):
+                assert Decimal(str(it["desconto_rateado"])) > 0
+
+    def test_preco_unitario_final(self, orcamento_id, bdi_rows, ficha_servico_id):
+        self._add(orcamento_id, "servicos", "BDI-MAT+MO", 10, 100, fs=ficha_servico_id)
+        client.put(
+            f"/api/v1/orcamentos/{orcamento_id}", json={"desconto_percentual": "10.00"}
+        )
+        data = client.post(f"/api/v1/orcamentos/{orcamento_id}/calcular").json()
+        it = data["itens"][0]
+        unit = Decimal(str(it["preco_venda_unitario"]))
+        final = Decimal(str(it["preco_venda_unitario_final"]))
+        # BLOCO 1.1 — final reflete o desconto (~10% menor)
+        assert final < unit
+        assert abs(final - unit * Decimal("0.90")) < Decimal("0.10")
+
+    def test_aprovar_exige_observacoes(self, orcamento_id, bdi_rows, ficha_servico_id):
+        self._add(orcamento_id, "servicos", "BDI-MAT+MO", 10, 10, fs=ficha_servico_id)
+        # sem observações → 422
+        r = client.post(f"/api/v1/orcamentos/{orcamento_id}/aprovar", json={})
+        assert r.status_code == 422
+        # com observações → aprovado + histórico
+        r = client.post(
+            f"/api/v1/orcamentos/{orcamento_id}/aprovar",
+            json={"observacoes_internas": "Margem reduzida por negociação."},
+        )
+        assert r.status_code == 200
+        assert r.json()["status"] == "aprovado"
+        assert r.json()["observacoes_internas"]
+        hist = client.get(
+            f"/api/v1/orcamentos/{orcamento_id}/historico-descontos"
+        ).json()
+        assert len(hist) >= 1
+        assert hist[0]["versao"] == 1

@@ -8,6 +8,11 @@ from backend.models.bd_models import (
     BdMateriais,
     BdRH,
 )
+from backend.models.extra_models import (
+    ConfigSistema,
+    HistoricoDesconto,
+    UsuarioOrcamentista,
+)
 from backend.models.ficha_models import FichaEquipe, FichaProduto, FichaServico
 from backend.models.orcamento_models import Cliente, Orcamento, OrcamentoItem
 from backend.models.param_models import (
@@ -39,5 +44,8 @@ __all__ = [
     "Componente",
     "Produto",
     "ItemFicha",
+    "HistoricoDesconto",
+    "UsuarioOrcamentista",
+    "ConfigSistema",
     "Usuario",
 ]

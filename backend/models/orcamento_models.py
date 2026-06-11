@@ -15,6 +15,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Text,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -73,6 +74,17 @@ class Orcamento(Base):
     )
     aprovado_em: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
+    # BLOCO 1.4 — observações internas (obrigatórias ao aprovar; não vão p/ proposta)
+    observacoes_internas: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # BLOCO 2.4 — orçamentista responsável
+    orcamentista_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("usuarios_orcamentistas.id"), nullable=True
+    )
+    # BLOCO 2.1/2.3 — textos parametrizáveis da proposta
+    validade_proposta: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    condicoes_pagamento: Mapped[str | None] = mapped_column(Text, nullable=True)
+    texto_livre_proposta: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     # Totais de leitura rápida (preenchidos pelo /calcular)
     total_custo_direto: Mapped[Decimal] = mapped_column(
         DECIMAL(14, 4), nullable=False, default=Decimal("0")
@@ -124,9 +136,15 @@ class OrcamentoItem(Base):
     ficha_produto_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("fichas_produto.id"), nullable=True
     )
+    # BLOCO 1.5 — produto do orçamento referencia o cadastro `produtos` (não a ficha)
+    produto_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("produtos.id"), nullable=True
+    )
     tipo_origem: Mapped[str] = mapped_column(String(20), nullable=False)
     # servico | produto | operacional | manual
     descricao: Mapped[str] = mapped_column(String(300), nullable=False)
+    # BLOCO 2.3 — descrição alternativa exibida ao cliente na proposta
+    descricao_cliente: Mapped[str | None] = mapped_column(String(300), nullable=True)
     unidade: Mapped[str] = mapped_column(String(10), nullable=False)
     quantidade: Mapped[Decimal] = mapped_column(DECIMAL(12, 4), nullable=False)
     mod_fat: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -141,6 +159,10 @@ class OrcamentoItem(Base):
         DECIMAL(10, 6), nullable=False, default=Decimal("0")
     )
     preco_venda_unitario: Mapped[Decimal] = mapped_column(
+        DECIMAL(12, 4), nullable=False, default=Decimal("0")
+    )
+    # BLOCO 1.1 — preço unitário APÓS o rateio do desconto
+    preco_venda_unitario_final: Mapped[Decimal] = mapped_column(
         DECIMAL(12, 4), nullable=False, default=Decimal("0")
     )
     preco_venda_total: Mapped[Decimal] = mapped_column(

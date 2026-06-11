@@ -210,6 +210,10 @@ export const orcamentoApi = {
   update: (id: number, b: unknown) => api.put<any>(`/orcamentos/${id}`, b),
   delete: (id: number) => api.delete(`/orcamentos/${id}`),
   reabrir: (id: number) => api.post<any>(`/orcamentos/${id}/reabrir`),
+  aprovar: (id: number, observacoes_internas: string) =>
+    api.post<any>(`/orcamentos/${id}/aprovar`, { observacoes_internas }),
+  historicoDescontos: (id: number) =>
+    api.get<any[]>(`/orcamentos/${id}/historico-descontos`),
   listItens: (id: number) => api.get<any[]>(`/orcamentos/${id}/itens`),
   addItem: (id: number, b: unknown) => api.post<any>(`/orcamentos/${id}/itens`, b),
   updateItem: (id: number, iid: number, b: unknown) =>

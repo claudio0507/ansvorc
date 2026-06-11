@@ -15,7 +15,15 @@ import { StatusBadge } from "~/components/status-badge"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog"
 import { Input } from "~/components/ui/input"
+import { Label } from "~/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -23,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select"
+import { Textarea } from "~/components/ui/textarea"
 import {
   Table,
   TableBody,
@@ -88,6 +97,9 @@ export default function OrcamentoEditor() {
   const [addBloco, setAddBloco] = useState<string | null>(null)
   const [calculando, setCalculando] = useState(false)
   const [desconto, setDesconto] = useState("0")
+  const [aprovarOpen, setAprovarOpen] = useState(false)
+  const [obsAprovacao, setObsAprovacao] = useState("")
+  const [historico, setHistorico] = useState<any[]>([])
 
   const readonly = orc && orc.status !== "rascunho"
 
@@ -95,13 +107,15 @@ export default function OrcamentoEditor() {
     setCarregando(true)
     setErro("")
     try {
-      const [o, its] = await Promise.all([
+      const [o, its, hist] = await Promise.all([
         orcamentoApi.get(orcId),
         orcamentoApi.listItens(orcId),
+        orcamentoApi.historicoDescontos(orcId).catch(() => []),
       ])
       setOrc(o)
       setItens(its)
       setDesconto(String(o.desconto_percentual ?? "0"))
+      setHistorico(hist)
       setResultado(null)
     } catch (err: any) {
       setErro(err.message)
@@ -164,12 +178,15 @@ export default function OrcamentoEditor() {
     }
   }
 
-  async function aprovar() {
-    if (!confirm("Aprovar este orçamento? Os valores serão congelados (somente leitura).")) return
+  async function confirmarAprovacao() {
+    if (!obsAprovacao.trim()) {
+      toast.error("Observações internas são obrigatórias para aprovar.")
+      return
+    }
     try {
-      await orcamentoApi.update(orcId, { status: "enviado" })
-      const atualizado = await orcamentoApi.update(orcId, { status: "aprovado" })
+      const atualizado = await orcamentoApi.aprovar(orcId, obsAprovacao.trim())
       setOrc(atualizado)
+      setAprovarOpen(false)
       toast.success("Orçamento aprovado e congelado")
     } catch (err: any) {
       toast.error(`Erro: ${err.message}`)
@@ -232,7 +249,7 @@ export default function OrcamentoEditor() {
               <Button size="sm" onClick={calcular} disabled={calculando}>
                 <CalculatorIcon className="size-4" /> {calculando ? "Calculando…" : "Calcular"}
               </Button>
-              <Button size="sm" variant="secondary" onClick={aprovar}>
+              <Button size="sm" variant="secondary" onClick={() => setAprovarOpen(true)}>
                 <CheckIcon className="size-4" /> Aprovar
               </Button>
             </>
@@ -427,6 +444,34 @@ export default function OrcamentoEditor() {
             </p>
           )}
         </Card>
+
+        {/* BLOCO 1.4 — observações internas (gerenciamento, não vai p/ proposta) */}
+        {orc.observacoes_internas && (
+          <Card className="p-4">
+            <div className="text-muted-foreground mb-1 text-xs font-medium uppercase">
+              📝 Observações Internas
+            </div>
+            <p className="text-sm whitespace-pre-wrap">{orc.observacoes_internas}</p>
+          </Card>
+        )}
+
+        {/* BLOCO 1.3 — histórico de descontos das versões */}
+        {historico.length > 0 && (
+          <Card className="p-4">
+            <div className="text-muted-foreground mb-2 text-xs font-medium uppercase">
+              Histórico de Descontos
+            </div>
+            <div className="space-y-1.5">
+              {historico.map((h, i) => (
+                <div key={i} className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Versão {h.versao}</span>
+                  <span>{Number(h.desconto_percentual).toFixed(2)}%</span>
+                  <span className="text-muted-foreground">{fmtBRL(h.desconto_total)}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
       </div>
 
       <AddItemModal
@@ -439,6 +484,33 @@ export default function OrcamentoEditor() {
           setAddBloco(null)
         }}
       />
+
+      {/* BLOCO 1.4 — modal de aprovação com observações internas obrigatórias */}
+      <Dialog open={aprovarOpen} onOpenChange={setAprovarOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Aprovar Orçamento</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <Label>Observações Internas *</Label>
+            <Textarea
+              rows={4}
+              placeholder="Registre o motivo do desconto/margem para rastreabilidade interna…"
+              value={obsAprovacao}
+              onChange={(e) => setObsAprovacao(e.target.value)}
+            />
+            <p className="text-muted-foreground text-xs">
+              Não aparece na proposta enviada ao cliente. Ao aprovar, os valores são congelados.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setAprovarOpen(false)}>Cancelar</Button>
+            <Button onClick={confirmarAprovacao} disabled={!obsAprovacao.trim()}>
+              Aprovar e congelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

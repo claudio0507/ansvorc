@@ -228,6 +228,91 @@ def atualizar_orcamento(id: int, body: OrcamentoUpdate, db: Session = Depends(ge
 
 
 @router.post(
+    "/orcamentos/{id}/aprovar",
+    response_model=OrcamentoRead,
+    tags=["orcamentos"],
+)
+def aprovar_orcamento(id: int, body: dict, db: Session = Depends(get_db)):
+    """BLOCO 1.4 — aprova exigindo observações internas; BLOCO 1.3 grava histórico de desconto.
+
+    Transição rascunho→enviado→aprovado em uma chamada. Congela o orçamento.
+    """
+    from backend.models.extra_models import HistoricoDesconto
+
+    orc = _get_or_404(db, Orcamento, id)
+    obs = (body or {}).get("observacoes_internas", "")
+    if not isinstance(obs, str) or not obs.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Observações internas são obrigatórias para aprovar.",
+        )
+    if orc.status not in ("rascunho", "enviado"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Orçamento em '{orc.status}' não pode ser aprovado.",
+        )
+
+    # Histórico do desconto concedido nesta versão (BLOCO 1.3)
+    itens = db.query(OrcamentoItem).filter(OrcamentoItem.orcamento_id == id).all()
+    subtotal_fat = sum(
+        (Decimal(i.preco_venda_total) for i in itens if i.bloco in FATURAVEIS),
+        Decimal("0"),
+    )
+    desc_frac = Decimal(orc.desconto_percentual) / Decimal("100")
+    db.add(
+        HistoricoDesconto(
+            orcamento_id=orc.id,
+            versao=orc.versao,
+            desconto_percentual=orc.desconto_percentual,
+            subtotal_faturavel=_q4(subtotal_fat),
+            desconto_total=_q4(subtotal_fat * desc_frac),
+        )
+    )
+
+    orc.observacoes_internas = obs.strip()
+    orc.status = "aprovado"
+    orc.aprovado_em = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(orc)
+    return orc
+
+
+@router.get(
+    "/orcamentos/{id}/historico-descontos",
+    tags=["orcamentos"],
+)
+def historico_descontos(id: int, db: Session = Depends(get_db)) -> list[dict]:
+    """BLOCO 1.3 — histórico de descontos das versões (próprias e da cadeia de origem)."""
+    from backend.models.extra_models import HistoricoDesconto
+
+    orc = _get_or_404(db, Orcamento, id)
+    # cadeia: este + ancestrais via orcamento_origem_id
+    ids = [orc.id]
+    cur = orc
+    while cur.orcamento_origem_id:
+        cur = db.get(Orcamento, cur.orcamento_origem_id)
+        if not cur:
+            break
+        ids.append(cur.id)
+    regs = (
+        db.query(HistoricoDesconto)
+        .filter(HistoricoDesconto.orcamento_id.in_(ids))
+        .order_by(HistoricoDesconto.versao.asc())
+        .all()
+    )
+    return [
+        {
+            "versao": r.versao,
+            "desconto_percentual": r.desconto_percentual,
+            "subtotal_faturavel": r.subtotal_faturavel,
+            "desconto_total": r.desconto_total,
+            "criado_em": r.criado_em,
+        }
+        for r in regs
+    ]
+
+
+@router.post(
     "/orcamentos/{id}/reabrir",
     response_model=OrcamentoRead,
     status_code=status.HTTP_201_CREATED,
@@ -267,8 +352,10 @@ def reabrir_orcamento(id: int, db: Session = Depends(get_db)):
                 bloco=it.bloco,
                 ficha_servico_id=it.ficha_servico_id,
                 ficha_produto_id=it.ficha_produto_id,
+                produto_id=it.produto_id,
                 tipo_origem=it.tipo_origem,
                 descricao=it.descricao,
+                descricao_cliente=it.descricao_cliente,
                 unidade=it.unidade,
                 quantidade=it.quantidade,
                 mod_fat=it.mod_fat,
@@ -309,6 +396,32 @@ def _custo_e_unidade_da_ficha(db: Session, body: OrcamentoItemCreate) -> tuple:
                 detail="Serviço sem ficha (possui_ficha=False) não pode ser orçado.",
             )
         return Decimal(f.custo_unitario), f.unidade, "servico"
+    if getattr(body, "produto_id", None):
+        # BLOCO 1.5 — produto do orçamento vem do cadastro `produtos`; o custo vem da
+        # ficha técnica vinculada (item_fichas → fichas_produto), se houver.
+        from backend.models.param_models import UnidadeMedida
+        from backend.models.produto_models import ItemFicha, Produto
+
+        prod = _get_or_404(db, Produto, body.produto_id)
+        custo = Decimal("0")
+        vinc = (
+            db.query(ItemFicha)
+            .filter(
+                ItemFicha.produto_id == prod.id,
+                ItemFicha.ficha_produto_id.isnot(None),
+            )
+            .first()
+        )
+        if vinc and vinc.ficha_produto_id:
+            fp = db.get(FichaProduto, vinc.ficha_produto_id)
+            if fp:
+                custo = Decimal(fp.custo_total)
+        unidade = body.unidade or "un"
+        if prod.unidade_id:
+            um = db.get(UnidadeMedida, prod.unidade_id)
+            if um:
+                unidade = um.sigla
+        return custo, unidade, "produto"
     if body.ficha_produto_id:
         f = _get_or_404(db, FichaProduto, body.ficha_produto_id)
         if not f.possui_ficha:
@@ -358,8 +471,10 @@ def adicionar_item(id: int, body: OrcamentoItemCreate, db: Session = Depends(get
         bloco=body.bloco,
         ficha_servico_id=body.ficha_servico_id,
         ficha_produto_id=body.ficha_produto_id,
+        produto_id=getattr(body, "produto_id", None),
         tipo_origem=tipo_origem,
         descricao=body.descricao,
+        descricao_cliente=getattr(body, "descricao_cliente", None),
         unidade=unidade,
         quantidade=body.quantidade,
         mod_fat=body.mod_fat,
@@ -548,7 +663,6 @@ def calcular_orcamento(id: int, db: Session = Depends(get_db)):
     fk_por_id = {r["id"]: r for r in calcular_fator_k(itens_fk, total_nao_faturavel)}
 
     subtotal_faturavel = sum((r["preco_total_base"] for r in fat), Decimal("0"))
-    total_antes_desc = subtotal_faturavel + total_nao_faturavel
 
     # Passo 4 — base p/ Margem Líquida Real (calculada após aplicar o desconto)
     itens_mlr = [
@@ -570,32 +684,36 @@ def calcular_orcamento(id: int, db: Session = Depends(get_db)):
     total_desconto = Decimal("0")
     total_com_desconto = Decimal("0")
 
+    # BLOCO 1.2 — desconto rateado APENAS em servicos+produtos (faturáveis).
     for r in fat:
         item = r["item"]
         fkr = fk_por_id.get(item.id, {})
         preco_linha = _q4(fkr.get("preco_final", r["preco_total_base"]))
         peso = fkr.get("peso_percentual", Decimal("0"))
         desc_linha = _q4(preco_linha * desc_frac)
+        qtd = item.quantidade
         item.bdi_aplicado = r["bdi"]
         item.peso_rateio = peso
         item.desconto_rateado = desc_linha
         item.preco_venda_total = preco_linha
-        item.preco_venda_unitario = _q4(preco_linha / item.quantidade)
+        # BLOCO 1.1 — unitário ANTES e DEPOIS do desconto
+        item.preco_venda_unitario = _q4(preco_linha / qtd)
+        item.preco_venda_unitario_final = _q4((preco_linha - desc_linha) / qtd)
         item.lucro_absoluto = _q4(r["lucro_abs"])
         total_desconto += desc_linha
         total_com_desconto += preco_linha - desc_linha
 
-    # Itens não faturáveis: o custo carregado é DILUÍDO nos faturáveis via Fator K
-    # (já embutido em preco_final acima). Portanto NÃO somam de novo ao total —
-    # exibem desconto_rateado apenas para referência visual.
+    # Itens não faturáveis (operacional/excepcionais): SEM desconto (BLOCO 1.2);
+    # custo carregado é diluído nos faturáveis via Fator K — não soma de novo ao total.
     for r in nfat:
         item = r["item"]
         preco_linha = _q4(r["carregado"])
         item.bdi_aplicado = Decimal("0")
         item.preco_venda_unitario = Decimal(item.custo_direto_unitario)
+        item.preco_venda_unitario_final = Decimal(item.custo_direto_unitario)
         item.preco_venda_total = preco_linha
         item.peso_rateio = Decimal("0")
-        item.desconto_rateado = _q4(preco_linha * desc_frac)
+        item.desconto_rateado = Decimal("0")
         item.lucro_absoluto = Decimal("0")
 
     total_proposta = _q4(total_com_desconto)

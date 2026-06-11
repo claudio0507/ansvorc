@@ -122,6 +122,10 @@ class OrcamentoUpdate(BaseModel):
     beneficio_reidi: bool | None = None
     desconto_percentual: Decimal | None = None
     status: str | None = None
+    orcamentista_id: int | None = None
+    validade_proposta: str | None = None
+    condicoes_pagamento: str | None = None
+    texto_livre_proposta: str | None = None
 
     _norm_obra = field_validator("obra")(normalizar_texto)
     _valida_uf = field_validator("uf_execucao")(_check_uf)
@@ -157,6 +161,11 @@ class OrcamentoRead(BaseModel):
     created_by: int | None
     created_at: datetime | None = None
     aprovado_em: datetime | None = None
+    observacoes_internas: str | None = None
+    orcamentista_id: int | None = None
+    validade_proposta: str | None = None
+    condicoes_pagamento: str | None = None
+    texto_livre_proposta: str | None = None
     total_custo_direto: Decimal
     total_proposta: Decimal
     margem_liquida_real: Decimal
@@ -169,7 +178,9 @@ class OrcamentoItemCreate(BaseModel):
     bloco: str
     ficha_servico_id: int | None = None
     ficha_produto_id: int | None = None
+    produto_id: int | None = None  # BLOCO 1.5 — produto do cadastro `produtos`
     descricao: str
+    descricao_cliente: str | None = None  # BLOCO 2.3
     unidade: str
     quantidade: Decimal
     mod_fat: str = "BDI-MAT+MO"
@@ -227,6 +238,7 @@ class OrcamentoItemUpdate(BaseModel):
     mod_fat: str | None = None
     margem_lucro: Decimal | None = None
     custo_direto_unitario: Decimal | None = None
+    descricao_cliente: str | None = None  # BLOCO 2.3
 
     @field_validator("mod_fat")
     @classmethod
@@ -258,8 +270,10 @@ class OrcamentoItemRead(BaseModel):
     bloco: str
     ficha_servico_id: int | None
     ficha_produto_id: int | None
+    produto_id: int | None
     tipo_origem: str
     descricao: str
+    descricao_cliente: str | None
     unidade: str
     quantidade: Decimal
     mod_fat: str
@@ -267,6 +281,7 @@ class OrcamentoItemRead(BaseModel):
     custo_direto_unitario: Decimal
     bdi_aplicado: Decimal
     preco_venda_unitario: Decimal
+    preco_venda_unitario_final: Decimal
     preco_venda_total: Decimal
     lucro_absoluto: Decimal
     peso_rateio: Decimal
@@ -287,6 +302,7 @@ class ItemCalculadoRead(BaseModel):
     custo_direto_unitario: Decimal
     bdi_aplicado: Decimal
     preco_venda_unitario: Decimal
+    preco_venda_unitario_final: Decimal
     preco_venda_total: Decimal
     peso_rateio: Decimal
     desconto_rateado: Decimal
