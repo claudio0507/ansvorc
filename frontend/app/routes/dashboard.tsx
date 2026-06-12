@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import {
-  PolarAngleAxis,
-  PolarGrid,
-  Radar,
-  RadarChart,
-} from "recharts"
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "~/components/ui/chart"
 import {
   ClockIcon,
   TrendUpIcon,
@@ -55,15 +56,23 @@ export default function Dashboard() {
   const porStatus = dados.por_status || {}
   const recentes = dados.orcamentos_recentes || []
 
-  // Radar data: status distribution (funil de 6 estados)
-  const fullMark = Math.max(1, dados.total_orcamentos || 1)
-  const radarData = [
-    { status: "Rascunho", value: porStatus.rascunho || 0, fullMark },
-    { status: "Enviado", value: porStatus.enviado || 0, fullMark },
-    { status: "Aprovado", value: porStatus.aprovado || 0, fullMark },
-    { status: "Reprovado", value: porStatus.reprovado || 0, fullMark },
-    { status: "Perdida", value: porStatus.perdida || 0, fullMark },
-    { status: "Fechado", value: porStatus.fechado || 0, fullMark },
+  const statusConfig = {
+    value: { label: "Orçamentos", color: "var(--chart-1)" },
+  } satisfies ChartConfig
+
+  const statusData = [
+    { label: "Rascunho", value: porStatus.rascunho || 0 },
+    { label: "Enviado", value: porStatus.enviado || 0 },
+    { label: "Aprovado", value: porStatus.aprovado || 0 },
+    { label: "Reprovado", value: porStatus.reprovado || 0 },
+    { label: "Perdida", value: porStatus.perdida || 0 },
+    { label: "Fechado", value: porStatus.fechado || 0 },
+  ]
+
+  const funilData = [
+    { label: "Enviado", value: porStatus.enviado || 0 },
+    { label: "Aprovado", value: porStatus.aprovado || 0 },
+    { label: "Fechado", value: porStatus.fechado || 0 },
   ]
 
   return (
@@ -112,27 +121,35 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Radar Chart */}
-      <Card className="p-4">
-        <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider mb-3">
-          Distribuição por Status
-        </div>
-        <div className="flex justify-center">
-          <RadarChart width={280} height={200} data={radarData} cx="50%" cy="50%" outerRadius="70%">
-            <PolarGrid stroke="oklch(0.55 0.005 250)" />
-            <PolarAngleAxis
-              dataKey="status"
-              tick={{ fontSize: 10, fill: "oklch(0.55 0.005 250)" }}
-            />
-            <Radar
-              dataKey="value"
-              stroke="oklch(0.536 0.189 24.67)"
-              fill="oklch(0.536 0.189 24.67)"
-              fillOpacity={0.15}
-            />
-          </RadarChart>
-        </div>
-      </Card>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card className="p-4">
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider mb-3">
+            Distribuição por Status
+          </div>
+          <ChartContainer config={statusConfig} className="h-[200px] w-full">
+            <BarChart data={statusData} accessibilityLayer>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="value" fill="var(--color-value)" radius={4} />
+            </BarChart>
+          </ChartContainer>
+        </Card>
+        <Card className="p-4">
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider mb-3">
+            Funil de Conversão
+          </div>
+          <ChartContainer config={statusConfig} className="h-[200px] w-full">
+            <BarChart data={funilData} layout="vertical" accessibilityLayer>
+              <CartesianGrid horizontal={false} />
+              <XAxis type="number" hide />
+              <YAxis dataKey="label" type="category" tickLine={false} axisLine={false} width={70} tick={{ fontSize: 10 }} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="value" fill="var(--color-value)" radius={4} />
+            </BarChart>
+          </ChartContainer>
+        </Card>
+      </div>
 
       {/* Últimos orçamentos */}
       <Card className="overflow-x-auto py-0">
