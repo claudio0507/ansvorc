@@ -86,3 +86,7 @@ class TestPrazos:
         numeros = {p["numero"] for p in lista}
         assert "P-ESTE" in numeros
         assert "P-PROX" not in numeros
+
+    def test_mes_malformado_422(self):
+        assert client.get("/api/v1/prazos?mes=2026-13").status_code == 422
+        assert client.get("/api/v1/prazos?mes=abc").status_code == 422

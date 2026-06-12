@@ -233,10 +233,17 @@ def listar_prazos(mes: str | None = None, db: Session = Depends(get_db)) -> list
     """Orçamentos rascunho/reprovado com data_limite no mês (para o calendário)."""
     hoje = date.today()
     if mes:
-        ano, m = int(mes[:4]), int(mes[5:7])
+        try:
+            ano, m = int(mes[:4]), int(mes[5:7])
+            inicio = date(ano, m, 1)  # valida ano/mês (mês 1..12)
+        except (ValueError, IndexError):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Parâmetro 'mes' inválido. Use o formato AAAA-MM.",
+            )
     else:
         ano, m = hoje.year, hoje.month
-    inicio = date(ano, m, 1)
+        inicio = date(ano, m, 1)
     fim = date(ano + (m == 12), (m % 12) + 1, 1)
     orcs = (
         db.query(Orcamento)
