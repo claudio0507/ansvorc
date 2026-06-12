@@ -13,6 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
+import { QRCodeSVG } from "qrcode.react"
+
 import { auth, clienteApi, configApi, orcamentistaApi, orcamentoApi } from "~/lib/api"
 import { fmtBRL, fmtData } from "~/lib/format"
 
@@ -87,8 +89,34 @@ export default function Proposta() {
     .filter((i) => ["servicos", "produtos"].includes(i.bloco))
     .reduce((s, i) => s + (parseFloat(i.desconto_rateado) || 0), 0)
   const totalLiquido = subtotal - descontoTotal
-  const nomeEmpresa = config?.nome_empresa ?? "ALTA NOROESTE"
   const hoje = new Date().toLocaleDateString("pt-BR")
+
+  const editavel = orc ? ["rascunho", "reprovado"].includes(orc.status) : false
+
+  const waLink = (tel?: string) => {
+    const dig = (tel ?? "").replace(/\D/g, "")
+    if (!dig) return null
+    return `https://wa.me/${dig.startsWith("55") ? dig : "55" + dig}`
+  }
+  const waOrc = waLink(orcamentista?.telefone)
+
+  async function salvarDescricaoItem(itemId: number, valor: string) {
+    try {
+      await orcamentoApi.updateItem(orcId, itemId, { descricao_cliente: valor })
+      setItens((arr) => arr.map((i) => (i.id === itemId ? { ...i, descricao_cliente: valor } : i)))
+    } catch (e: any) {
+      toast.error(`Erro: ${e.message}`)
+    }
+  }
+
+  async function salvarTextoOrc(campo: string, valor: string) {
+    try {
+      await orcamentoApi.update(orcId, { [campo]: valor })
+      setOrc((o: any) => ({ ...o, [campo]: valor }))
+    } catch (e: any) {
+      toast.error(`Erro: ${e.message}`)
+    }
+  }
 
   return (
     <>
@@ -105,30 +133,21 @@ export default function Proposta() {
 
       <Card className="mx-auto max-w-4xl p-8">
         {/* Cabeçalho */}
-        <div className="flex items-start justify-between border-b pb-5">
-          <div className="flex items-center gap-3">
+        <div className="grid grid-cols-3 items-center border-b pb-5">
+          <div className="flex items-center">
             {config?.logo_path ? (
               <img src={config.logo_path} alt="logo" className="h-12 max-w-[160px] object-contain" />
             ) : (
-              <div className="bg-primary text-primary-foreground flex size-12 items-center justify-center">
-                <svg viewBox="0 0 24 24" className="size-6 fill-current">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zm0 10L2 7v10l10 5 10-5V7l-10 5z" />
-                </svg>
+              <div className="bg-primary text-primary-foreground flex size-12 items-center justify-center rounded">
+                <svg viewBox="0 0 24 24" className="size-6 fill-current"><path d="M12 2L2 7l10 5 10-5-10-5zm0 10L2 7v10l10 5 10-5V7l-10 5z" /></svg>
               </div>
             )}
-            <div>
-              <div className="text-xl font-bold tracking-tight">orcOS</div>
-              <div className="text-muted-foreground text-xs font-medium tracking-[0.1em] uppercase">
-                {nomeEmpresa}
-              </div>
-            </div>
           </div>
+          <div className="text-center text-lg font-bold tracking-wide uppercase">Proposta Comercial</div>
           <div className="text-right text-xs">
-            <div className="font-semibold">Proposta {orc.numero}</div>
+            {orc.obra && <div className="font-semibold">{orc.obra}</div>}
+            <div className="text-muted-foreground">Proposta {orc.numero} · v{orc.versao ?? 1}</div>
             <div className="text-muted-foreground">Emissão: {hoje}</div>
-            {orc.validade_proposta && (
-              <div className="text-muted-foreground">Validade: {orc.validade_proposta}</div>
-            )}
           </div>
         </div>
 
@@ -149,6 +168,22 @@ export default function Proposta() {
             {orcamentista?.email && <div className="text-muted-foreground text-xs">{orcamentista.email}</div>}
           </div>
         </div>
+
+        {(orc.texto_topo_proposta || editavel) && (
+          <div className="border-b py-3">
+            {editavel ? (
+              <textarea
+                defaultValue={orc.texto_topo_proposta ?? ""}
+                placeholder="Texto de apresentação (aparece antes dos itens)…"
+                onBlur={(e) => salvarTextoOrc("texto_topo_proposta", e.target.value)}
+                className="text-muted-foreground w-full resize-none rounded border bg-transparent p-2 text-xs"
+                rows={2}
+              />
+            ) : (
+              <p className="text-muted-foreground text-xs whitespace-pre-wrap">{orc.texto_topo_proposta}</p>
+            )}
+          </div>
+        )}
 
         {/* Corpo: só Serviços + Produtos */}
         {BLOCOS_PROPOSTA.map((b) => {
@@ -173,7 +208,15 @@ export default function Proposta() {
                   {ls.map((it) => (
                     <TableRow key={it.id}>
                       <TableCell className="font-medium">
-                        {it.descricao_cliente || it.descricao}
+                        {editavel ? (
+                          <input
+                            defaultValue={it.descricao_cliente ?? it.descricao}
+                            onBlur={(e) => salvarDescricaoItem(it.id, e.target.value)}
+                            className="w-full rounded border bg-transparent px-1 py-0.5 text-xs"
+                          />
+                        ) : (
+                          it.descricao_cliente || it.descricao
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         {Number(it.quantidade).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}
@@ -227,16 +270,38 @@ export default function Proposta() {
             {orc.condicoes_pagamento}
           </div>
         )}
-        {orc.texto_livre_proposta && (
-          <p className="text-muted-foreground mt-2 text-xs whitespace-pre-wrap">{orc.texto_livre_proposta}</p>
+        {(orc.texto_livre_proposta || editavel) && (
+          editavel ? (
+            <textarea
+              defaultValue={orc.texto_livre_proposta ?? ""}
+              placeholder="Condições, validade, observações…"
+              onBlur={(e) => salvarTextoOrc("texto_livre_proposta", e.target.value)}
+              className="text-muted-foreground mt-2 w-full resize-none rounded border bg-transparent p-2 text-xs"
+              rows={2}
+            />
+          ) : (
+            <p className="text-muted-foreground mt-2 text-xs whitespace-pre-wrap">{orc.texto_livre_proposta}</p>
+          )
         )}
 
-        {/* Rodapé: dados do orçamentista */}
-        <div className="mt-6 border-t pt-4 text-xs text-muted-foreground">
-          <div className="font-medium text-foreground">{orcamentista?.nome_completo ?? "—"}</div>
-          {orcamentista?.funcao && <div>{orcamentista.funcao}</div>}
-          {orcamentista?.telefone && <div>Tel: {orcamentista.telefone}</div>}
-          {orcamentista?.email && <div>{orcamentista.email}</div>}
+        {/* Rodapé: Aprovado por (diretor) + Elaborado por (orçamentista) + QR */}
+        <div className="mt-8 flex items-start justify-between border-t pt-4 text-xs">
+          <div>
+            <div className="text-muted-foreground mb-1 text-[0.625rem] font-semibold uppercase">Aprovado por</div>
+            <div className="font-semibold">{config?.diretor_nome ?? "—"}</div>
+            {config?.diretor_funcao && <div className="text-muted-foreground">{config.diretor_funcao}</div>}
+            {config?.diretor_telefone && <div className="text-muted-foreground">{config.diretor_telefone}</div>}
+            {config?.diretor_email && <div className="text-muted-foreground">{config.diretor_email}</div>}
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="text-right">
+              <div className="text-muted-foreground mb-1 text-[0.625rem] font-semibold uppercase">Elaborado por</div>
+              <div className="font-semibold">{orcamentista?.nome_completo ?? "—"}</div>
+              {orcamentista?.funcao && <div className="text-muted-foreground">{orcamentista.funcao}</div>}
+              {orcamentista?.telefone && <div className="text-muted-foreground">{orcamentista.telefone}</div>}
+            </div>
+            {waOrc && <QRCodeSVG value={waOrc} size={60} level="M" className="shrink-0" />}
+          </div>
         </div>
 
         <p className="text-muted-foreground/70 mt-6 text-center text-[0.625rem]">
