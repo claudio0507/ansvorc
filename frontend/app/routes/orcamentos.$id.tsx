@@ -4,7 +4,6 @@ import { toast } from "sonner"
 import {
   ArrowLeftIcon,
   CalculatorIcon,
-  CheckIcon,
   ArrowsClockwiseIcon,
   TrashIcon,
   PlusIcon,
@@ -16,15 +15,7 @@ import { StatusBadge } from "~/components/status-badge"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "~/components/ui/dialog"
 import { Input } from "~/components/ui/input"
-import { Label } from "~/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -32,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select"
-import { Textarea } from "~/components/ui/textarea"
 import {
   Table,
   TableBody,
@@ -85,6 +75,24 @@ const BLOCOS: {
 ]
 const MOD_FAT_OPTS = ["BDI-MAT+MO", "BDI-MO", "BDI+ICMS", "FAT DIR SIMP"]
 
+// Máquina de transição de status (6 estados).
+const TRANSICOES: Record<string, string[]> = {
+  rascunho: ["enviado"],
+  enviado: ["aprovado", "reprovado", "perdida"],
+  aprovado: ["fechado", "perdida"],
+  reprovado: ["rascunho"],
+  perdida: [],
+  fechado: [],
+}
+const STATUS_LABEL: Record<string, string> = {
+  rascunho: "Rascunho",
+  enviado: "Enviado",
+  aprovado: "Aprovado",
+  reprovado: "Reprovado",
+  perdida: "Perdida",
+  fechado: "Fechado",
+}
+
 export default function OrcamentoEditor() {
   const { id } = useParams()
   const orcId = Number(id)
@@ -98,11 +106,9 @@ export default function OrcamentoEditor() {
   const [addBloco, setAddBloco] = useState<string | null>(null)
   const [calculando, setCalculando] = useState(false)
   const [desconto, setDesconto] = useState("0")
-  const [aprovarOpen, setAprovarOpen] = useState(false)
-  const [obsAprovacao, setObsAprovacao] = useState("")
   const [historico, setHistorico] = useState<any[]>([])
 
-  const readonly = orc && orc.status !== "rascunho"
+  const readonly = orc && !["rascunho", "reprovado"].includes(orc.status)
 
   const carregar = useCallback(async () => {
     setCarregando(true)
@@ -179,18 +185,13 @@ export default function OrcamentoEditor() {
     }
   }
 
-  async function confirmarAprovacao() {
-    if (!obsAprovacao.trim()) {
-      toast.error("Observações internas são obrigatórias para aprovar.")
-      return
-    }
+  async function mudarStatus(novo: string) {
     try {
-      const atualizado = await orcamentoApi.aprovar(orcId, obsAprovacao.trim())
+      const atualizado = await orcamentoApi.update(orcId, { status: novo })
       setOrc(atualizado)
-      setAprovarOpen(false)
-      toast.success("Orçamento aprovado e congelado")
-    } catch (err: any) {
-      toast.error(`Erro: ${err.message}`)
+      toast.success(`Status: ${STATUS_LABEL[novo] ?? novo}`)
+    } catch (e: any) {
+      toast.error(`Erro: ${e.message}`)
     }
   }
 
@@ -250,19 +251,27 @@ export default function OrcamentoEditor() {
               <FileTextIcon className="size-4" /> Proposta
             </Link>
           </Button>
-          {!readonly ? (
-            <>
-              <Button size="sm" onClick={calcular} disabled={calculando}>
-                <CalculatorIcon className="size-4" /> {calculando ? "Calculando…" : "Calcular"}
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => setAprovarOpen(true)}>
-                <CheckIcon className="size-4" /> Aprovar
-              </Button>
-            </>
-          ) : (
+          {!readonly && (
+            <Button size="sm" onClick={calcular} disabled={calculando}>
+              <CalculatorIcon className="size-4" /> {calculando ? "Calculando…" : "Calcular"}
+            </Button>
+          )}
+          {readonly && (
             <Button size="sm" variant="secondary" onClick={novaVersao}>
               <ArrowsClockwiseIcon className="size-4" /> Nova Versão
             </Button>
+          )}
+          {TRANSICOES[orc.status]?.length > 0 && (
+            <Select value="" onValueChange={mudarStatus}>
+              <SelectTrigger className="h-8 w-auto gap-2">
+                <SelectValue placeholder="Mudar status…" />
+              </SelectTrigger>
+              <SelectContent>
+                {TRANSICOES[orc.status].map((s) => (
+                  <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         </div>
       </div>
@@ -490,33 +499,6 @@ export default function OrcamentoEditor() {
           setAddBloco(null)
         }}
       />
-
-      {/* BLOCO 1.4 — modal de aprovação com observações internas obrigatórias */}
-      <Dialog open={aprovarOpen} onOpenChange={setAprovarOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Aprovar Orçamento</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label>Observações Internas *</Label>
-            <Textarea
-              rows={4}
-              placeholder="Registre o motivo do desconto/margem para rastreabilidade interna…"
-              value={obsAprovacao}
-              onChange={(e) => setObsAprovacao(e.target.value)}
-            />
-            <p className="text-muted-foreground text-xs">
-              Não aparece na proposta enviada ao cliente. Ao aprovar, os valores são congelados.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setAprovarOpen(false)}>Cancelar</Button>
-            <Button onClick={confirmarAprovacao} disabled={!obsAprovacao.trim()}>
-              Aprovar e congelar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   )
 }
