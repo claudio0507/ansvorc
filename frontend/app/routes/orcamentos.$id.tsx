@@ -9,6 +9,7 @@ import {
   TrashIcon,
   PlusIcon,
   FileTextIcon,
+  XIcon,
 } from "@phosphor-icons/react"
 
 import { AddItemModal } from "~/components/add-item-modal"
@@ -204,6 +205,17 @@ export default function OrcamentoEditor() {
     }
   }
 
+  async function rejeitar() {
+    if (!confirm("Rejeitar este orçamento? Ele será marcado como rejeitado e poderá voltar a rascunho.")) return
+    try {
+      await orcamentoApi.update(orcId, { status: "rejeitado" })
+      toast.success("Orçamento rejeitado")
+      carregar()
+    } catch (err: any) {
+      toast.error(`Erro: ${err.message}`)
+    }
+  }
+
   if (carregando) {
     return <div className="text-muted-foreground py-12 text-center">Carregando orçamento…</div>
   }
@@ -255,6 +267,9 @@ export default function OrcamentoEditor() {
               </Button>
               <Button size="sm" variant="secondary" onClick={() => setAprovarOpen(true)}>
                 <CheckIcon className="size-4" /> Aprovar
+              </Button>
+              <Button size="sm" variant="ghost" className="text-destructive" onClick={rejeitar}>
+                <XIcon className="size-4" /> Rejeitar
               </Button>
             </>
           ) : (

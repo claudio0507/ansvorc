@@ -8,6 +8,13 @@ import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
 import { Checkbox } from "~/components/ui/checkbox"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select"
+import {
   Dialog,
   DialogContent,
   DialogFooter,
@@ -25,7 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
-import { componenteApi, fichaApi, itemFichaApi, produtoApi } from "~/lib/api"
+import { componenteApi, fichaApi, itemFichaApi, produtoApi, unidadeApi } from "~/lib/api"
 
 type Tipo = "produto" | "componente"
 
@@ -44,8 +51,13 @@ function NovoModal({
 }) {
   const [v, setV] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
+  const [unidades, setUnidades] = useState<any[]>([])
   const api = tipo === "produto" ? produtoApi : componenteApi
   const isEdit = !!editItem
+
+  useEffect(() => {
+    unidadeApi.list().then(setUnidades).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (open) {
@@ -57,6 +69,7 @@ function NovoModal({
           dimensoes: editItem.dimensoes || "",
           setor: editItem.setor || "",
           deposito_produtivo: editItem.deposito_produtivo || "",
+          unidade_id: editItem.unidade_id ? String(editItem.unidade_id) : "",
         })
       } else {
         setV({})
@@ -74,6 +87,7 @@ function NovoModal({
       dimensoes: v.dimensoes || null,
       setor: v.setor || null,
       deposito_produtivo: v.deposito_produtivo || null,
+      unidade_id: v.unidade_id ? Number(v.unidade_id) : null,
     }
     try {
       if (isEdit) {
@@ -114,6 +128,17 @@ function NovoModal({
           <div className="flex flex-col gap-2">
             <Label>Setor</Label>
             <Input value={v.setor ?? ""} onChange={(e) => setV((s) => ({ ...s, setor: e.target.value }))} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label>Unidade</Label>
+            <Select value={v.unidade_id ?? ""} onValueChange={(val) => setV((s) => ({ ...s, unidade_id: val }))}>
+              <SelectTrigger><SelectValue placeholder="Selecione…" /></SelectTrigger>
+              <SelectContent>
+                {unidades.map((u: any) => (
+                  <SelectItem key={u.id} value={String(u.id)}>{u.sigla} — {u.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label>Depósito Produtivo</Label>
@@ -262,6 +287,7 @@ function Aba({ tipo }: { tipo: Tipo }) {
             <TableRow>
               <TableHead>Código</TableHead>
               <TableHead>Nome</TableHead>
+              <TableHead>Und</TableHead>
               <TableHead>Setor</TableHead>
               <TableHead>Dimensões</TableHead>
               <TableHead>Ficha Técnica</TableHead>
@@ -278,6 +304,7 @@ function Aba({ tipo }: { tipo: Tipo }) {
                 <TableRow key={r.id}>
                   <TableCell className="text-primary font-mono text-xs">{r.codigo}</TableCell>
                   <TableCell><strong>{r.nome}</strong></TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{r.unidade_sigla ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">{r.setor ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">{r.dimensoes ?? "—"}</TableCell>
                   <TableCell>
