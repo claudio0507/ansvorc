@@ -594,26 +594,40 @@ class TestCalcular:
 
 
 class TestDashboard:
-    def test_dashboard_vazio_200(self):
-        resp = client.get("/api/v1/dashboard")
-        assert resp.status_code == 200
-        d = resp.json()
-        for chave in (
-            "total_orcado_mes",
-            "margem_media",
-            "por_status",
-            "total_orcamentos",
-            "orcamentos_recentes",
-        ):
-            assert chave in d
+    def _mk_orc(self, db_session, cliente_id, numero, status, total, custo):
+        from decimal import Decimal
+        from backend.models.orcamento_models import Orcamento
+        o = Orcamento(
+            numero=numero, cliente_id=cliente_id, uf_execucao="PR",
+            status=status, total_proposta=Decimal(total),
+            total_custo_direto=Decimal(custo),
+            margem_liquida_real=Decimal("0.20"),
+        )
+        db_session.add(o)
+        db_session.commit()
 
-    def test_dashboard_com_orcamento(self, orcamento_id):
-        resp = client.get("/api/v1/dashboard")
-        assert resp.status_code == 200
-        d = resp.json()
-        assert d["total_orcamentos"] >= 1
-        # recentes usa os campos renomeados (numero / created_at)
-        assert any(o["numero"] for o in d["orcamentos_recentes"])
+    def test_dashboard_vazio_200(self):
+        d = client.get("/api/v1/dashboard").json()
+        for chave in (
+            "total_orcado_mes", "total_orcado_acumulado",
+            "margem_rs_mes", "margem_rs_acumulado",
+            "margem_pct_mes", "margem_pct_acumulado",
+            "por_status", "total_orcamentos", "orcamentos_recentes",
+        ):
+            assert chave in d, chave
+
+    def test_total_orcado_conta_so_enviado(self, db_session, cliente_id):
+        self._mk_orc(db_session, cliente_id, "ENV-1", "enviado", "1000", "600")
+        self._mk_orc(db_session, cliente_id, "RAS-1", "rascunho", "5000", "100")
+        d = client.get("/api/v1/dashboard").json()
+        assert float(d["total_orcado_acumulado"]) == 1000.0
+
+    def test_margem_conta_so_fechado(self, db_session, cliente_id):
+        self._mk_orc(db_session, cliente_id, "FEC-1", "fechado", "1000", "600")
+        self._mk_orc(db_session, cliente_id, "ENV-2", "enviado", "9000", "100")
+        d = client.get("/api/v1/dashboard").json()
+        assert float(d["margem_rs_acumulado"]) == 400.0
+        assert abs(float(d["margem_pct_acumulado"]) - 0.20) < 0.0001
 
 
 # ── v2: desconto faturável-only, preço final, aprovar+observações+histórico ──
