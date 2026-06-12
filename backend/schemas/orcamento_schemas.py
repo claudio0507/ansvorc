@@ -132,6 +132,7 @@ class OrcamentoUpdate(BaseModel):
     prazo_entrega: str | None = None
     tipo_frete: str | None = None
     condicoes_pagamento: str | None = None
+    texto_topo_proposta: str | None = None
     texto_livre_proposta: str | None = None
     data_limite: date | None = None
     segmentos: list[str] | None = None
@@ -176,6 +177,7 @@ class OrcamentoRead(BaseModel):
     prazo_entrega: str | None = None
     tipo_frete: str | None = None
     condicoes_pagamento: str | None = None
+    texto_topo_proposta: str | None = None
     texto_livre_proposta: str | None = None
     data_limite: date | None = None
     segmentos: list[str] = []

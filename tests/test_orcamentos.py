@@ -768,3 +768,17 @@ class TestSegmentosEDataLimite:
         )
         assert r2.status_code == 200, r2.text
         assert r2.json()["segmentos"] == ["VERTICAL"]
+
+
+# ── Sub-projeto D: texto_topo_proposta ───────────────────────────────────────
+
+
+class TestTextoTopoProposta:
+    def test_round_trip(self, cliente_id):
+        r = client.post("/api/v1/orcamentos", json={
+            "numero": "TT-1", "cliente_id": cliente_id, "uf_execucao": "PR",
+        })
+        oid = r.json()["id"]
+        r2 = client.put(f"/api/v1/orcamentos/{oid}", json={"texto_topo_proposta": "Apresentação da proposta"})
+        assert r2.status_code == 200
+        assert r2.json()["texto_topo_proposta"] == "Apresentação da proposta"

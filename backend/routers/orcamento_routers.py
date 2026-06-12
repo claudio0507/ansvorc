@@ -441,13 +441,27 @@ def _custo_e_unidade_da_ficha(db: Session, body: OrcamentoItemCreate) -> tuple:
                 unidade = um.sigla
         return custo, unidade, "produto"
     if body.ficha_produto_id:
+        from backend.models.param_models import UnidadeMedida
+        from backend.models.produto_models import ItemFicha, Produto
+
         f = _get_or_404(db, FichaProduto, body.ficha_produto_id)
         if not f.possui_ficha:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Produto sem ficha (possui_ficha=False) não pode ser orçado.",
             )
-        return Decimal(f.custo_total), f.unidade, "produto"
+        unidade = f.unidade
+        prod_vinc = (
+            db.query(Produto)
+            .join(ItemFicha, ItemFicha.produto_id == Produto.id)
+            .filter(ItemFicha.ficha_produto_id == f.id)
+            .first()
+        )
+        if prod_vinc and prod_vinc.unidade_id:
+            um = db.get(UnidadeMedida, prod_vinc.unidade_id)
+            if um:
+                unidade = um.sigla
+        return Decimal(f.custo_total), unidade, "produto"
     if body.bloco == "operacional":
         # Custo do bd_ESTRUTURA_OPERACIONAL pela descrição (item)
         est = (

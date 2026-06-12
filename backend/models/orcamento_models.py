@@ -91,6 +91,7 @@ class Orcamento(Base):
     prazo_entrega: Mapped[str | None] = mapped_column(String(50), nullable=True)
     tipo_frete: Mapped[str | None] = mapped_column(String(30), nullable=True)
     condicoes_pagamento: Mapped[str | None] = mapped_column(Text, nullable=True)
+    texto_topo_proposta: Mapped[str | None] = mapped_column(Text, nullable=True)
     texto_livre_proposta: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Totais de leitura rápida (preenchidos pelo /calcular)
