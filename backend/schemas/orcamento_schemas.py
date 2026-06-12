@@ -4,7 +4,7 @@ margem_lucro é PERCENTUAL (10 = 10%, DECIMAL(5,2)). Custos de itens faturáveis
 da ficha (não enviados pelo cliente); apenas itens manuais informam custo.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
@@ -82,7 +82,9 @@ _UF_VALIDAS = {
     "SE",
     "AC",
 }
-_STATUS_VALIDOS = {"rascunho", "enviado", "aprovado", "rejeitado"}
+_STATUS_VALIDOS = {
+    "rascunho", "enviado", "aprovado", "reprovado", "perdida", "fechado",
+}
 _MOD_FAT_VALIDAS = {"BDI-MO", "BDI-MAT+MO", "BDI+ICMS", "FAT DIR SIMP", "-"}
 _BLOCOS_VALIDOS = {"servicos", "produtos", "operacional", "excepcionais"}
 _TIPO_ORIGEM_VALIDOS = {"servico", "produto", "operacional", "manual"}
@@ -105,6 +107,8 @@ class OrcamentoCreate(BaseModel):
     beneficio_reidi: bool = False
     desconto_percentual: Decimal = Decimal("0")
     orcamentista_id: int | None = None  # BLOCO 2.4
+    data_limite: date | None = None
+    segmentos: list[str] = []
 
     _norm_obra = field_validator("obra")(normalizar_texto)
     _valida_uf = field_validator("uf_execucao")(_check_uf)
@@ -127,6 +131,8 @@ class OrcamentoUpdate(BaseModel):
     validade_proposta: str | None = None
     condicoes_pagamento: str | None = None
     texto_livre_proposta: str | None = None
+    data_limite: date | None = None
+    segmentos: list[str] | None = None
 
     _norm_obra = field_validator("obra")(normalizar_texto)
     _valida_uf = field_validator("uf_execucao")(_check_uf)
@@ -167,6 +173,17 @@ class OrcamentoRead(BaseModel):
     validade_proposta: str | None = None
     condicoes_pagamento: str | None = None
     texto_livre_proposta: str | None = None
+    data_limite: date | None = None
+    segmentos: list[str] = []
+
+    @field_validator("segmentos", mode="before")
+    @classmethod
+    def _serializa_segmentos(cls, v):
+        # Aceita relationship (list[OrcamentoSegmento]) ou list[str] já pronta.
+        if v and not isinstance(v[0], str):
+            return [s.seguimento for s in v]
+        return v or []
+
     total_custo_direto: Decimal
     total_proposta: Decimal
     margem_liquida_real: Decimal
