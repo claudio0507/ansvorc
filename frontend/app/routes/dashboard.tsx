@@ -9,6 +9,7 @@ import {
 } from "~/components/ui/chart"
 
 import { PageHeader } from "~/components/page-header"
+import { PrazosCalendar } from "~/components/prazos-calendar"
 import { StatusBadge } from "~/components/status-badge"
 import { Card } from "~/components/ui/card"
 import { Skeleton } from "~/components/ui/skeleton"
@@ -144,6 +145,8 @@ export default function Dashboard() {
           </ChartContainer>
         </Card>
       </div>
+
+      <PrazosCalendar />
 
       {/* Últimos orçamentos */}
       <Card className="overflow-x-auto py-0">
