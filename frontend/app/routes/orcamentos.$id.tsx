@@ -341,6 +341,7 @@ export default function OrcamentoEditor() {
                                     step="any"
                                     className="h-7 w-24 text-right text-[0.6875rem] tabular-nums"
                                     onBlur={(e) => salvarQuantidade(it.id, e.target.value, it.quantidade)}
+                                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); (e.target as HTMLInputElement).blur(); calcular() } }}
                                   />
                                 )}
                               </TableCell>
@@ -358,6 +359,7 @@ export default function OrcamentoEditor() {
                                         step="0.1"
                                         className="h-7 w-14 text-right text-[0.6875rem] tabular-nums"
                                         onBlur={(e) => salvarCampo(it.id, "margem_lucro", e.target.value, Number(it.margem_lucro))}
+                                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); (e.target as HTMLInputElement).blur(); calcular() } }}
                                       />
                                       <span className="text-muted-foreground">%</span>
                                     </div>
@@ -384,7 +386,7 @@ export default function OrcamentoEditor() {
                               <TableCell className="px-2 py-0.5 text-right">{fmtBRL(it.custo_direto_unitario)}</TableCell>
                               <TableCell className="px-2 py-0.5 text-right">
                                 {hasPrices ? (
-                                  <span className="font-medium">{fmtBRL(it.preco_venda_unitario)}</span>
+                                  <span className="font-medium">{fmtBRL(it.preco_venda_unitario_final || it.preco_venda_unitario)}</span>
                                 ) : (
                                   <span className="text-muted-foreground">—</span>
                                 )}
@@ -431,6 +433,7 @@ export default function OrcamentoEditor() {
                   step="0.01"
                   value={desconto}
                   onChange={(e) => setDesconto(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); salvarDesconto().then(calcular) } }}
                   className="h-8"
                 />
                 <Button size="sm" variant="secondary" onClick={salvarDesconto}>OK</Button>
