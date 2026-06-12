@@ -70,7 +70,7 @@ export default function Login() {
           <p className="text-muted-foreground mt-0.5 text-xs font-medium tracking-[0.12em] uppercase">
             ALTA NOROESTE
           </p>
-          <p className="text-muted-foreground mt-1 text-sm">ERP de Orçamentação Viária</p>
+          <p className="text-muted-foreground mt-1 text-sm">Sistema de Orçamentação</p>
         </div>
 
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">

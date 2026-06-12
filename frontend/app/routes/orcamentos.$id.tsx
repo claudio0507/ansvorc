@@ -219,10 +219,8 @@ export default function OrcamentoEditor() {
     )
   }
 
-  const calculado = resultado !== null || itens.some((i) => parseFloat(i.preco_venda_unitario) > 0)
-
-  // Painel: apenas MLR (verde) e Total (primária) coloridos.
-  const subtotalFat = resultado ? fmtBRL(resultado.subtotal_faturavel) : "—"
+  // Totais: usa resultado do último cálculo ou valores persistidos no orc (item 9)
+  const subtotalFat = resultado ? fmtBRL(resultado.subtotal_faturavel) : orc.total_custo_direto ? fmtBRL(orc.total_custo_direto) : "—"
   const totalDiluir = resultado ? fmtBRL(resultado.total_nao_faturavel) : "—"
   const fatorK = resultado ? `${(parseFloat(String(resultado.fator_k_percentual)) || 0).toFixed(2)}%` : "—"
   const mlr = resultado ? fmtPct(resultado.margem_liquida_real) : orc.margem_liquida_real ? fmtPct(orc.margem_liquida_real) : "—"
