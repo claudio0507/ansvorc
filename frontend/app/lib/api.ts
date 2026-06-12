@@ -351,3 +351,12 @@ export const biApi = {
     return resp.json()
   },
 }
+
+export const notificacaoApi = {
+  list: () => api.get<{ total: number; notificacoes: any[] }>("/notificacoes"),
+}
+
+export const prazoApi = {
+  list: (mes?: string) =>
+    api.get<any[]>(`/prazos${mes ? `?mes=${encodeURIComponent(mes)}` : ""}`),
+}
