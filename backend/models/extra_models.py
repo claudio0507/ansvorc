@@ -50,6 +50,10 @@ class ConfigSistema(Base):
         String(200), nullable=False, default="ALTA NOROESTE"
     )
     logo_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    diretor_nome: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    diretor_funcao: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    diretor_telefone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    diretor_email: Mapped[str | None] = mapped_column(String(150), nullable=True)
 
 
 class OrcamentoSegmento(Base):

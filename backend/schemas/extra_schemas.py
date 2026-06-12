@@ -39,7 +39,15 @@ class ConfigSistemaRead(BaseModel):
     id: int
     nome_empresa: str
     logo_path: str | None
+    diretor_nome: str | None = None
+    diretor_funcao: str | None = None
+    diretor_telefone: str | None = None
+    diretor_email: str | None = None
 
 
 class ConfigSistemaUpdate(BaseModel):
     nome_empresa: str | None = None
+    diretor_nome: str | None = None
+    diretor_funcao: str | None = None
+    diretor_telefone: str | None = None
+    diretor_email: str | None = None

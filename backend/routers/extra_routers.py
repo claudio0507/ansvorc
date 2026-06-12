@@ -101,6 +101,10 @@ def atualizar_config(payload: ConfigSistemaUpdate, db: Session = Depends(get_db)
     cfg = _get_config(db)
     if payload.nome_empresa is not None:
         cfg.nome_empresa = payload.nome_empresa
+    for campo in ("diretor_nome", "diretor_funcao", "diretor_telefone", "diretor_email"):
+        valor = getattr(payload, campo)
+        if valor is not None:
+            setattr(cfg, campo, valor)
     db.commit()
     db.refresh(cfg)
     return cfg
