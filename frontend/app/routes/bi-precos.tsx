@@ -23,8 +23,15 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
 import { biApi, fichaApi, produtoApi } from "~/lib/api"
 import { fmtBRL, fmtNum } from "~/lib/format"
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "~/components/ui/chart"
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -73,39 +80,30 @@ interface Detalhe {
   valor_total: number
 }
 
-// ── Gráfico de barras simples (sem recharts) ────────────────────────────────
+// ── Gráfico de barras (Shadcn Charts) ──────────────────────────────────────
+
+const biChartConfig = {
+  value: { label: "Valor", color: "var(--chart-1)" },
+} satisfies ChartConfig
 
 function MiniBarChart({
   data,
   height = 160,
 }: {
-  data: { label: string; value: number; max: number }[]
+  data: { label: string; value: number; max?: number }[]
   height?: number
 }) {
-  if (!data.length) return <div className="text-muted-foreground text-xs py-8 text-center">Sem dados</div>
-
-  const realMax = Math.max(...data.map((d) => d.value), 1)
-
+  if (!data.length)
+    return <div className="text-muted-foreground text-xs py-8 text-center">Sem dados</div>
   return (
-    <div className="flex items-end gap-1" style={{ height }}>
-      {data.map((d, i) => (
-        <div key={i} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-          <span className="text-[0.5625rem] text-muted-foreground tabular-nums">
-            {fmtNum(d.value)}
-          </span>
-          <div
-            className="w-full bg-primary/60 rounded-t-sm transition-all"
-            style={{
-              height: `${(d.value / realMax) * 100}%`,
-              minHeight: d.value > 0 ? 4 : 0,
-            }}
-          />
-          <span className="text-[0.5rem] text-muted-foreground truncate w-full text-center leading-tight">
-            {d.label}
-          </span>
-        </div>
-      ))}
-    </div>
+    <ChartContainer config={biChartConfig} style={{ height }} className="w-full">
+      <BarChart data={data} accessibilityLayer>
+        <CartesianGrid vertical={false} />
+        <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 9 }} />
+        <ChartTooltip content={<ChartTooltipContent />} />
+        <Bar dataKey="value" fill="var(--color-value)" radius={3} />
+      </BarChart>
+    </ChartContainer>
   )
 }
 
