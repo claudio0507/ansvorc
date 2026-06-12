@@ -4,13 +4,14 @@ Regras: snapshot imutável pós-aprovado; versionamento via orcamento_origem_id;
 desconto sobre o total rateado nas linhas; produtos orçáveis sem serviço.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from sqlalchemy import (
     DECIMAL,
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Integer,
@@ -82,6 +83,7 @@ class Orcamento(Base):
     )
     # BLOCO 2.1/2.3 — textos parametrizáveis da proposta
     validade_proposta: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    data_limite: Mapped[date | None] = mapped_column(Date, nullable=True)
     condicoes_pagamento: Mapped[str | None] = mapped_column(Text, nullable=True)
     texto_livre_proposta: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -101,6 +103,11 @@ class Orcamento(Base):
     )
     itens: Mapped[list["OrcamentoItem"]] = relationship(
         "OrcamentoItem", back_populates="orcamento", cascade="all, delete-orphan"
+    )
+    segmentos: Mapped[list["OrcamentoSegmento"]] = relationship(
+        "OrcamentoSegmento",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
 

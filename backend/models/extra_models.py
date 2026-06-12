@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DECIMAL, Boolean, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import DECIMAL, Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.database import Base
@@ -50,3 +50,19 @@ class ConfigSistema(Base):
         String(200), nullable=False, default="ALTA NOROESTE"
     )
     logo_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
+
+
+class OrcamentoSegmento(Base):
+    """BLOCO A — segmentos (multi) classificando o orçamento. Só etiqueta."""
+
+    __tablename__ = "orcamento_segmentos"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    orcamento_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("orcamentos.id", ondelete="CASCADE"), nullable=False
+    )
+    seguimento: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("orcamento_id", "seguimento", name="uq_orc_segmento"),
+    )

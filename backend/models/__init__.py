@@ -11,6 +11,7 @@ from backend.models.bd_models import (
 from backend.models.extra_models import (
     ConfigSistema,
     HistoricoDesconto,
+    OrcamentoSegmento,
     UsuarioOrcamentista,
 )
 from backend.models.ficha_models import FichaEquipe, FichaProduto, FichaServico
@@ -45,6 +46,7 @@ __all__ = [
     "Produto",
     "ItemFicha",
     "HistoricoDesconto",
+    "OrcamentoSegmento",
     "UsuarioOrcamentista",
     "ConfigSistema",
     "Usuario",
