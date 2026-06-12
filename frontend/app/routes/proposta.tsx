@@ -197,7 +197,7 @@ export default function Proposta() {
             <span className="text-muted-foreground">Subtotal</span>
             <span>{fmtBRL(subtotal)}</span>
           </div>
-          {descontoTotal > 0 && (
+          {descontoTotal > 0 && (orc.versao ?? 1) >= 2 && (
             <div className="flex w-56 justify-between">
               <span className="text-muted-foreground">Desconto ({Number(orc.desconto_percentual).toFixed(2)}%)</span>
               <span>- {fmtBRL(descontoTotal)}</span>
@@ -209,8 +209,20 @@ export default function Proposta() {
           </div>
         </div>
 
+        {orc.prazo_entrega && (
+          <div className="text-muted-foreground mt-4 text-xs">
+            <span className="font-medium">Prazo de entrega: </span>
+            {orc.prazo_entrega}
+          </div>
+        )}
+        {orc.tipo_frete && (
+          <div className="text-muted-foreground mt-1 text-xs">
+            <span className="font-medium">Tipo de frete: </span>
+            {orc.tipo_frete}
+          </div>
+        )}
         {orc.condicoes_pagamento && (
-          <div className="text-muted-foreground mt-5 text-xs">
+          <div className="text-muted-foreground mt-1 text-xs">
             <span className="font-medium">Condições de pagamento: </span>
             {orc.condicoes_pagamento}
           </div>
@@ -219,7 +231,15 @@ export default function Proposta() {
           <p className="text-muted-foreground mt-2 text-xs whitespace-pre-wrap">{orc.texto_livre_proposta}</p>
         )}
 
-        <p className="text-muted-foreground/70 mt-8 text-center text-[0.625rem]">
+        {/* Rodapé: dados do orçamentista */}
+        <div className="mt-6 border-t pt-4 text-xs text-muted-foreground">
+          <div className="font-medium text-foreground">{orcamentista?.nome_completo ?? "—"}</div>
+          {orcamentista?.funcao && <div>{orcamentista.funcao}</div>}
+          {orcamentista?.telefone && <div>Tel: {orcamentista.telefone}</div>}
+          {orcamentista?.email && <div>{orcamentista.email}</div>}
+        </div>
+
+        <p className="text-muted-foreground/70 mt-6 text-center text-[0.625rem]">
           Desenvolvido por Viaxis Tech HUB
         </p>
       </Card>

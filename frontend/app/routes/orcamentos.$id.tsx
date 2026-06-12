@@ -333,19 +333,19 @@ export default function OrcamentoEditor() {
                               <TableCell className="text-muted-foreground px-2 py-0.5">{it.unidade}</TableCell>
                               <TableCell className="px-2 py-0.5 text-right">
                                 {readonly ? (
-                                  <span>
+                                  <span className="tabular-nums">
                                     {Number(it.quantidade).toLocaleString("pt-BR", {
-                                      minimumFractionDigits: 1,
-                                      maximumFractionDigits: 1,
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 2,
                                     })}
                                   </span>
                                 ) : (
                                   <Input
                                     type="number"
-                                    defaultValue={it.quantidade}
+                                    defaultValue={Number(it.quantidade).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                                     min="0"
                                     step="any"
-                                    className="h-7 w-24 text-right text-[0.6875rem]"
+                                    className="h-7 w-24 text-right text-[0.6875rem] tabular-nums"
                                     onBlur={(e) => salvarQuantidade(it.id, e.target.value, it.quantidade)}
                                   />
                                 )}
@@ -358,11 +358,11 @@ export default function OrcamentoEditor() {
                                     <div className="flex items-center justify-end gap-0.5">
                                       <Input
                                         type="number"
-                                        defaultValue={Number(it.margem_lucro)}
+                                        defaultValue={Number(it.margem_lucro).toFixed(1)}
                                         min="0"
                                         max="99.9"
                                         step="0.1"
-                                        className="h-7 w-14 text-right text-[0.6875rem]"
+                                        className="h-7 w-14 text-right text-[0.6875rem] tabular-nums"
                                         onBlur={(e) => salvarCampo(it.id, "margem_lucro", e.target.value, Number(it.margem_lucro))}
                                       />
                                       <span className="text-muted-foreground">%</span>
