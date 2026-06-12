@@ -150,12 +150,19 @@ function EmpresaConfig() {
   const [cfg, setCfg] = useState<any>(null)
   const [nome, setNome] = useState("")
   const [saving, setSaving] = useState(false)
+  const [diretor, setDiretor] = useState({ nome: "", funcao: "", telefone: "", email: "" })
 
   async function load() {
     try {
       const c = await configApi.get()
       setCfg(c)
       setNome(c.nome_empresa ?? "")
+      setDiretor({
+        nome: c.diretor_nome ?? "",
+        funcao: c.diretor_funcao ?? "",
+        telefone: c.diretor_telefone ?? "",
+        email: c.diretor_email ?? "",
+      })
     } catch (e: any) {
       toast.error(e.message)
     }
@@ -167,9 +174,15 @@ function EmpresaConfig() {
   async function salvarNome() {
     setSaving(true)
     try {
-      const c = await configApi.update({ nome_empresa: nome })
+      const c = await configApi.update({
+        nome_empresa: nome,
+        diretor_nome: diretor.nome || null,
+        diretor_funcao: diretor.funcao || null,
+        diretor_telefone: diretor.telefone || null,
+        diretor_email: diretor.email || null,
+      })
       setCfg(c)
-      toast.success("Nome da empresa atualizado")
+      toast.success("Configurações da empresa atualizadas")
     } catch (e: any) {
       toast.error(`Erro: ${e.message}`)
     } finally {
@@ -213,6 +226,17 @@ function EmpresaConfig() {
           }}
         />
         <p className="text-muted-foreground text-xs">Exibido na proposta, login e sidebar.</p>
+      </div>
+
+      <div className="flex flex-col gap-3 border-t pt-5">
+        <Label>Diretor Comercial (Aprovado por — exibido na proposta)</Label>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Input value={diretor.nome} onChange={(e) => setDiretor((d) => ({ ...d, nome: e.target.value }))} placeholder="Nome" />
+          <Input value={diretor.funcao} onChange={(e) => setDiretor((d) => ({ ...d, funcao: e.target.value }))} placeholder="Função (ex: Diretor Comercial)" />
+          <Input value={diretor.telefone} onChange={(e) => setDiretor((d) => ({ ...d, telefone: e.target.value }))} placeholder="Telefone" />
+          <Input value={diretor.email} onChange={(e) => setDiretor((d) => ({ ...d, email: e.target.value }))} placeholder="E-mail" />
+        </div>
+        <Button size="sm" onClick={salvarNome} disabled={saving} className="self-start">Salvar</Button>
       </div>
     </Card>
   )
