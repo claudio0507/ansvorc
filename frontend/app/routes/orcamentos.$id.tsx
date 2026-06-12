@@ -58,8 +58,8 @@ const BLOCOS: {
     key: "servicos",
     titulo: "1. SERVIÇOS",
     faturavel: true,
-    bar: "bg-primary/10 text-primary",
-    pill: "bg-primary",
+    bar: "bg-secondary text-secondary-foreground",
+    pill: "bg-muted-foreground/60",
   },
   {
     key: "produtos",
@@ -72,15 +72,15 @@ const BLOCOS: {
     key: "operacional",
     titulo: "3. ESTRUTURA OPERACIONAL",
     faturavel: false,
-    bar: "bg-secondary text-muted-foreground",
+    bar: "bg-secondary text-secondary-foreground",
     pill: "bg-muted-foreground/50",
   },
   {
     key: "excepcionais",
     titulo: "4. CUSTOS EXCEPCIONAIS",
     faturavel: false,
-    bar: "bg-primary/[0.06] text-primary/70",
-    pill: "bg-primary/40",
+    bar: "bg-secondary text-secondary-foreground",
+    pill: "bg-muted-foreground/50",
   },
 ]
 const MOD_FAT_OPTS = ["BDI-MAT+MO", "BDI-MO", "BDI+ICMS", "FAT DIR SIMP"]
@@ -292,6 +292,7 @@ export default function OrcamentoEditor() {
                         {b.faturavel && <TableHead className="h-7 w-16 text-right text-[0.625rem]">Margem</TableHead>}
                         {b.faturavel && <TableHead className="h-7 w-28 text-[0.625rem]">MOD FAT</TableHead>}
                         <TableHead className="h-7 w-24 text-right text-[0.625rem]">Custo Unit</TableHead>
+                        <TableHead className="h-7 w-24 text-right text-[0.625rem]">Preço Unit</TableHead>
                         <TableHead className="h-7 w-24 text-right text-[0.625rem]">Preço Total</TableHead>
                         <TableHead className="h-7 w-24 text-right text-[0.625rem]">Desc. Rateado</TableHead>
                         {!readonly && <TableHead className="h-7 w-8"></TableHead>}
@@ -372,6 +373,13 @@ export default function OrcamentoEditor() {
                                 </TableCell>
                               )}
                               <TableCell className="px-2 py-0.5 text-right">{fmtBRL(it.custo_direto_unitario)}</TableCell>
+                              <TableCell className="px-2 py-0.5 text-right">
+                                {hasPrices ? (
+                                  <span className="font-medium">{fmtBRL(it.preco_venda_unitario)}</span>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
                               <TableCell className="px-2 py-0.5 text-right">
                                 {hasPrices ? (
                                   <span className="text-primary font-semibold">{fmtBRL(it.preco_venda_total)}</span>
