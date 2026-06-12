@@ -9,6 +9,7 @@ import {
   TrashIcon,
   PlusIcon,
   FileTextIcon,
+  XIcon,
 } from "@phosphor-icons/react"
 
 import { AddItemModal } from "~/components/add-item-modal"
@@ -58,8 +59,8 @@ const BLOCOS: {
     key: "servicos",
     titulo: "1. SERVIÇOS",
     faturavel: true,
-    bar: "bg-primary/10 text-primary",
-    pill: "bg-primary",
+    bar: "bg-secondary text-secondary-foreground",
+    pill: "bg-muted-foreground/60",
   },
   {
     key: "produtos",
@@ -72,15 +73,15 @@ const BLOCOS: {
     key: "operacional",
     titulo: "3. ESTRUTURA OPERACIONAL",
     faturavel: false,
-    bar: "bg-secondary text-muted-foreground",
+    bar: "bg-secondary text-secondary-foreground",
     pill: "bg-muted-foreground/50",
   },
   {
     key: "excepcionais",
     titulo: "4. CUSTOS EXCEPCIONAIS",
     faturavel: false,
-    bar: "bg-primary/[0.06] text-primary/70",
-    pill: "bg-primary/40",
+    bar: "bg-secondary text-secondary-foreground",
+    pill: "bg-muted-foreground/50",
   },
 ]
 const MOD_FAT_OPTS = ["BDI-MAT+MO", "BDI-MO", "BDI+ICMS", "FAT DIR SIMP"]
@@ -204,6 +205,17 @@ export default function OrcamentoEditor() {
     }
   }
 
+  async function rejeitar() {
+    if (!confirm("Rejeitar este orçamento? Ele será marcado como rejeitado e poderá voltar a rascunho.")) return
+    try {
+      await orcamentoApi.update(orcId, { status: "rejeitado" })
+      toast.success("Orçamento rejeitado")
+      carregar()
+    } catch (err: any) {
+      toast.error(`Erro: ${err.message}`)
+    }
+  }
+
   if (carregando) {
     return <div className="text-muted-foreground py-12 text-center">Carregando orçamento…</div>
   }
@@ -219,10 +231,8 @@ export default function OrcamentoEditor() {
     )
   }
 
-  const calculado = resultado !== null || itens.some((i) => parseFloat(i.preco_venda_unitario) > 0)
-
-  // Painel: apenas MLR (verde) e Total (primária) coloridos.
-  const subtotalFat = resultado ? fmtBRL(resultado.subtotal_faturavel) : "—"
+  // Totais: usa resultado do último cálculo ou valores persistidos no orc (item 9)
+  const subtotalFat = resultado ? fmtBRL(resultado.subtotal_faturavel) : orc.total_custo_direto ? fmtBRL(orc.total_custo_direto) : "—"
   const totalDiluir = resultado ? fmtBRL(resultado.total_nao_faturavel) : "—"
   const fatorK = resultado ? `${(parseFloat(String(resultado.fator_k_percentual)) || 0).toFixed(2)}%` : "—"
   const mlr = resultado ? fmtPct(resultado.margem_liquida_real) : orc.margem_liquida_real ? fmtPct(orc.margem_liquida_real) : "—"
@@ -257,6 +267,9 @@ export default function OrcamentoEditor() {
               </Button>
               <Button size="sm" variant="secondary" onClick={() => setAprovarOpen(true)}>
                 <CheckIcon className="size-4" /> Aprovar
+              </Button>
+              <Button size="sm" variant="ghost" className="text-destructive" onClick={rejeitar}>
+                <XIcon className="size-4" /> Rejeitar
               </Button>
             </>
           ) : (
@@ -294,6 +307,7 @@ export default function OrcamentoEditor() {
                         {b.faturavel && <TableHead className="h-7 w-16 text-right text-[0.625rem]">Margem</TableHead>}
                         {b.faturavel && <TableHead className="h-7 w-28 text-[0.625rem]">MOD FAT</TableHead>}
                         <TableHead className="h-7 w-24 text-right text-[0.625rem]">Custo Unit</TableHead>
+                        <TableHead className="h-7 w-24 text-right text-[0.625rem]">Preço Unit</TableHead>
                         <TableHead className="h-7 w-24 text-right text-[0.625rem]">Preço Total</TableHead>
                         <TableHead className="h-7 w-24 text-right text-[0.625rem]">Desc. Rateado</TableHead>
                         {!readonly && <TableHead className="h-7 w-8"></TableHead>}
@@ -319,19 +333,19 @@ export default function OrcamentoEditor() {
                               <TableCell className="text-muted-foreground px-2 py-0.5">{it.unidade}</TableCell>
                               <TableCell className="px-2 py-0.5 text-right">
                                 {readonly ? (
-                                  <span>
+                                  <span className="tabular-nums">
                                     {Number(it.quantidade).toLocaleString("pt-BR", {
-                                      minimumFractionDigits: 1,
-                                      maximumFractionDigits: 1,
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 2,
                                     })}
                                   </span>
                                 ) : (
                                   <Input
                                     type="number"
-                                    defaultValue={it.quantidade}
+                                    defaultValue={Number(it.quantidade).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                                     min="0"
                                     step="any"
-                                    className="h-7 w-24 text-right text-[0.6875rem]"
+                                    className="h-7 w-24 text-right text-[0.6875rem] tabular-nums"
                                     onBlur={(e) => salvarQuantidade(it.id, e.target.value, it.quantidade)}
                                   />
                                 )}
@@ -344,11 +358,11 @@ export default function OrcamentoEditor() {
                                     <div className="flex items-center justify-end gap-0.5">
                                       <Input
                                         type="number"
-                                        defaultValue={Number(it.margem_lucro)}
+                                        defaultValue={Number(it.margem_lucro).toFixed(1)}
                                         min="0"
                                         max="99.9"
                                         step="0.1"
-                                        className="h-7 w-14 text-right text-[0.6875rem]"
+                                        className="h-7 w-14 text-right text-[0.6875rem] tabular-nums"
                                         onBlur={(e) => salvarCampo(it.id, "margem_lucro", e.target.value, Number(it.margem_lucro))}
                                       />
                                       <span className="text-muted-foreground">%</span>
@@ -374,6 +388,13 @@ export default function OrcamentoEditor() {
                                 </TableCell>
                               )}
                               <TableCell className="px-2 py-0.5 text-right">{fmtBRL(it.custo_direto_unitario)}</TableCell>
+                              <TableCell className="px-2 py-0.5 text-right">
+                                {hasPrices ? (
+                                  <span className="font-medium">{fmtBRL(it.preco_venda_unitario)}</span>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
                               <TableCell className="px-2 py-0.5 text-right">
                                 {hasPrices ? (
                                   <span className="text-primary font-semibold">{fmtBRL(it.preco_venda_total)}</span>
@@ -444,7 +465,7 @@ export default function OrcamentoEditor() {
               <dd className="text-primary text-2xl font-bold">{total}</dd>
             </div>
           </dl>
-          {!calculado && (
+          {!resultado && !orc.total_proposta && (
             <p className="text-warning bg-warning/10 mt-3 p-2.5 text-center text-xs">
               Clique em "Calcular" para obter os preços finais.
             </p>

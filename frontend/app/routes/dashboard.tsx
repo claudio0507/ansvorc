@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import {
+  PolarAngleAxis,
+  PolarGrid,
+  Radar,
+  RadarChart,
+} from "recharts"
 import {
   ClockIcon,
   TrendUpIcon,
@@ -10,13 +15,7 @@ import {
 
 import { PageHeader } from "~/components/page-header"
 import { StatusBadge } from "~/components/status-badge"
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "~/components/ui/chart"
+import { Card } from "~/components/ui/card"
 import { Skeleton } from "~/components/ui/skeleton"
 import {
   Table,
@@ -27,201 +26,158 @@ import {
   TableRow,
 } from "~/components/ui/table"
 import { Button } from "~/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select"
 import { api } from "~/lib/api"
-import { fmtBRL, fmtData, fmtPctMlr } from "~/lib/format"
-
-interface DashboardData {
-  total_orcamentos?: number
-  por_status?: Record<string, number>
-  orcamentos_recentes?: any[]
-  total_orcado_mes?: number | string
-  margem_media?: number | string
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  rascunho: "Rascunho",
-  enviado: "Enviado",
-  aprovado: "Aprovado",
-  rejeitado: "Rejeitado",
-}
-
-const chartConfig: ChartConfig = {
-  n: { label: "Orçamentos", color: "var(--chart-2)" },
-}
+import { fmtBRL } from "~/lib/format"
 
 export default function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null)
+  const [dados, setDados] = useState<any>(null)
   const [erro, setErro] = useState("")
+  const [filtro, setFiltro] = useState<"mes" | "acumulado">("acumulado")
 
   useEffect(() => {
-    api
-      .get<DashboardData>("/dashboard")
-      .then(setData)
-      .catch((e) => setErro(e.message))
+    api.get<any>("/dashboard").then(setDados).catch((e) => setErro(e.message))
   }, [])
 
-  if (erro) {
-    return (
-      <>
-        <PageHeader title="Dashboard" subtitle="Visão geral das propostas comerciais" />
-        <p className="text-destructive">{erro}</p>
-      </>
-    )
-  }
+  if (erro) return <div className="text-destructive py-12 text-center">{erro}</div>
+  if (!dados) return <Skeleton className="h-64 w-full" />
 
-  if (!data) {
-    return (
-      <>
-        <PageHeader title="Dashboard" subtitle="Visão geral das propostas comerciais" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24" />
-          ))}
-        </div>
-      </>
-    )
-  }
+  const totalOrcado = filtro === "mes" ? dados.total_orcado_mes : dados.total_orcado_acumulado ?? dados.total_orcado_mes
+  const margemAcumulada = dados.margem_acumulada ?? dados.margem_media ?? 0
+  const porStatus = dados.por_status || {}
+  const recentes = dados.orcamentos_recentes || []
 
-  const porStatus = data.por_status ?? {}
-  const total = data.total_orcamentos ?? 0
-  const recentes = data.orcamentos_recentes ?? []
-  const pendentes = (porStatus.rascunho ?? 0) + (porStatus.enviado ?? 0)
-
-  const chartData = Object.keys(STATUS_LABELS)
-    .map((key) => ({ status: STATUS_LABELS[key], n: porStatus[key] ?? 0 }))
-    .filter((d) => d.n > 0)
-
-  const fluxo = Object.keys(STATUS_LABELS).map((key) => ({
-    key,
-    label: STATUS_LABELS[key],
-    n: porStatus[key] ?? 0,
-  }))
-
-  const cards = [
-    { label: "Total Orçado (mês)", value: fmtBRL(data.total_orcado_mes ?? 0), icon: ClockIcon },
-    { label: "Margem Média (MLR)", value: fmtPctMlr(data.margem_media ?? 0), icon: TrendUpIcon },
-    { label: "Propostas Pendentes", value: String(pendentes), icon: FileTextIcon },
-    { label: "Total de Orçamentos", value: String(total), icon: FoldersIcon },
+  // Radar data: status distribution
+  const radarData = [
+    { status: "Rascunho", value: porStatus.rascunho || 0, fullMark: Math.max(1, dados.total_orcamentos || 1) },
+    { status: "Enviado", value: porStatus.enviado || 0, fullMark: Math.max(1, dados.total_orcamentos || 1) },
+    { status: "Aprovado", value: porStatus.aprovado || 0, fullMark: Math.max(1, dados.total_orcamentos || 1) },
+    { status: "Rejeitado", value: porStatus.rejeitado || 0, fullMark: Math.max(1, dados.total_orcamentos || 1) },
   ]
 
   return (
-    <>
-      <PageHeader title="Dashboard" subtitle="Visão geral das propostas comerciais" />
+    <div className="space-y-6">
+      <PageHeader
+        title="Dashboard"
+        subtitle="Painel de controle"
+        actions={
+          <Select value={filtro} onValueChange={(v) => setFiltro(v as "mes" | "acumulado")}>
+            <SelectTrigger className="h-8 w-32 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="acumulado">Acumulado</SelectItem>
+              <SelectItem value="mes">Este Mês</SelectItem>
+            </SelectContent>
+          </Select>
+        }
+      />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => (
-          <Card key={c.label}>
-            <CardContent className="flex items-center gap-4">
-              <div className="bg-primary/10 text-primary flex size-11 shrink-0 items-center justify-center">
-                <c.icon className="size-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="truncate text-xl font-semibold">{c.value}</div>
-                <div className="text-muted-foreground text-xs">{c.label}</div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Card className="p-4">
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">
+            {filtro === "mes" ? "Orçado no Mês" : "Total Orçado"}
+          </div>
+          <div className="text-2xl font-bold mt-2 tabular-nums text-primary">
+            {fmtBRL(totalOrcado)}
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">
+            Margem Líquida Acumulada
+          </div>
+          <div className="text-2xl font-bold mt-2 tabular-nums">
+            {typeof margemAcumulada === "number" ? `${(margemAcumulada * 100).toFixed(2)}%` : "—"}
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">
+            Total Orçamentos
+          </div>
+          <div className="text-2xl font-bold mt-2 tabular-nums">
+            {dados.total_orcamentos || 0}
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">
+            Aprovados
+          </div>
+          <div className="text-2xl font-bold mt-2 tabular-nums text-success">
+            {porStatus.aprovado || 0}
+          </div>
+        </Card>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Orçamentos por Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {chartData.length === 0 ? (
-              <p className="text-muted-foreground py-8 text-center text-sm">
-                Nenhum orçamento cadastrado.
-              </p>
-            ) : (
-              <ChartContainer config={chartConfig} className="h-56 w-full">
-                <BarChart accessibilityLayer data={chartData} layout="vertical" margin={{ left: 8 }}>
-                  <CartesianGrid horizontal={false} />
-                  <XAxis type="number" hide />
-                  <YAxis
-                    type="category"
-                    dataKey="status"
-                    tickLine={false}
-                    axisLine={false}
-                    width={80}
-                    className="text-xs"
-                  />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="n" fill="var(--color-n)" radius={0} />
-                </BarChart>
-              </ChartContainer>
-            )}
-          </CardContent>
-        </Card>
+      {/* Radar Chart */}
+      <Card className="p-4">
+        <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider mb-3">
+          Distribuição por Status
+        </div>
+        <div className="flex justify-center">
+          <RadarChart width={280} height={200} data={radarData} cx="50%" cy="50%" outerRadius="70%">
+            <PolarGrid stroke="oklch(0.55 0.005 250)" />
+            <PolarAngleAxis
+              dataKey="status"
+              tick={{ fontSize: 10, fill: "oklch(0.55 0.005 250)" }}
+            />
+            <Radar
+              dataKey="value"
+              stroke="oklch(0.536 0.189 24.67)"
+              fill="oklch(0.536 0.189 24.67)"
+              fillOpacity={0.15}
+            />
+          </RadarChart>
+        </div>
+      </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Fluxo de Aprovação</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {fluxo.map((s) => (
-                <div key={s.key} className="bg-muted/50 flex flex-col items-center gap-1 p-3 text-center">
-                  <span className="text-2xl font-semibold">{s.n}</span>
-                  <StatusBadge status={s.key} />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="text-sm">Propostas Recentes</CardTitle>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/orcamentos">Ver todas →</Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="px-0">
+      {/* Últimos orçamentos */}
+      <Card className="overflow-x-auto py-0">
+        <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider px-4 py-3 border-b border-border">
+          Orçamentos Recentes
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="h-7 text-[0.625rem]">Número</TableHead>
+              <TableHead className="h-7 text-[0.625rem]">Status</TableHead>
+              <TableHead className="h-7 text-[0.625rem] text-right">Total</TableHead>
+              <TableHead className="h-7 text-[0.625rem]">Data</TableHead>
+              <TableHead className="h-7 text-[0.625rem] w-8"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {recentes.length === 0 ? (
-              <p className="text-muted-foreground py-6 text-center text-sm">
-                Nenhum orçamento cadastrado.
-              </p>
+              <TableRow>
+                <TableCell colSpan={5} className="text-muted-foreground py-6 text-center text-xs">
+                  Nenhum orçamento encontrado.
+                </TableCell>
+              </TableRow>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nº Proposta</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentes.map((o) => (
-                    <TableRow key={o.id}>
-                      <TableCell className="text-primary font-mono text-xs">
-                        {o.numero}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={o.status} />
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {fmtBRL(o.total_proposta)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-xs">
-                        {fmtData(o.created_at)}
-                      </TableCell>
-                      <TableCell>
-                        <Button asChild variant="ghost" size="sm">
-                          <Link to={`/orcamentos/${o.id}`}>Abrir →</Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              recentes.map((o: any) => (
+                <TableRow key={o.id}>
+                  <TableCell className="font-medium text-xs">{o.numero ?? o.id}</TableCell>
+                  <TableCell><StatusBadge status={o.status} /></TableCell>
+                  <TableCell className="text-right text-xs tabular-nums">{fmtBRL(o.total_proposta)}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
+                    {o.created_at ? new Date(o.created_at).toLocaleDateString("pt-BR") : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
+                      <Link to={`/orcamentos/${o.id}`}>Abrir</Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
             )}
-          </CardContent>
-        </Card>
-      </div>
-    </>
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
   )
 }

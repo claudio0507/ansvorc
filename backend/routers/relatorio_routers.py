@@ -164,9 +164,30 @@ def dashboard(db: Session = Depends(get_db)) -> dict:
         for o in recentes
     ]
 
+    # Acumulado
+    total_orcado_acumulado = (
+        db.query(func.sum(Orcamento.total_proposta))
+        .scalar()
+    )
+    total_acum: Decimal = Decimal(str(total_orcado_acumulado)) if total_orcado_acumulado is not None else Decimal("0")
+    
+    # Margem líquida acumulada
+    margem_acumulada_q = (
+        db.query(func.avg(Orcamento.margem_liquida_real))
+        .filter(Orcamento.total_proposta > Decimal("0"))
+        .scalar()
+    )
+    margem_acumulada: Decimal = (
+        Decimal(str(margem_acumulada_q)).quantize(Decimal("0.000001"))
+        if margem_acumulada_q is not None
+        else Decimal("0")
+    )
+
     return {
         "total_orcado_mes": total_orcado_mes,
+        "total_orcado_acumulado": total_acum,
         "margem_media": margem_media,
+        "margem_acumulada": margem_acumulada,
         "por_status": por_status,
         "total_orcamentos": total_orcamentos,
         "orcamentos_recentes": orcamentos_recentes,
