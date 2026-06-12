@@ -666,21 +666,91 @@ class TestV2Calculo:
         assert final < unit
         assert abs(final - unit * Decimal("0.90")) < Decimal("0.10")
 
-    def test_aprovar_exige_observacoes(self, orcamento_id, bdi_rows, ficha_servico_id):
+    def test_aprovar_via_status_grava_historico(
+        self, orcamento_id, bdi_rows, ficha_servico_id
+    ):
         self._add(orcamento_id, "servicos", "BDI-MAT+MO", 10, 10, fs=ficha_servico_id)
-        # sem observações → 422
-        r = client.post(f"/api/v1/orcamentos/{orcamento_id}/aprovar", json={})
-        assert r.status_code == 422
-        # com observações → aprovado + histórico
-        r = client.post(
-            f"/api/v1/orcamentos/{orcamento_id}/aprovar",
-            json={"observacoes_internas": "Margem reduzida por negociação."},
-        )
+        client.put(f"/api/v1/orcamentos/{orcamento_id}", json={"status": "enviado"})
+        r = client.put(f"/api/v1/orcamentos/{orcamento_id}", json={"status": "aprovado"})
         assert r.status_code == 200
         assert r.json()["status"] == "aprovado"
-        assert r.json()["observacoes_internas"]
         hist = client.get(
             f"/api/v1/orcamentos/{orcamento_id}/historico-descontos"
         ).json()
         assert len(hist) >= 1
         assert hist[0]["versao"] == 1
+
+
+# ── v2: segmentos validados + data_limite ────────────────────────────────────
+
+
+class TestSegmentosEDataLimite:
+    @pytest.fixture
+    def segs(self, db_session):
+        from backend.models.param_models import ParametroSeguimento
+
+        db_session.add_all(
+            [
+                ParametroSeguimento(nome="EPS", ativo=True),
+                ParametroSeguimento(nome="VERTICAL", ativo=True),
+            ]
+        )
+        db_session.commit()
+
+    def test_cria_com_segmentos(self, cliente_id, segs):
+        r = client.post(
+            "/api/v1/orcamentos",
+            json={
+                "numero": "SEG-1",
+                "cliente_id": cliente_id,
+                "uf_execucao": "PR",
+                "data_limite": "2026-07-01",
+                "segmentos": ["EPS"],
+            },
+        )
+        assert r.status_code == 201, r.text
+        body = r.json()
+        assert body["segmentos"] == ["EPS"]
+        assert body["data_limite"] == "2026-07-01"
+
+    def test_rejeita_segmento_inexistente(self, cliente_id, segs):
+        r = client.post(
+            "/api/v1/orcamentos",
+            json={
+                "numero": "SEG-2",
+                "cliente_id": cliente_id,
+                "uf_execucao": "PR",
+                "segmentos": ["NAO_EXISTE_XYZ"],
+            },
+        )
+        assert r.status_code == 422
+
+    def test_rejeita_segmento_duplicado(self, cliente_id, segs):
+        r = client.post(
+            "/api/v1/orcamentos",
+            json={
+                "numero": "SEG-DUP",
+                "cliente_id": cliente_id,
+                "uf_execucao": "PR",
+                "segmentos": ["EPS", "EPS"],
+            },
+        )
+        assert r.status_code == 422
+
+    def test_substitui_segmentos_no_put(self, cliente_id, segs):
+        r = client.post(
+            "/api/v1/orcamentos",
+            json={
+                "numero": "SEG-3",
+                "cliente_id": cliente_id,
+                "uf_execucao": "PR",
+                "segmentos": ["EPS"],
+            },
+        )
+        assert r.status_code == 201, r.text
+        oid = r.json()["id"]
+        r2 = client.put(
+            f"/api/v1/orcamentos/{oid}", json={"segmentos": ["VERTICAL"]}
+        )
+        assert r2.status_code == 200, r2.text
+        assert r2.json()["segmentos"] == ["VERTICAL"]
