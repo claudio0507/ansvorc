@@ -465,7 +465,7 @@ export default function OrcamentoEditor() {
               <dd className="text-primary text-2xl font-bold">{total}</dd>
             </div>
           </dl>
-          {!calculado && (
+          {!resultado && !orc.total_proposta && (
             <p className="text-warning bg-warning/10 mt-3 p-2.5 text-center text-xs">
               Clique em "Calcular" para obter os preços finais.
             </p>
