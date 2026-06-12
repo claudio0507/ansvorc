@@ -75,7 +75,17 @@ def _guard_rascunho(orc: Orcamento) -> None:
 
 def _aplicar_segmentos(db: Session, orc: Orcamento, segmentos: list[str]) -> None:
     """Substitui em bloco os segmentos do orçamento. Valida contra ParametroSeguimento."""
-    validos = {s.nome for s in db.query(ParametroSeguimento).all()}
+    if len(segmentos) != len(set(segmentos)):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Lista de segmentos contém duplicatas.",
+        )
+    validos = {
+        s.nome
+        for s in db.query(ParametroSeguimento)
+        .filter(ParametroSeguimento.ativo.is_(True))
+        .all()
+    }
     for seg in segmentos:
         if seg not in validos:
             raise HTTPException(
@@ -95,7 +105,7 @@ def _gravar_historico_desconto(db: Session, orc: Orcamento) -> None:
         (Decimal(i.preco_venda_total) for i in itens if i.bloco in FATURAVEIS),
         Decimal("0"),
     )
-    desc_frac = Decimal(orc.desconto_percentual) / Decimal("100")
+    desc_frac = Decimal(orc.desconto_percentual or 0) / Decimal("100")
     db.add(
         HistoricoDesconto(
             orcamento_id=orc.id,
@@ -272,6 +282,7 @@ def atualizar_orcamento(id: int, body: OrcamentoUpdate, db: Session = Depends(ge
             setattr(obj, k, v)
 
     if segmentos is not None:
+        _guard_rascunho(obj)
         _aplicar_segmentos(db, obj, segmentos)
 
     db.commit()
