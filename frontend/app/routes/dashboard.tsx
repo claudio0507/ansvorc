@@ -7,12 +7,6 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "~/components/ui/chart"
-import {
-  ClockIcon,
-  TrendUpIcon,
-  FileTextIcon,
-  FoldersIcon,
-} from "@phosphor-icons/react"
 
 import { PageHeader } from "~/components/page-header"
 import { StatusBadge } from "~/components/status-badge"
