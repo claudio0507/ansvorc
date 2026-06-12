@@ -12,8 +12,10 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models.bd_models import BdBDI, BdEstrutura
+from backend.models.extra_models import HistoricoDesconto, OrcamentoSegmento
 from backend.models.ficha_models import FichaProduto, FichaServico
 from backend.models.orcamento_models import Cliente, Orcamento, OrcamentoItem
+from backend.models.param_models import ParametroSeguimento
 from backend.schemas.orcamento_schemas import (
     ClienteCreate,
     ClienteRead,
@@ -69,6 +71,40 @@ def _guard_rascunho(orc: Orcamento) -> None:
             detail=f"Orçamento com status '{orc.status}' está congelado e não "
             "permite alterações de itens.",
         )
+
+
+def _aplicar_segmentos(db: Session, orc: Orcamento, segmentos: list[str]) -> None:
+    """Substitui em bloco os segmentos do orçamento. Valida contra ParametroSeguimento."""
+    validos = {s.nome for s in db.query(ParametroSeguimento).all()}
+    for seg in segmentos:
+        if seg not in validos:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Segmento inválido: '{seg}'. Cadastre em Parâmetros.",
+            )
+    orc.segmentos.clear()  # delete-orphan remove os antigos
+    db.flush()
+    for seg in segmentos:
+        orc.segmentos.append(OrcamentoSegmento(seguimento=seg))
+
+
+def _gravar_historico_desconto(db: Session, orc: Orcamento) -> None:
+    """BLOCO 1.3 — grava o desconto concedido nesta versão ao aprovar."""
+    itens = db.query(OrcamentoItem).filter(OrcamentoItem.orcamento_id == orc.id).all()
+    subtotal_fat = sum(
+        (Decimal(i.preco_venda_total) for i in itens if i.bloco in FATURAVEIS),
+        Decimal("0"),
+    )
+    desc_frac = Decimal(orc.desconto_percentual) / Decimal("100")
+    db.add(
+        HistoricoDesconto(
+            orcamento_id=orc.id,
+            versao=orc.versao,
+            desconto_percentual=orc.desconto_percentual,
+            subtotal_faturavel=_q4(subtotal_fat),
+            desconto_total=_q4(subtotal_fat * desc_frac),
+        )
+    )
 
 
 _TRANSICOES_STATUS: dict[str, frozenset[str]] = {
@@ -199,8 +235,12 @@ def listar_orcamentos(
 )
 def criar_orcamento(body: OrcamentoCreate, db: Session = Depends(get_db)):
     _get_or_404(db, Cliente, body.cliente_id)
-    obj = Orcamento(**body.model_dump())
+    dados = body.model_dump()
+    segmentos = dados.pop("segmentos", [])
+    obj = Orcamento(**dados)
     db.add(obj)
+    db.flush()
+    _aplicar_segmentos(db, obj, segmentos)
     db.commit()
     db.refresh(obj)
     return obj
@@ -216,71 +256,27 @@ def atualizar_orcamento(id: int, body: OrcamentoUpdate, db: Session = Depends(ge
     obj = _get_or_404(db, Orcamento, id)
     dados = body.model_dump(exclude_none=True)
 
+    segmentos = dados.pop("segmentos", None)
+
     if "status" in dados:
         novo = dados.pop("status")
         _guard_transicao_status(obj.status, novo)
         obj.status = novo
         if novo == "aprovado":
             obj.aprovado_em = datetime.now(timezone.utc)
+            _gravar_historico_desconto(db, obj)
 
     if dados:
         _guard_rascunho(obj)
         for k, v in dados.items():
             setattr(obj, k, v)
 
+    if segmentos is not None:
+        _aplicar_segmentos(db, obj, segmentos)
+
     db.commit()
     db.refresh(obj)
     return obj
-
-
-@router.post(
-    "/orcamentos/{id}/aprovar",
-    response_model=OrcamentoRead,
-    tags=["orcamentos"],
-)
-def aprovar_orcamento(id: int, body: dict, db: Session = Depends(get_db)):
-    """BLOCO 1.4 — aprova exigindo observações internas; BLOCO 1.3 grava histórico de desconto.
-
-    Transição rascunho→enviado→aprovado em uma chamada. Congela o orçamento.
-    """
-    from backend.models.extra_models import HistoricoDesconto
-
-    orc = _get_or_404(db, Orcamento, id)
-    obs = (body or {}).get("observacoes_internas", "")
-    if not isinstance(obs, str) or not obs.strip():
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Observações internas são obrigatórias para aprovar.",
-        )
-    if orc.status not in ("rascunho", "enviado"):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Orçamento em '{orc.status}' não pode ser aprovado.",
-        )
-
-    # Histórico do desconto concedido nesta versão (BLOCO 1.3)
-    itens = db.query(OrcamentoItem).filter(OrcamentoItem.orcamento_id == id).all()
-    subtotal_fat = sum(
-        (Decimal(i.preco_venda_total) for i in itens if i.bloco in FATURAVEIS),
-        Decimal("0"),
-    )
-    desc_frac = Decimal(orc.desconto_percentual) / Decimal("100")
-    db.add(
-        HistoricoDesconto(
-            orcamento_id=orc.id,
-            versao=orc.versao,
-            desconto_percentual=orc.desconto_percentual,
-            subtotal_faturavel=_q4(subtotal_fat),
-            desconto_total=_q4(subtotal_fat * desc_frac),
-        )
-    )
-
-    orc.observacoes_internas = obs.strip()
-    orc.status = "aprovado"
-    orc.aprovado_em = datetime.now(timezone.utc)
-    db.commit()
-    db.refresh(orc)
-    return orc
 
 
 @router.get(
