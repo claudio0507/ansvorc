@@ -58,20 +58,26 @@ def _get_or_404(db: Session, model, pk: int):
     return obj
 
 
+_EDITAVEIS = frozenset({"rascunho", "reprovado"})
+
+
 def _guard_rascunho(orc: Orcamento) -> None:
-    if orc.status != "rascunho":
+    """Itens só editam em status editável (rascunho/reprovado). Demais congelam."""
+    if orc.status not in _EDITAVEIS:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Orçamento com status '{orc.status}' não pode ser editado. "
-            "Apenas orçamentos em 'rascunho' permitem alterações.",
+            detail=f"Orçamento com status '{orc.status}' está congelado e não "
+            "permite alterações de itens.",
         )
 
 
 _TRANSICOES_STATUS: dict[str, frozenset[str]] = {
     "rascunho": frozenset({"enviado"}),
-    "enviado": frozenset({"aprovado", "rejeitado"}),
-    "aprovado": frozenset(),
-    "rejeitado": frozenset({"rascunho"}),
+    "enviado": frozenset({"aprovado", "reprovado", "perdida"}),
+    "aprovado": frozenset({"fechado", "perdida"}),
+    "reprovado": frozenset({"rascunho"}),
+    "perdida": frozenset(),
+    "fechado": frozenset(),
 }
 
 
