@@ -35,9 +35,18 @@ _RBAC: list[tuple[str, frozenset[str]]] = [
     ("/api/v1/componentes", frozenset({"parametrizador", "sponsor"})),
     ("/api/v1/produtos", frozenset({"parametrizador", "sponsor"})),
     ("/api/v1/item-fichas", frozenset({"parametrizador", "sponsor"})),
-    # Orçamentistas e config: lidos por orçamentista (criar orçamento) + parametrizador/sponsor
+    # Orçamentistas e config: LEITURA ampla (proposta/dropdown). Escrita é restrita
+    # em _RBAC_ESCRITA abaixo (parametrizador/sponsor apenas).
     ("/api/v1/orcamentistas", frozenset({"orcamentista", "parametrizador", "sponsor"})),
     ("/api/v1/config", _TODOS_PAPEIS),
+]
+
+# Override por método: prefixos cujas mutações (POST/PUT/PATCH/DELETE) exigem papéis
+# mais restritos que a leitura. Consultado só em requisições mutantes.
+_METODOS_MUTANTES = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+_RBAC_ESCRITA: list[tuple[str, frozenset[str]]] = [
+    ("/api/v1/orcamentistas", frozenset({"parametrizador", "sponsor"})),
+    ("/api/v1/config", frozenset({"parametrizador", "sponsor"})),
 ]
 
 # Paths que exigem startswith
@@ -81,7 +90,12 @@ def _eh_publica(path: str) -> bool:
     return False
 
 
-def _papeis_permitidos(path: str) -> frozenset[str] | None:
+def _papeis_permitidos(path: str, metodo: str) -> frozenset[str] | None:
+    # Mutações: regra de escrita mais restrita tem precedência, se houver.
+    if metodo in _METODOS_MUTANTES:
+        for prefixo, papeis in _RBAC_ESCRITA:
+            if path.startswith(prefixo):
+                return papeis
     for prefixo, papeis in _RBAC:
         if path.startswith(prefixo):
             return papeis
@@ -137,7 +151,7 @@ class AuthMiddleware:
             return
 
         papel = payload.get("papel", "")
-        papeis_ok = _papeis_permitidos(path)
+        papeis_ok = _papeis_permitidos(path, scope.get("method", "GET"))
 
         if papeis_ok is None and path.startswith("/api/v1/"):
             # Rota /api/v1/* não registrada no RBAC — nega por padrão

@@ -221,15 +221,17 @@ class OrcamentoItemCreate(BaseModel):
 
     @model_validator(mode="after")
     def valida_ficha_exclusiva(self) -> "OrcamentoItemCreate":
-        if self.ficha_servico_id is not None and self.ficha_produto_id is not None:
+        refs = (self.ficha_servico_id, self.ficha_produto_id, self.produto_id)
+        if sum(r is not None for r in refs) > 1:
             raise ValueError(
-                "ficha_servico_id e ficha_produto_id não podem ser informados juntos"
+                "Apenas uma referência por item (ficha_servico_id, "
+                "ficha_produto_id ou produto_id)"
             )
-        if self.bloco in ("operacional", "excepcionais") and (
-            self.ficha_servico_id is not None or self.ficha_produto_id is not None
+        if self.bloco in ("operacional", "excepcionais") and any(
+            r is not None for r in refs
         ):
             raise ValueError(
-                f"Bloco '{self.bloco}' não pode ter ficha_servico_id nem ficha_produto_id"
+                f"Bloco '{self.bloco}' não pode ter ficha nem produto vinculado"
             )
         return self
 

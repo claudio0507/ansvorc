@@ -30,7 +30,8 @@ def _get_or_404(db: Session, model, pk: int):
 
 
 def _get_config(db: Session) -> ConfigSistema:
-    cfg = db.query(ConfigSistema).first()
+    # Singleton: sempre o menor id, para ser determinístico se houver linha duplicada.
+    cfg = db.query(ConfigSistema).order_by(ConfigSistema.id).first()
     if not cfg:
         cfg = ConfigSistema(nome_empresa="ALTA NOROESTE")
         db.add(cfg)
@@ -108,16 +109,17 @@ def atualizar_config(payload: ConfigSistemaUpdate, db: Session = Depends(get_db)
 @router.post("/config/logo", response_model=ConfigSistemaRead, tags=["config"])
 async def upload_logo(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """BLOCO 2.2 — upload de logo PNG (≤500KB). Salvo em backend/static/logo.png."""
-    if file.content_type not in ("image/png",):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Apenas imagem PNG é aceita.",
-        )
     conteudo = await file.read()
     if len(conteudo) > _MAX_LOGO_BYTES:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Logo excede 500 KB.",
+        )
+    # Valida pela assinatura real do arquivo (content_type do cliente não é confiável).
+    if conteudo[:8] != b"\x89PNG\r\n\x1a\n":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Arquivo não é um PNG válido.",
         )
     _STATIC_DIR.mkdir(parents=True, exist_ok=True)
     _LOGO_PATH.write_bytes(conteudo)
