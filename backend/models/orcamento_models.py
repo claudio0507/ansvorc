@@ -6,6 +6,7 @@ desconto sobre o total rateado nas linhas; produtos orçáveis sem serviço.
 
 from datetime import date, datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     DECIMAL,
@@ -22,6 +23,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.database import Base
+
+if TYPE_CHECKING:
+    from backend.models.extra_models import OrcamentoSegmento
 
 
 class Cliente(Base):
@@ -62,7 +66,7 @@ class Orcamento(Base):
         DECIMAL(5, 2), nullable=False, default=Decimal("0")
     )
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="rascunho")
-    # rascunho | enviado | aprovado | rejeitado
+    # rascunho | enviado | aprovado | reprovado | perdida | fechado
     versao: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     orcamento_origem_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("orcamentos.id"), nullable=True

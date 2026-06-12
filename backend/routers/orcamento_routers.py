@@ -354,9 +354,14 @@ def reabrir_orcamento(id: int, db: Session = Depends(get_db)):
         versao=origem.versao + 1,
         orcamento_origem_id=origem.id,
         created_by=origem.created_by,
+        data_limite=origem.data_limite,
     )
     db.add(nova)
     db.flush()
+
+    # Segmentos (classificação) acompanham a nova versão.
+    for seg in origem.segmentos:
+        nova.segmentos.append(OrcamentoSegmento(seguimento=seg.seguimento))
 
     for it in origem.itens:
         db.add(

@@ -42,7 +42,9 @@ const STATUS_LABELS: Record<string, string> = {
   rascunho: "Rascunho",
   enviado: "Enviado",
   aprovado: "Aprovado",
-  rejeitado: "Rejeitado",
+  reprovado: "Reprovado",
+  perdida: "Perdida",
+  fechado: "Fechado",
 }
 
 const chartConfig: ChartConfig = {

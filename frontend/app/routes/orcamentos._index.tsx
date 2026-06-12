@@ -26,7 +26,9 @@ const FILTROS = [
   { key: "rascunho", label: "Rascunho" },
   { key: "enviado", label: "Enviado" },
   { key: "aprovado", label: "Aprovado" },
-  { key: "rejeitado", label: "Rejeitado" },
+  { key: "reprovado", label: "Reprovado" },
+  { key: "perdida", label: "Perdida" },
+  { key: "fechado", label: "Fechado" },
 ]
 
 export default function OrcamentosLista() {

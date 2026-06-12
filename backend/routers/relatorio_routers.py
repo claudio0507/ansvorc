@@ -140,7 +140,9 @@ def dashboard(db: Session = Depends(get_db)) -> dict:
         "rascunho": 0,
         "enviado": 0,
         "aprovado": 0,
-        "rejeitado": 0,
+        "reprovado": 0,
+        "perdida": 0,
+        "fechado": 0,
     }
     for s, cnt in status_counts:
         if s in por_status:
