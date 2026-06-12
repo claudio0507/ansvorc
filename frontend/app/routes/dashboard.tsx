@@ -48,8 +48,10 @@ export default function Dashboard() {
   if (erro) return <div className="text-destructive py-12 text-center">{erro}</div>
   if (!dados) return <Skeleton className="h-64 w-full" />
 
-  const totalOrcado = filtro === "mes" ? dados.total_orcado_mes : dados.total_orcado_acumulado ?? dados.total_orcado_mes
-  const margemAcumulada = dados.margem_acumulada ?? dados.margem_media ?? 0
+  const sfx = filtro === "mes" ? "mes" : "acumulado"
+  const totalOrcado = dados[`total_orcado_${sfx}`] ?? 0
+  const margemRs = dados[`margem_rs_${sfx}`] ?? 0
+  const margemPct = dados[`margem_pct_${sfx}`] ?? 0
   const porStatus = dados.por_status || {}
   const recentes = dados.orcamentos_recentes || []
 
@@ -82,38 +84,31 @@ export default function Dashboard() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <Card className="p-4">
           <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">
             {filtro === "mes" ? "Orçado no Mês" : "Total Orçado"}
           </div>
-          <div className="text-2xl font-bold mt-2 tabular-nums text-primary">
-            {fmtBRL(totalOrcado)}
-          </div>
+          <div className="text-2xl font-bold mt-2 tabular-nums text-primary">{fmtBRL(totalOrcado)}</div>
+          <div className="text-muted-foreground text-[0.5625rem] mt-1">status Enviado</div>
         </Card>
         <Card className="p-4">
-          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">
-            Margem Líquida Acumulada
-          </div>
-          <div className="text-2xl font-bold mt-2 tabular-nums">
-            {typeof margemAcumulada === "number" ? `${(margemAcumulada * 100).toFixed(2)}%` : "—"}
-          </div>
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">Margem Líquida</div>
+          <div className="text-2xl font-bold mt-2 tabular-nums text-success">{fmtBRL(margemRs)}</div>
+          <div className="text-muted-foreground text-[0.5625rem] mt-1">status Fechado</div>
         </Card>
         <Card className="p-4">
-          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">
-            Total Orçamentos
-          </div>
-          <div className="text-2xl font-bold mt-2 tabular-nums">
-            {dados.total_orcamentos || 0}
-          </div>
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">Margem Média</div>
+          <div className="text-2xl font-bold mt-2 tabular-nums">{`${(Number(margemPct) * 100).toFixed(2)}%`}</div>
+          <div className="text-muted-foreground text-[0.5625rem] mt-1">status Fechado</div>
         </Card>
         <Card className="p-4">
-          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">
-            Aprovados
-          </div>
-          <div className="text-2xl font-bold mt-2 tabular-nums text-success">
-            {porStatus.aprovado || 0}
-          </div>
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">Total Orçamentos</div>
+          <div className="text-2xl font-bold mt-2 tabular-nums">{dados.total_orcamentos || 0}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">Aprovados</div>
+          <div className="text-2xl font-bold mt-2 tabular-nums text-success">{porStatus.aprovado || 0}</div>
         </Card>
       </div>
 
