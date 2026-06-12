@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import datetime
 import re
+from datetime import date, timedelta
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -192,3 +193,76 @@ def dashboard(db: Session = Depends(get_db)) -> dict:
         "total_orcamentos": total_orcamentos,
         "orcamentos_recentes": orcamentos_recentes,
     }
+
+
+# ── Notificações / Prazos ──────────────────────────────────────────────────────
+
+
+@router.get("/notificacoes")
+def listar_notificacoes(db: Session = Depends(get_db)) -> dict:
+    """Prazos de envio iminentes (rascunho/reprovado, até amanhã)."""
+    hoje = date.today()
+    amanha = hoje + timedelta(days=1)
+    orcs = (
+        db.query(Orcamento)
+        .filter(Orcamento.status.in_(["rascunho", "reprovado"]))
+        .filter(Orcamento.data_limite.isnot(None))
+        .filter(Orcamento.data_limite <= amanha)
+        .order_by(Orcamento.data_limite)
+        .all()
+    )
+
+    def _urg(d):
+        return "atrasado" if d < hoje else "hoje" if d == hoje else "amanha"
+
+    itens = [
+        {
+            "id": o.id,
+            "numero": o.numero,
+            "obra": o.obra,
+            "data_limite": o.data_limite,
+            "urgencia": _urg(o.data_limite),
+        }
+        for o in orcs
+    ]
+    return {"total": len(itens), "notificacoes": itens}
+
+
+@router.get("/prazos")
+def listar_prazos(mes: str | None = None, db: Session = Depends(get_db)) -> list[dict]:
+    """Orçamentos rascunho/reprovado com data_limite no mês (para o calendário)."""
+    hoje = date.today()
+    if mes:
+        ano, m = int(mes[:4]), int(mes[5:7])
+    else:
+        ano, m = hoje.year, hoje.month
+    inicio = date(ano, m, 1)
+    fim = date(ano + (m == 12), (m % 12) + 1, 1)
+    orcs = (
+        db.query(Orcamento)
+        .filter(Orcamento.status.in_(["rascunho", "reprovado"]))
+        .filter(Orcamento.data_limite.isnot(None))
+        .filter(Orcamento.data_limite >= inicio, Orcamento.data_limite < fim)
+        .order_by(Orcamento.data_limite)
+        .all()
+    )
+
+    def _urg(d):
+        if d < hoje:
+            return "atrasado"
+        if d == hoje:
+            return "hoje"
+        if d == hoje + timedelta(days=1):
+            return "amanha"
+        return "futuro"
+
+    return [
+        {
+            "id": o.id,
+            "numero": o.numero,
+            "obra": o.obra,
+            "data_limite": o.data_limite,
+            "urgencia": _urg(o.data_limite),
+        }
+        for o in orcs
+    ]
