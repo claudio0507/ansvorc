@@ -278,7 +278,19 @@ def obter_proposta(id: int, db: Session = Depends(get_db)) -> dict:
         db.query(OrcamentoItem).filter(OrcamentoItem.orcamento_id == id).all()
     )
     cliente = db.get(Cliente, orc.cliente_id)
-    resolvidos = montar_proposta(orc, config) if config else {}
+    if config is not None:
+        resolvidos = montar_proposta(orc, config)
+    else:
+        # Sem config no banco: ainda assim resolvemos os defaults literais do helper.
+        from types import SimpleNamespace
+        _config_stub = SimpleNamespace(
+            declaracoes_padrao=None,
+            clausula_tributaria_padrao=None,
+            reajustamento_padrao=None,
+            garantia_retencao_padrao_pct=None,
+            garantia_devolucao_padrao_dias=None,
+        )
+        resolvidos = montar_proposta(orc, _config_stub)
     if resolvidos:
         # Normaliza o percentual para o texto cliente: 5.00 → "5", 7.50 → "7.5".
         pct = resolvidos["garantia_retencao_pct"]

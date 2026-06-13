@@ -62,6 +62,8 @@ class ConfigSistemaRead(BaseModel):
 
 
 class ConfigSistemaUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     nome_empresa: str | None = None
     diretor_nome: str | None = None
     diretor_funcao: str | None = None

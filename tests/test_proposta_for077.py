@@ -195,6 +195,10 @@ class TestPutConfigCompleto:
         r = client.put("/api/v1/config", json={"nome_empresa": None})
         assert r.status_code == 422, r.text
 
+    def test_campo_desconhecido_retorna_422(self):
+        r = client.put("/api/v1/config", json={"campo_inexistente": "x"})
+        assert r.status_code == 422, r.text
+
 
 class TestMontarProposta:
     def _orc_vazio(self):
@@ -296,14 +300,38 @@ class TestEndpointProposta:
         assert r.status_code == 404, r.text
 
     def test_proposta_sem_config_usa_literais(self, db_session):
-        # sem nenhum PUT /config: a tabela ConfigSistema está vazia neste teste isolado
+        # sem nenhum PUT /config: a tabela ConfigSistema está vazia neste teste isolado.
+        # o endpoint ainda resolve os defaults LITERAIS do helper montar_proposta.
         orc_id, _ = _criar_orcamento_com_item(db_session, sufixo="prop2")
         r = client.get(f"/api/v1/orcamentos/{orc_id}/proposta")
         assert r.status_code == 200, r.text
         body = r.json()
-        # sem config no banco → config None, resolvidos {} (ver impl)
         assert body["config"] is None
-        assert body["resolvidos"] == {}
+        # resolvidos agora traz os literais mesmo sem config
+        assert body["resolvidos"]["modalidade"] == "Preço Unitário"
+        assert body["resolvidos"]["faturamento_direto"] == "Não aplicável."
+        assert str(body["resolvidos"]["garantia_retencao_pct"]) in ("5", "5.0")
+        assert body["resolvidos"]["garantia_devolucao_dias"] == 60
+        # garantia_texto montado a partir dos literais
+        assert "5%" in body["garantia_texto"]
+        assert "60 dias" in body["garantia_texto"]
+
+    def test_descricao_cliente_patchada_aparece_na_proposta(self, db_session):
+        orc_id, item_id = _criar_orcamento_com_item(db_session, sufixo="prop3")
+        # edita a descrição cliente via PATCH
+        rp = client.patch(
+            f"/api/v1/orcamentos/{orc_id}/itens/{item_id}",
+            json={"descricao": "Fresagem visível ao cliente"},
+        )
+        assert rp.status_code == 200, rp.text
+        # busca a proposta e confirma que o item traz a descricao_cliente
+        r = client.get(f"/api/v1/orcamentos/{orc_id}/proposta")
+        assert r.status_code == 200, r.text
+        itens = r.json()["itens"]
+        assert len(itens) == 1
+        assert itens[0]["descricao_cliente"] == "Fresagem visível ao cliente"
+        # descricao interna preservada
+        assert itens[0]["descricao"] == "Fresagem (descrição interna de composição)"
 
 
 class TestSeedFor077:
