@@ -314,6 +314,12 @@ class OrcamentoItemUpdate(BaseModel):
         return v
 
 
+class OrcamentoItemDescricaoPatch(BaseModel):
+    """PATCH da descrição exibida ao cliente. extra='forbid' → 422 em campo estranho."""
+    model_config = ConfigDict(extra="forbid")
+    descricao: str
+
+
 class OrcamentoItemRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
