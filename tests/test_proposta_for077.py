@@ -304,3 +304,27 @@ class TestEndpointProposta:
         # sem config no banco → config None, resolvidos {} (ver impl)
         assert body["config"] is None
         assert body["resolvidos"] == {}
+
+
+class TestSeedFor077:
+    def test_seed_extra_popula_config_for077(self, db_session):
+        from backend.models.extra_models import ConfigSistema
+        from backend.seeds import seed_extra
+
+        seed_extra(db_session)
+        db_session.commit()
+        cfg = db_session.query(ConfigSistema).order_by(ConfigSistema.id).first()
+        assert cfg is not None
+        assert cfg.cnpj == "20.945.724/0001-15"
+        assert cfg.banco == "Bradesco"
+        assert cfg.agencia == "0110"
+        assert cfg.conta_corrente == "0287852-6"
+        assert cfg.diretor_cpf == "277.540.838-92"
+        assert cfg.contato_comercial_nome == "Milaini Carvalho Miranda"
+        assert cfg.contato_comercial_email == "comercial@altanoroeste.com.br"
+        assert cfg.garantia_retencao_padrao_pct == Decimal("5")
+        assert cfg.garantia_devolucao_padrao_dias == 60
+        assert "IBS/CBS" in cfg.clausula_tributaria_padrao
+        assert "IPCA" in cfg.reajustamento_padrao
+        # declaracoes_padrao tem 12 bullets separados por \n
+        assert cfg.declaracoes_padrao.count("\n") >= 11
