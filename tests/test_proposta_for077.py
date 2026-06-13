@@ -260,3 +260,46 @@ class TestMontarProposta:
         # garantia cai nos literais 5 / 60 mesmo sem config
         assert r["garantia_retencao_pct"] == Decimal("5")
         assert r["garantia_devolucao_dias"] == 60
+
+
+class TestEndpointProposta:
+    def test_proposta_resolve_fallback_e_monta_garantia(self, db_session):
+        orc_id, _ = _criar_orcamento_com_item(db_session, sufixo="prop1")
+        # popula config com padrões FOR-077
+        client.put(
+            "/api/v1/config",
+            json={
+                "nome_empresa": "ALTA NOROESTE",
+                "cnpj": "20.945.724/0001-15",
+                "clausula_tributaria_padrao": "cláusula default",
+                "garantia_retencao_padrao_pct": 5,
+                "garantia_devolucao_padrao_dias": 60,
+            },
+        )
+        r = client.get(f"/api/v1/orcamentos/{orc_id}/proposta")
+        assert r.status_code == 200, r.text
+        body = r.json()
+        # blocos serializados presentes
+        assert body["orcamento"]["id"] == orc_id
+        assert body["config"]["cnpj"] == "20.945.724/0001-15"
+        assert body["cliente"]["nome"] == "Motiva Rodovias S.A."
+        assert len(body["itens"]) == 1
+        # fallback resolvido
+        assert body["resolvidos"]["clausula_tributaria"] == "cláusula default"
+        # garantia_texto montado a partir dos resolvidos
+        assert "5" in body["garantia_texto"]
+        assert "60 dias" in body["garantia_texto"]
+
+    def test_proposta_404_orcamento_inexistente(self):
+        r = client.get("/api/v1/orcamentos/999999/proposta")
+        assert r.status_code == 404, r.text
+
+    def test_proposta_sem_config_usa_literais(self, db_session):
+        # sem nenhum PUT /config: a tabela ConfigSistema está vazia neste teste isolado
+        orc_id, _ = _criar_orcamento_com_item(db_session, sufixo="prop2")
+        r = client.get(f"/api/v1/orcamentos/{orc_id}/proposta")
+        assert r.status_code == 200, r.text
+        body = r.json()
+        # sem config no banco → config None, resolvidos {} (ver impl)
+        assert body["config"] is None
+        assert body["resolvidos"] == {}

@@ -262,6 +262,49 @@ def obter_orcamento(id: int, db: Session = Depends(get_db)):
     return _get_or_404(db, Orcamento, id)
 
 
+@router.get("/orcamentos/{id}/proposta", tags=["orcamentos"])
+def obter_proposta(id: int, db: Session = Depends(get_db)) -> dict:
+    """FOR-077 — monta a proposta resolvendo fallback ConfigSistema.
+
+    Fonte única consumida por F2 (editor) e F3 (documento/PDF).
+    """
+    from backend.models.extra_models import ConfigSistema
+    from backend.schemas.extra_schemas import ConfigSistemaRead
+    from backend.services.proposta_fallback import montar_proposta
+
+    orc = _get_or_404(db, Orcamento, id)
+    config = db.query(ConfigSistema).order_by(ConfigSistema.id).first()
+    itens = (
+        db.query(OrcamentoItem).filter(OrcamentoItem.orcamento_id == id).all()
+    )
+    cliente = db.get(Cliente, orc.cliente_id)
+    resolvidos = montar_proposta(orc, config) if config else {}
+    return {
+        "orcamento": OrcamentoRead.model_validate(orc).model_dump(mode="json"),
+        "config": (
+            ConfigSistemaRead.model_validate(config).model_dump(mode="json")
+            if config
+            else None
+        ),
+        "cliente": (
+            ClienteRead.model_validate(cliente).model_dump(mode="json")
+            if cliente
+            else None
+        ),
+        "itens": [
+            OrcamentoItemRead.model_validate(i).model_dump(mode="json") for i in itens
+        ],
+        "resolvidos": resolvidos,
+        "garantia_texto": (
+            f"Retenção de {resolvidos.get('garantia_retencao_pct')}%, com devolução "
+            f"em {resolvidos.get('garantia_devolucao_dias')} dias após o termo de "
+            "encerramento."
+            if resolvidos
+            else ""
+        ),
+    }
+
+
 @router.put("/orcamentos/{id}", response_model=OrcamentoRead, tags=["orcamentos"])
 def atualizar_orcamento(id: int, body: OrcamentoUpdate, db: Session = Depends(get_db)):
     obj = _get_or_404(db, Orcamento, id)
