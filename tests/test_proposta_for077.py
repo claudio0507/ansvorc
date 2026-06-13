@@ -286,8 +286,9 @@ class TestEndpointProposta:
         assert len(body["itens"]) == 1
         # fallback resolvido
         assert body["resolvidos"]["clausula_tributaria"] == "cláusula default"
-        # garantia_texto montado a partir dos resolvidos
-        assert "5" in body["garantia_texto"]
+        # garantia_texto montado a partir dos resolvidos — pct normalizado (5, não 5.00)
+        assert "5%" in body["garantia_texto"]
+        assert "5.00%" not in body["garantia_texto"]
         assert "60 dias" in body["garantia_texto"]
 
     def test_proposta_404_orcamento_inexistente(self):

@@ -279,6 +279,17 @@ def obter_proposta(id: int, db: Session = Depends(get_db)) -> dict:
     )
     cliente = db.get(Cliente, orc.cliente_id)
     resolvidos = montar_proposta(orc, config) if config else {}
+    if resolvidos:
+        # Normaliza o percentual para o texto cliente: 5.00 → "5", 7.50 → "7.5".
+        pct = resolvidos["garantia_retencao_pct"]
+        pct_txt = f"{pct.normalize():f}" if isinstance(pct, Decimal) else str(pct)
+        garantia_texto = (
+            f"Retenção de {pct_txt}%, com devolução em "
+            f"{resolvidos['garantia_devolucao_dias']} dias após o termo de "
+            "encerramento."
+        )
+    else:
+        garantia_texto = ""
     return {
         "orcamento": OrcamentoRead.model_validate(orc).model_dump(mode="json"),
         "config": (
@@ -295,13 +306,7 @@ def obter_proposta(id: int, db: Session = Depends(get_db)) -> dict:
             OrcamentoItemRead.model_validate(i).model_dump(mode="json") for i in itens
         ],
         "resolvidos": resolvidos,
-        "garantia_texto": (
-            f"Retenção de {resolvidos.get('garantia_retencao_pct')}%, com devolução "
-            f"em {resolvidos.get('garantia_devolucao_dias')} dias após o termo de "
-            "encerramento."
-            if resolvidos
-            else ""
-        ),
+        "garantia_texto": garantia_texto,
     }
 
 
