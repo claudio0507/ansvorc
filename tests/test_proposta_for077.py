@@ -5,6 +5,7 @@ endpoint GET /orcamentos/{id}/proposta com fallback ConfigSistema.
 """
 
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -16,6 +17,7 @@ from backend.auth import criar_token
 from backend.database import Base, get_db
 from backend.main import app
 from backend.models.orcamento_models import Cliente, Orcamento, OrcamentoItem
+from backend.services.proposta_fallback import montar_proposta
 
 engine_test = create_engine(
     "sqlite:///:memory:",
@@ -192,3 +194,59 @@ class TestPutConfigCompleto:
         # nome_empresa é NOT NULL no banco — limpar via null deve dar 422, não 500
         r = client.put("/api/v1/config", json={"nome_empresa": None})
         assert r.status_code == 422, r.text
+
+
+class TestMontarProposta:
+    def _orc_vazio(self):
+        # SimpleNamespace simula um Orcamento só com os atributos lidos pelo helper
+        return SimpleNamespace(
+            texto_topo_proposta=None,
+            clausula_tributaria=None,
+            reajustamento=None,
+            garantia_retencao_pct=None,
+            garantia_devolucao_dias=None,
+            faturamento_direto=None,
+            entrega_as_built=None,
+            modalidade=None,
+        )
+
+    def _config_cheio(self):
+        return SimpleNamespace(
+            declaracoes_padrao="declarações default",
+            clausula_tributaria_padrao="cláusula default",
+            reajustamento_padrao="reajuste default",
+            garantia_retencao_padrao_pct=Decimal("5"),
+            garantia_devolucao_padrao_dias=60,
+        )
+
+    def test_usa_padrao_do_config_quando_orc_vazio(self):
+        r = montar_proposta(self._orc_vazio(), self._config_cheio())
+        assert r["clausula_tributaria"] == "cláusula default"
+        assert r["reajustamento"] == "reajuste default"
+        assert r["texto_topo_proposta"] == "declarações default"
+        assert r["garantia_retencao_pct"] == Decimal("5")
+        assert r["garantia_devolucao_dias"] == 60
+
+    def test_orc_tem_precedencia_sobre_config(self):
+        orc = self._orc_vazio()
+        orc.clausula_tributaria = "cláusula específica do orçamento"
+        orc.garantia_retencao_pct = Decimal("10")
+        r = montar_proposta(orc, self._config_cheio())
+        assert r["clausula_tributaria"] == "cláusula específica do orçamento"
+        assert r["garantia_retencao_pct"] == Decimal("10")
+
+    def test_defaults_literais_quando_config_tambem_vazio(self):
+        config = SimpleNamespace(
+            declaracoes_padrao=None,
+            clausula_tributaria_padrao=None,
+            reajustamento_padrao=None,
+            garantia_retencao_padrao_pct=None,
+            garantia_devolucao_padrao_dias=None,
+        )
+        r = montar_proposta(self._orc_vazio(), config)
+        assert r["faturamento_direto"] == "Não aplicável."
+        assert r["entrega_as_built"] == "Não aplicável."
+        assert r["modalidade"] == "Preço Unitário"
+        # garantia cai nos literais 5 / 60 mesmo sem config
+        assert r["garantia_retencao_pct"] == Decimal("5")
+        assert r["garantia_devolucao_dias"] == 60
