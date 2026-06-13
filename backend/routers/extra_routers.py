@@ -101,7 +101,13 @@ def atualizar_config(payload: ConfigSistemaUpdate, db: Session = Depends(get_db)
     cfg = _get_config(db)
     # exclude_unset: grava só o que veio no JSON (inclui null para limpar);
     # campos omitidos não são tocados. Corrige o bug "não dá pra limpar campo".
-    for campo, valor in payload.model_dump(exclude_unset=True).items():
+    dados = payload.model_dump(exclude_unset=True)
+    if "nome_empresa" in dados and dados["nome_empresa"] is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="nome_empresa não pode ser nulo.",
+        )
+    for campo, valor in dados.items():
         setattr(cfg, campo, valor)
     db.commit()
     db.refresh(cfg)

@@ -187,3 +187,8 @@ class TestPutConfigCompleto:
         d = client.get("/api/v1/config").json()
         assert d["agencia"] == "0220"
         assert d["banco"] == "Bradesco"  # não foi tocado
+
+    def test_nome_empresa_null_retorna_422(self):
+        # nome_empresa é NOT NULL no banco — limpar via null deve dar 422, não 500
+        r = client.put("/api/v1/config", json={"nome_empresa": None})
+        assert r.status_code == 422, r.text
