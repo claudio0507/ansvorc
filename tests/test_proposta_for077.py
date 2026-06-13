@@ -144,3 +144,46 @@ class TestPatchDescricaoItem:
             json={},
         )
         assert r.status_code == 422, r.text
+
+
+class TestPutConfigCompleto:
+    def test_round_trip_campos_for077(self):
+        payload = {
+            "nome_empresa": "ALTA NOROESTE",
+            "cnpj": "20.945.724/0001-15",
+            "banco": "Bradesco",
+            "agencia": "0110",
+            "conta_corrente": "0287852-6",
+            "diretor_cpf": "277.540.838-92",
+            "contato_comercial_nome": "Milaini Carvalho Miranda",
+            "contato_comercial_funcao": "Comercial",
+            "contato_comercial_fone": "(18) 99683-6472",
+            "contato_comercial_email": "comercial@altanoroeste.com.br",
+            "garantia_retencao_padrao_pct": 5,
+            "garantia_devolucao_padrao_dias": 60,
+            "clausula_tributaria_padrao": "texto tributário",
+            "reajustamento_padrao": "texto reajuste",
+            "declaracoes_padrao": "linha1\nlinha2",
+        }
+        r = client.put("/api/v1/config", json=payload)
+        assert r.status_code == 200, r.text
+        d = client.get("/api/v1/config").json()
+        assert d["cnpj"] == "20.945.724/0001-15"
+        assert d["contato_comercial_email"] == "comercial@altanoroeste.com.br"
+        assert str(d["garantia_retencao_padrao_pct"]) in ("5", "5.0", "5.00")
+        assert d["garantia_devolucao_padrao_dias"] == 60
+        assert d["declaracoes_padrao"] == "linha1\nlinha2"
+
+    def test_limpar_campo_via_null(self):
+        client.put("/api/v1/config", json={"banco": "Bradesco"})
+        assert client.get("/api/v1/config").json()["banco"] == "Bradesco"
+        # exclude_unset: enviar null limpa; omitir não toca
+        client.put("/api/v1/config", json={"banco": None})
+        assert client.get("/api/v1/config").json()["banco"] is None
+
+    def test_omitir_campo_nao_apaga(self):
+        client.put("/api/v1/config", json={"banco": "Bradesco", "agencia": "0110"})
+        client.put("/api/v1/config", json={"agencia": "0220"})
+        d = client.get("/api/v1/config").json()
+        assert d["agencia"] == "0220"
+        assert d["banco"] == "Bradesco"  # não foi tocado
