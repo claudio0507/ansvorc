@@ -95,3 +95,29 @@ class TestPatchDescricaoItem:
         assert body["descricao_cliente"] == "Fresagem da pista existente"
         # composição preservada
         assert body["descricao"] == "Fresagem (descrição interna de composição)"
+
+    def test_patch_campo_extra_retorna_422(self, db_session):
+        orc_id, item_id = _criar_orcamento_com_item(db_session)
+        r = client.patch(
+            f"/api/v1/orcamentos/{orc_id}/itens/{item_id}",
+            json={"descricao": "ok", "descricao_cliente": "tentativa direta"},
+        )
+        assert r.status_code == 422, r.text
+
+    def test_patch_orcamento_congelado_retorna_403(self, db_session):
+        orc_id, item_id = _criar_orcamento_com_item(db_session, status="aprovado")
+        r = client.patch(
+            f"/api/v1/orcamentos/{orc_id}/itens/{item_id}",
+            json={"descricao": "nao deveria gravar"},
+        )
+        assert r.status_code == 403, r.text
+
+    def test_patch_item_de_outro_orcamento_retorna_404(self, db_session):
+        orc_id, item_id = _criar_orcamento_com_item(db_session)
+        outro_orc_id, _ = _criar_orcamento_com_item(db_session, sufixo="2")
+        # item_id pertence a orc_id, mas pedimos via outro_orc_id
+        r = client.patch(
+            f"/api/v1/orcamentos/{outro_orc_id}/itens/{item_id}",
+            json={"descricao": "x"},
+        )
+        assert r.status_code == 404, r.text

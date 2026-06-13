@@ -23,6 +23,7 @@ from backend.schemas.orcamento_schemas import (
     ItemCalculadoRead,
     OrcamentoCreate,
     OrcamentoItemCreate,
+    OrcamentoItemDescricaoPatch,
     OrcamentoItemRead,
     OrcamentoItemUpdate,
     OrcamentoRead,
@@ -547,6 +548,38 @@ def atualizar_item(
         dados.pop("custo_direto_unitario")
     for k, v in dados.items():
         setattr(item, k, v)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.patch(
+    "/orcamentos/{id}/itens/{item_id}",
+    response_model=OrcamentoItemRead,
+    tags=["orcamentos"],
+)
+def patch_descricao_item(
+    id: int,
+    item_id: int,
+    payload: OrcamentoItemDescricaoPatch,
+    db: Session = Depends(get_db),
+):
+    """FOR-077 — edita a descrição exibida ao cliente (descricao_cliente).
+
+    Preserva `descricao` (composição). Só em status editável (rascunho/reprovado).
+    """
+    orc = _get_or_404(db, Orcamento, id)
+    _guard_rascunho(orc)
+    item = (
+        db.query(OrcamentoItem)
+        .filter(OrcamentoItem.id == item_id, OrcamentoItem.orcamento_id == id)
+        .first()
+    )
+    if not item:
+        raise HTTPException(
+            status_code=404, detail="Item não encontrado neste orçamento"
+        )
+    item.descricao_cliente = payload.descricao
     db.commit()
     db.refresh(item)
     return item
