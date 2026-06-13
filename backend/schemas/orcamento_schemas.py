@@ -7,7 +7,7 @@ da ficha (não enviados pelo cliente); apenas itens manuais informam custo.
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from backend.schemas.validators import normalizar_texto, normalizar_uf
 
@@ -317,7 +317,7 @@ class OrcamentoItemUpdate(BaseModel):
 class OrcamentoItemDescricaoPatch(BaseModel):
     """PATCH da descrição exibida ao cliente. extra='forbid' → 422 em campo estranho."""
     model_config = ConfigDict(extra="forbid")
-    descricao: str
+    descricao: str = Field(min_length=1)
 
 
 class OrcamentoItemRead(BaseModel):

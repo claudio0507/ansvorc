@@ -121,3 +121,26 @@ class TestPatchDescricaoItem:
             json={"descricao": "x"},
         )
         assert r.status_code == 404, r.text
+
+    def test_patch_descricao_vazia_retorna_422(self, db_session):
+        orc_id, item_id = _criar_orcamento_com_item(db_session)
+        r = client.patch(
+            f"/api/v1/orcamentos/{orc_id}/itens/{item_id}",
+            json={"descricao": ""},
+        )
+        assert r.status_code == 422, r.text
+
+    def test_patch_orcamento_inexistente_retorna_404(self):
+        r = client.patch(
+            "/api/v1/orcamentos/999999/itens/1",
+            json={"descricao": "x"},
+        )
+        assert r.status_code == 404, r.text
+
+    def test_patch_descricao_ausente_retorna_422(self, db_session):
+        orc_id, item_id = _criar_orcamento_com_item(db_session)
+        r = client.patch(
+            f"/api/v1/orcamentos/{orc_id}/itens/{item_id}",
+            json={},
+        )
+        assert r.status_code == 422, r.text
