@@ -9,16 +9,30 @@ Tarefa: implementar o template de proposta comercial FOR-077 (ver `PROMPT_PROPOS
 
 Decomposto em **3 fases sequenciais**, cada uma com ciclo spec → plan → execução (subagent-driven) → review → commit/push:
 
-- **F1 — Backend gaps** ← PRÓXIMA. Spec **aprovado pelo usuário**, pronto pra plano.
-- **F2 — Editor** (tela `proposta.$id.tsx` + aba Empresa nos Parâmetros). A brainstormar.
+- **F1 — Backend gaps** ✅ CONCLUÍDA (subagent-driven, 11 commits fce0bff..44c3215, 179 testes verdes).
+- **F2 — Editor** ← PRÓXIMA (tela `proposta.$id.tsx` + aba Empresa nos Parâmetros). A brainstormar.
 - **F3 — Documento + PDF** (redesenhar `proposta.tsx` cliente + atualizar `export_pdf.py` WeasyPrint pro layout FOR-077; PDF funcional). A brainstormar.
+
+## F1 — o que foi entregue
+
+Plano: `docs/superpowers/plans/2026-06-13-proposta-for077-fase1-backend.md`. Tudo TDD, review spec+qualidade por task + review final (opus).
+
+- PATCH `/api/v1/orcamentos/{id}/itens/{item_id}` → grava `descricao_cliente` (preserva `descricao`). Guards: 404 orç → 403 congelado → 404 item. Schema `OrcamentoItemDescricaoPatch` (extra=forbid, min_length=1).
+- PUT `/api/v1/config` reescrito com `model_dump(exclude_unset=True)` → grava os 19 campos, limpa via null, rejeita `nome_empresa=null` (422), `extra=forbid` em ConfigSistemaUpdate.
+- Helper puro `backend/services/proposta_fallback.py::montar_proposta(orc, config)` → precedência orç→config→literal; numéricos com `is not None` (0% honrado).
+- GET `/api/v1/orcamentos/{id}/proposta` → orcamento/config/cliente/itens/resolvidos/garantia_texto. **Fonte única p/ F2 e F3.** Resolve literais mesmo sem config (stub). `garantia_texto` com pct normalizado.
+- Seed FOR-077 em `backend/seeds.py::seed_extra` (valores verbatim do PROMPT_PROPOSTA).
+- Testes: `tests/test_proposta_for077.py` (21 testes).
+
+### Débitos deferidos do review final (cabem em F2/F3, não bloqueiam)
+
+- GET /proposta retorna `dict` cru (sem `response_model`). Quando F2 consumir e o contrato estabilizar, criar `PropostaRead` tipado.
+- `garantia_texto` é montado no router; se F3/PDF reconstruir a frase, mover p/ camada pura (`proposta_fallback`) p/ evitar drift.
+- Sem teste de RBAC dedicado p/ /proposta (coberto pelo middleware testado em outro lugar).
 
 ## Próximo passo concreto
 
-F1 spec aprovado → **invocar `superpowers:writing-plans`** para gerar o plano da F1 a partir de:
-`docs/superpowers/specs/2026-06-13-proposta-for077-fase1-backend-design.md`
-
-Depois executar via `superpowers:subagent-driven-development` (padrão das fases anteriores: implementer + spec-review + code-review por task; backend roda TDD via `py -m pytest`).
+F2 (editor) → **`superpowers:brainstorming`** primeiro (decidir UX da tela `proposta.$id.tsx` por seções + aba Empresa em `parametros.tsx`), depois spec → writing-plans → subagent-driven. F2 consome o GET `/proposta` como fonte de dados.
 
 ## Decisões já travadas (não reabrir)
 
