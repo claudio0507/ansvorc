@@ -135,6 +135,19 @@ class OrcamentoUpdate(BaseModel):
     texto_topo_proposta: str | None = None
     texto_livre_proposta: str | None = None
     data_limite: date | None = None
+    # BLOCO 2.5 — campos da proposta comercial (FOR 077)
+    escopo: str | None = None
+    modalidade: str | None = None
+    faturamento_direto: str | None = None
+    medicao_pagamento: str | None = None
+    clausula_tributaria: str | None = None
+    reajustamento: str | None = None
+    garantia_retencao_pct: Decimal | None = None
+    garantia_devolucao_dias: int | None = None
+    entrega_as_built: str | None = None
+    testemunha_nome: str | None = None
+    testemunha_email: str | None = None
+    testemunha_cpf: str | None = None
     segmentos: list[str] | None = None
 
     _norm_obra = field_validator("obra")(normalizar_texto)
@@ -180,6 +193,19 @@ class OrcamentoRead(BaseModel):
     texto_topo_proposta: str | None = None
     texto_livre_proposta: str | None = None
     data_limite: date | None = None
+    # BLOCO 2.5 — campos da proposta comercial (FOR 077)
+    escopo: str | None = None
+    modalidade: str | None = None
+    faturamento_direto: str | None = None
+    medicao_pagamento: str | None = None
+    clausula_tributaria: str | None = None
+    reajustamento: str | None = None
+    garantia_retencao_pct: Decimal | None = None
+    garantia_devolucao_dias: int | None = None
+    entrega_as_built: str | None = None
+    testemunha_nome: str | None = None
+    testemunha_email: str | None = None
+    testemunha_cpf: str | None = None
     segmentos: list[str] = []
 
     @field_validator("segmentos", mode="before")
