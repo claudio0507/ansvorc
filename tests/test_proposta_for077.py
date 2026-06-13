@@ -227,6 +227,16 @@ class TestMontarProposta:
         assert r["garantia_retencao_pct"] == Decimal("5")
         assert r["garantia_devolucao_dias"] == 60
 
+    def test_garantia_zero_no_config_nao_vira_default(self):
+        # 0% de retenção é valor válido — não pode ser sobrescrito pelo literal 5
+        orc = self._orc_vazio()
+        config = self._config_cheio()
+        config.garantia_retencao_padrao_pct = Decimal("0")
+        config.garantia_devolucao_padrao_dias = 0
+        r = montar_proposta(orc, config)
+        assert r["garantia_retencao_pct"] == Decimal("0")
+        assert r["garantia_devolucao_dias"] == 0
+
     def test_orc_tem_precedencia_sobre_config(self):
         orc = self._orc_vazio()
         orc.clausula_tributaria = "cláusula específica do orçamento"

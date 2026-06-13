@@ -20,21 +20,30 @@ def montar_proposta(orc, config) -> dict:
             return padrao
         return literal
 
+    def fb_num(valor, padrao, literal):
+        # Para campos numéricos: 0 é um valor válido (ex.: 0% de retenção),
+        # então usamos `is not None` em vez de `or` em ambos os níveis.
+        if valor is not None:
+            return valor
+        if padrao is not None:
+            return padrao
+        return literal
+
     return {
         "texto_topo_proposta": fb(orc.texto_topo_proposta, config.declaracoes_padrao),
         "clausula_tributaria": fb(
             orc.clausula_tributaria, config.clausula_tributaria_padrao
         ),
         "reajustamento": fb(orc.reajustamento, config.reajustamento_padrao),
-        "garantia_retencao_pct": (
-            orc.garantia_retencao_pct
-            if orc.garantia_retencao_pct is not None
-            else (config.garantia_retencao_padrao_pct or Decimal("5"))
+        "garantia_retencao_pct": fb_num(
+            orc.garantia_retencao_pct,
+            config.garantia_retencao_padrao_pct,
+            Decimal("5"),
         ),
-        "garantia_devolucao_dias": (
-            orc.garantia_devolucao_dias
-            if orc.garantia_devolucao_dias is not None
-            else (config.garantia_devolucao_padrao_dias or 60)
+        "garantia_devolucao_dias": fb_num(
+            orc.garantia_devolucao_dias,
+            config.garantia_devolucao_padrao_dias,
+            60,
         ),
         "faturamento_direto": fb(orc.faturamento_direto, None, "Não aplicável."),
         "entrega_as_built": fb(orc.entrega_as_built, None, "Não aplicável."),
