@@ -295,7 +295,7 @@ export default function PropostaEditor() {
             <div className="grid grid-cols-2 gap-3">
               <CampoTexto label="Retenção (%)" value={orc.garantia_retencao_pct != null ? String(orc.garantia_retencao_pct) : ""}
                 readonly={readonly} placeholderFallback={resolvidos?.garantia_retencao_pct != null ? String(resolvidos.garantia_retencao_pct) : undefined}
-                onSave={(v) => salvarOrc("garantia_retencao_pct", v === "" ? null : v)} />
+                onSave={(v) => salvarOrc("garantia_retencao_pct", v === "" ? null : Number(v))} />
               <CampoTexto label="Devolução (dias)" value={orc.garantia_devolucao_dias != null ? String(orc.garantia_devolucao_dias) : ""}
                 readonly={readonly} placeholderFallback={resolvidos?.garantia_devolucao_dias != null ? String(resolvidos.garantia_devolucao_dias) : undefined}
                 onSave={(v) => salvarOrc("garantia_devolucao_dias", v === "" ? null : Number(v))} />

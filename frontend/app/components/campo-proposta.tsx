@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useId, useState } from "react"
 
 import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
@@ -32,9 +32,13 @@ export function CampoTexto({
   readonly,
 }: BaseProps) {
   const [v, setV] = useState(value ?? "")
+  useEffect(() => {
+    setV(value ?? "")
+  }, [value])
+  const fieldId = useId()
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-muted-foreground text-xs font-medium uppercase">{label}</Label>
+      <Label htmlFor={fieldId} className="text-muted-foreground text-xs font-medium uppercase">{label}</Label>
       {readonly ? (
         <div className="bg-secondary/40 min-h-9 rounded border px-3 py-2 text-sm">
           {value || <span className="text-muted-foreground italic">—</span>}
@@ -42,6 +46,7 @@ export function CampoTexto({
       ) : (
         <>
           <Input
+            id={fieldId}
             value={v}
             placeholder={placeholderFallback || placeholder}
             onChange={(e) => setV(e.target.value)}
@@ -66,9 +71,13 @@ export function CampoTextarea({
   rows = 3,
 }: BaseProps & { rows?: number }) {
   const [v, setV] = useState(value ?? "")
+  useEffect(() => {
+    setV(value ?? "")
+  }, [value])
+  const fieldId = useId()
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-muted-foreground text-xs font-medium uppercase">{label}</Label>
+      <Label htmlFor={fieldId} className="text-muted-foreground text-xs font-medium uppercase">{label}</Label>
       {readonly ? (
         <div className="bg-secondary/40 min-h-9 rounded border px-3 py-2 text-sm whitespace-pre-wrap">
           {value || <span className="text-muted-foreground italic">—</span>}
@@ -76,6 +85,7 @@ export function CampoTextarea({
       ) : (
         <>
           <Textarea
+            id={fieldId}
             value={v}
             rows={rows}
             placeholder={placeholderFallback || placeholder}
