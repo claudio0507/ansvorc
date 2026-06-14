@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DECIMAL, Boolean, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import DECIMAL, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.database import Base
@@ -50,3 +50,40 @@ class ConfigSistema(Base):
         String(200), nullable=False, default="ALTA NOROESTE"
     )
     logo_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    diretor_nome: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    diretor_funcao: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    diretor_telefone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    diretor_email: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    diretor_cpf: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Dados bancários
+    banco: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    agencia: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    conta_corrente: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    cnpj: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Contato comercial
+    contato_comercial_nome: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    contato_comercial_funcao: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    contato_comercial_fone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    contato_comercial_email: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    # Textos padrão da proposta
+    clausula_tributaria_padrao: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reajustamento_padrao: Mapped[str | None] = mapped_column(Text, nullable=True)
+    garantia_retencao_padrao_pct: Mapped[Decimal | None] = mapped_column(DECIMAL(5, 2), nullable=True)
+    garantia_devolucao_padrao_dias: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    declaracoes_padrao: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class OrcamentoSegmento(Base):
+    """BLOCO A — segmentos (multi) classificando o orçamento. Só etiqueta."""
+
+    __tablename__ = "orcamento_segmentos"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    orcamento_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("orcamentos.id", ondelete="CASCADE"), nullable=False
+    )
+    seguimento: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("orcamento_id", "seguimento", name="uq_orc_segmento"),
+    )

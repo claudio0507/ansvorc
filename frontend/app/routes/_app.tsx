@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from "react-router"
 import { MoonIcon, SunIcon, SignOutIcon } from "@phosphor-icons/react"
 
 import { AppSidebar } from "~/components/app-sidebar"
+import { NotificationBell } from "~/components/notification-bell"
 import { Button } from "~/components/ui/button"
 import { Separator } from "~/components/ui/separator"
 import {
@@ -64,6 +65,7 @@ export default function AppLayout() {
           <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4" />
           <h1 className="text-sm font-semibold">{pageTitle(location.pathname)}</h1>
           <div className="ml-auto flex items-center gap-1">
+            <NotificationBell />
             <Button
               variant="ghost"
               size="icon"

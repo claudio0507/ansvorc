@@ -39,6 +39,8 @@ _RBAC: list[tuple[str, frozenset[str]]] = [
     # em _RBAC_ESCRITA abaixo (parametrizador/sponsor apenas).
     ("/api/v1/orcamentistas", frozenset({"orcamentista", "parametrizador", "sponsor"})),
     ("/api/v1/config", _TODOS_PAPEIS),
+    ("/api/v1/notificacoes", _TODOS_PAPEIS),
+    ("/api/v1/prazos", _TODOS_PAPEIS),
 ]
 
 # Override por método: prefixos cujas mutações (POST/PUT/PATCH/DELETE) exigem papéis

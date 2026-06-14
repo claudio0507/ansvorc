@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import datetime
 import re
+from datetime import date, timedelta
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -93,42 +94,55 @@ def listar_versoes(id: int, db: Session = Depends(get_db)) -> list[dict]:
 # ── Dashboard ──────────────────────────────────────────────────────────────────
 
 
+def _soma_proposta_status(db, status_val, desde=None):
+    q = db.query(func.sum(Orcamento.total_proposta)).filter(
+        Orcamento.status == status_val
+    )
+    if desde is not None:
+        q = q.filter(Orcamento.created_at >= desde)
+    return Decimal(str(q.scalar() or 0))
+
+
+def _soma_margem_rs(db, desde=None):
+    q = db.query(
+        func.sum(Orcamento.total_proposta - Orcamento.total_custo_direto)
+    ).filter(Orcamento.status == "fechado")
+    if desde is not None:
+        q = q.filter(Orcamento.created_at >= desde)
+    return Decimal(str(q.scalar() or 0))
+
+
+def _media_margem_pct(db, desde=None):
+    q = db.query(func.avg(Orcamento.margem_liquida_real)).filter(
+        Orcamento.status == "fechado"
+    )
+    if desde is not None:
+        q = q.filter(Orcamento.created_at >= desde)
+    r = q.scalar()
+    return (
+        Decimal(str(r)).quantize(Decimal("0.000001"))
+        if r is not None
+        else Decimal("0")
+    )
+
+
 @router.get("/dashboard")
 def dashboard(db: Session = Depends(get_db)) -> dict:
     """
-    Métricas agregadas para o painel principal.
+    Métricas agregadas para o painel principal (redefinidas por STATUS).
 
     Retorna:
-      - total_orcado_mes: soma de total_proposta dos orçamentos criados no mês atual
-      - margem_media: média de margem_liquida_real (apenas onde total_proposta > 0)
+      - total_orcado_mes/acumulado: Σ total_proposta dos orçamentos 'enviado'
+      - margem_rs_mes/acumulado: Σ (total_proposta − total_custo_direto) dos 'fechado'
+      - margem_pct_mes/acumulado: média de margem_liquida_real dos 'fechado'
+      - margem_media/margem_acumulada: aliases de margem_pct (compat.)
       - por_status: contagem por status
       - total_orcamentos: total geral de orçamentos
       - orcamentos_recentes: últimos 5 orçamentos
+    (mês = created_at >= 1º dia do mês atual)
     """
     hoje = datetime.date.today()
     primeiro_dia_mes = datetime.datetime(hoje.year, hoje.month, 1)
-
-    # Total orçado no mês
-    resultado_mes = (
-        db.query(func.sum(Orcamento.total_proposta))
-        .filter(Orcamento.created_at >= primeiro_dia_mes)
-        .scalar()
-    )
-    total_orcado_mes: Decimal = (
-        Decimal(str(resultado_mes)) if resultado_mes is not None else Decimal("0")
-    )
-
-    # Margem média (somente orçamentos com total_proposta > 0)
-    resultado_margem = (
-        db.query(func.avg(Orcamento.margem_liquida_real))
-        .filter(Orcamento.total_proposta > Decimal("0"))
-        .scalar()
-    )
-    margem_media: Decimal = (
-        Decimal(str(resultado_margem)).quantize(Decimal("0.000001"))
-        if resultado_margem is not None
-        else Decimal("0")
-    )
 
     # Contagem por status
     status_counts = (
@@ -140,7 +154,9 @@ def dashboard(db: Session = Depends(get_db)) -> dict:
         "rascunho": 0,
         "enviado": 0,
         "aprovado": 0,
-        "rejeitado": 0,
+        "reprovado": 0,
+        "perdida": 0,
+        "fechado": 0,
     }
     for s, cnt in status_counts:
         if s in por_status:
@@ -164,31 +180,96 @@ def dashboard(db: Session = Depends(get_db)) -> dict:
         for o in recentes
     ]
 
-    # Acumulado
-    total_orcado_acumulado = (
-        db.query(func.sum(Orcamento.total_proposta))
-        .scalar()
-    )
-    total_acum: Decimal = Decimal(str(total_orcado_acumulado)) if total_orcado_acumulado is not None else Decimal("0")
-    
-    # Margem líquida acumulada
-    margem_acumulada_q = (
-        db.query(func.avg(Orcamento.margem_liquida_real))
-        .filter(Orcamento.total_proposta > Decimal("0"))
-        .scalar()
-    )
-    margem_acumulada: Decimal = (
-        Decimal(str(margem_acumulada_q)).quantize(Decimal("0.000001"))
-        if margem_acumulada_q is not None
-        else Decimal("0")
-    )
-
     return {
-        "total_orcado_mes": total_orcado_mes,
-        "total_orcado_acumulado": total_acum,
-        "margem_media": margem_media,
-        "margem_acumulada": margem_acumulada,
+        "total_orcado_mes": _soma_proposta_status(db, "enviado", primeiro_dia_mes),
+        "total_orcado_acumulado": _soma_proposta_status(db, "enviado"),
+        "margem_rs_mes": _soma_margem_rs(db, primeiro_dia_mes),
+        "margem_rs_acumulado": _soma_margem_rs(db),
+        "margem_pct_mes": _media_margem_pct(db, primeiro_dia_mes),
+        "margem_pct_acumulado": _media_margem_pct(db),
+        "margem_media": _media_margem_pct(db, primeiro_dia_mes),
+        "margem_acumulada": _media_margem_pct(db),
         "por_status": por_status,
         "total_orcamentos": total_orcamentos,
         "orcamentos_recentes": orcamentos_recentes,
     }
+
+
+# ── Notificações / Prazos ──────────────────────────────────────────────────────
+
+
+@router.get("/notificacoes")
+def listar_notificacoes(db: Session = Depends(get_db)) -> dict:
+    """Prazos de envio iminentes (rascunho/reprovado, até amanhã)."""
+    hoje = date.today()
+    amanha = hoje + timedelta(days=1)
+    orcs = (
+        db.query(Orcamento)
+        .filter(Orcamento.status.in_(["rascunho", "reprovado"]))
+        .filter(Orcamento.data_limite.isnot(None))
+        .filter(Orcamento.data_limite <= amanha)
+        .order_by(Orcamento.data_limite)
+        .all()
+    )
+
+    def _urg(d):
+        return "atrasado" if d < hoje else "hoje" if d == hoje else "amanha"
+
+    itens = [
+        {
+            "id": o.id,
+            "numero": o.numero,
+            "obra": o.obra,
+            "data_limite": o.data_limite,
+            "urgencia": _urg(o.data_limite),
+        }
+        for o in orcs
+    ]
+    return {"total": len(itens), "notificacoes": itens}
+
+
+@router.get("/prazos")
+def listar_prazos(mes: str | None = None, db: Session = Depends(get_db)) -> list[dict]:
+    """Orçamentos rascunho/reprovado com data_limite no mês (para o calendário)."""
+    hoje = date.today()
+    if mes:
+        try:
+            ano, m = int(mes[:4]), int(mes[5:7])
+            inicio = date(ano, m, 1)  # valida ano/mês (mês 1..12)
+        except (ValueError, IndexError):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Parâmetro 'mes' inválido. Use o formato AAAA-MM.",
+            )
+    else:
+        ano, m = hoje.year, hoje.month
+        inicio = date(ano, m, 1)
+    fim = date(ano + (m == 12), (m % 12) + 1, 1)
+    orcs = (
+        db.query(Orcamento)
+        .filter(Orcamento.status.in_(["rascunho", "reprovado"]))
+        .filter(Orcamento.data_limite.isnot(None))
+        .filter(Orcamento.data_limite >= inicio, Orcamento.data_limite < fim)
+        .order_by(Orcamento.data_limite)
+        .all()
+    )
+
+    def _urg(d):
+        if d < hoje:
+            return "atrasado"
+        if d == hoje:
+            return "hoje"
+        if d == hoje + timedelta(days=1):
+            return "amanha"
+        return "futuro"
+
+    return [
+        {
+            "id": o.id,
+            "numero": o.numero,
+            "obra": o.obra,
+            "data_limite": o.data_limite,
+            "urgencia": _urg(o.data_limite),
+        }
+        for o in orcs
+    ]

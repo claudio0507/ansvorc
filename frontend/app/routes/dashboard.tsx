@@ -1,19 +1,15 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import {
-  PolarAngleAxis,
-  PolarGrid,
-  Radar,
-  RadarChart,
-} from "recharts"
-import {
-  ClockIcon,
-  TrendUpIcon,
-  FileTextIcon,
-  FoldersIcon,
-} from "@phosphor-icons/react"
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "~/components/ui/chart"
 
 import { PageHeader } from "~/components/page-header"
+import { PrazosCalendar } from "~/components/prazos-calendar"
 import { StatusBadge } from "~/components/status-badge"
 import { Card } from "~/components/ui/card"
 import { Skeleton } from "~/components/ui/skeleton"
@@ -48,17 +44,30 @@ export default function Dashboard() {
   if (erro) return <div className="text-destructive py-12 text-center">{erro}</div>
   if (!dados) return <Skeleton className="h-64 w-full" />
 
-  const totalOrcado = filtro === "mes" ? dados.total_orcado_mes : dados.total_orcado_acumulado ?? dados.total_orcado_mes
-  const margemAcumulada = dados.margem_acumulada ?? dados.margem_media ?? 0
+  const sfx = filtro === "mes" ? "mes" : "acumulado"
+  const totalOrcado = dados[`total_orcado_${sfx}`] ?? 0
+  const margemRs = dados[`margem_rs_${sfx}`] ?? 0
+  const margemPct = dados[`margem_pct_${sfx}`] ?? 0
   const porStatus = dados.por_status || {}
   const recentes = dados.orcamentos_recentes || []
 
-  // Radar data: status distribution
-  const radarData = [
-    { status: "Rascunho", value: porStatus.rascunho || 0, fullMark: Math.max(1, dados.total_orcamentos || 1) },
-    { status: "Enviado", value: porStatus.enviado || 0, fullMark: Math.max(1, dados.total_orcamentos || 1) },
-    { status: "Aprovado", value: porStatus.aprovado || 0, fullMark: Math.max(1, dados.total_orcamentos || 1) },
-    { status: "Rejeitado", value: porStatus.rejeitado || 0, fullMark: Math.max(1, dados.total_orcamentos || 1) },
+  const statusConfig = {
+    value: { label: "Orçamentos", color: "var(--chart-1)" },
+  } satisfies ChartConfig
+
+  const statusData = [
+    { label: "Rascunho", value: porStatus.rascunho || 0 },
+    { label: "Enviado", value: porStatus.enviado || 0 },
+    { label: "Aprovado", value: porStatus.aprovado || 0 },
+    { label: "Reprovado", value: porStatus.reprovado || 0 },
+    { label: "Perdida", value: porStatus.perdida || 0 },
+    { label: "Fechado", value: porStatus.fechado || 0 },
+  ]
+
+  const funilData = [
+    { label: "Enviado", value: porStatus.enviado || 0 },
+    { label: "Aprovado", value: porStatus.aprovado || 0 },
+    { label: "Fechado", value: porStatus.fechado || 0 },
   ]
 
   return (
@@ -79,62 +88,65 @@ export default function Dashboard() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <Card className="p-4">
           <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">
             {filtro === "mes" ? "Orçado no Mês" : "Total Orçado"}
           </div>
-          <div className="text-2xl font-bold mt-2 tabular-nums text-primary">
-            {fmtBRL(totalOrcado)}
-          </div>
+          <div className="text-2xl font-bold mt-2 tabular-nums text-primary">{fmtBRL(totalOrcado)}</div>
+          <div className="text-muted-foreground text-[0.5625rem] mt-1">status Enviado</div>
         </Card>
         <Card className="p-4">
-          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">
-            Margem Líquida Acumulada
-          </div>
-          <div className="text-2xl font-bold mt-2 tabular-nums">
-            {typeof margemAcumulada === "number" ? `${(margemAcumulada * 100).toFixed(2)}%` : "—"}
-          </div>
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">Margem Líquida</div>
+          <div className="text-2xl font-bold mt-2 tabular-nums text-success">{fmtBRL(margemRs)}</div>
+          <div className="text-muted-foreground text-[0.5625rem] mt-1">status Fechado</div>
         </Card>
         <Card className="p-4">
-          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">
-            Total Orçamentos
-          </div>
-          <div className="text-2xl font-bold mt-2 tabular-nums">
-            {dados.total_orcamentos || 0}
-          </div>
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">Margem Média</div>
+          <div className="text-2xl font-bold mt-2 tabular-nums">{`${(Number(margemPct) * 100).toFixed(2)}%`}</div>
+          <div className="text-muted-foreground text-[0.5625rem] mt-1">status Fechado</div>
         </Card>
         <Card className="p-4">
-          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">
-            Aprovados
-          </div>
-          <div className="text-2xl font-bold mt-2 tabular-nums text-success">
-            {porStatus.aprovado || 0}
-          </div>
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">Total Orçamentos</div>
+          <div className="text-2xl font-bold mt-2 tabular-nums">{dados.total_orcamentos || 0}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider">Aprovados</div>
+          <div className="text-2xl font-bold mt-2 tabular-nums text-success">{porStatus.aprovado || 0}</div>
         </Card>
       </div>
 
-      {/* Radar Chart */}
-      <Card className="p-4">
-        <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider mb-3">
-          Distribuição por Status
-        </div>
-        <div className="flex justify-center">
-          <RadarChart width={280} height={200} data={radarData} cx="50%" cy="50%" outerRadius="70%">
-            <PolarGrid stroke="oklch(0.55 0.005 250)" />
-            <PolarAngleAxis
-              dataKey="status"
-              tick={{ fontSize: 10, fill: "oklch(0.55 0.005 250)" }}
-            />
-            <Radar
-              dataKey="value"
-              stroke="oklch(0.536 0.189 24.67)"
-              fill="oklch(0.536 0.189 24.67)"
-              fillOpacity={0.15}
-            />
-          </RadarChart>
-        </div>
-      </Card>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card className="p-4">
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider mb-3">
+            Distribuição por Status
+          </div>
+          <ChartContainer config={statusConfig} className="h-[200px] w-full">
+            <BarChart data={statusData} accessibilityLayer>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="value" fill="var(--color-value)" radius={4} />
+            </BarChart>
+          </ChartContainer>
+        </Card>
+        <Card className="p-4">
+          <div className="text-muted-foreground text-[0.625rem] font-semibold uppercase tracking-wider mb-3">
+            Funil de Conversão
+          </div>
+          <ChartContainer config={statusConfig} className="h-[200px] w-full">
+            <BarChart data={funilData} layout="vertical" accessibilityLayer>
+              <CartesianGrid horizontal={false} />
+              <XAxis type="number" hide />
+              <YAxis dataKey="label" type="category" tickLine={false} axisLine={false} width={70} tick={{ fontSize: 10 }} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="value" fill="var(--color-value)" radius={4} />
+            </BarChart>
+          </ChartContainer>
+        </Card>
+      </div>
+
+      <PrazosCalendar />
 
       {/* Últimos orçamentos */}
       <Card className="overflow-x-auto py-0">

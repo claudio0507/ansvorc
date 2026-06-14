@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select"
-import { clienteApi, orcamentoApi } from "~/lib/api"
+import { clienteApi, orcamentoApi, parametroApi } from "~/lib/api"
 
 const UFS = [
   { v: "PR", l: "Paraná (PR)" },
@@ -44,6 +44,9 @@ export function NovoOrcamentoModal({
   const [obra, setObra] = useState("")
   const [uf, setUf] = useState("PR")
   const [reidi, setReidi] = useState(false)
+  const [dataLimite, setDataLimite] = useState("")
+  const [seguimentosDisp, setSeguimentosDisp] = useState<any[]>([])
+  const [segmentos, setSegmentos] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -53,9 +56,18 @@ export function NovoOrcamentoModal({
       setObra("")
       setUf("PR")
       setReidi(false)
+      setDataLimite("")
+      setSegmentos([])
       clienteApi.list().then(setClientes).catch(() => setClientes([]))
+      parametroApi.listSeguimentos().then(setSeguimentosDisp).catch(() => setSeguimentosDisp([]))
     }
   }, [open])
+
+  function toggleSegmento(nome: string) {
+    setSegmentos((prev) =>
+      prev.includes(nome) ? prev.filter((s) => s !== nome) : [...prev, nome]
+    )
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -71,6 +83,8 @@ export function NovoOrcamentoModal({
         obra: obra || null,
         uf_execucao: uf,
         beneficio_reidi: reidi,
+        data_limite: dataLimite || null,
+        segmentos,
       })
       toast.success("Orçamento criado!")
       onOpenChange(false)
@@ -110,6 +124,27 @@ export function NovoOrcamentoModal({
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label>Descrição da Obra</Label>
             <Input placeholder="Ex: Rodovia PR-444 — Lote 3" value={obra} onChange={(e) => setObra(e.target.value)} />
+          </div>
+          <div className="flex flex-col gap-2 sm:col-span-2">
+            <Label>Data-limite de envio</Label>
+            <Input type="date" value={dataLimite} onChange={(e) => setDataLimite(e.target.value)} />
+          </div>
+          <div className="flex flex-col gap-2 sm:col-span-2">
+            <Label>Segmentos</Label>
+            <div className="flex flex-wrap gap-3">
+              {seguimentosDisp.map((s) => (
+                <label key={s.id ?? s.nome} className="flex cursor-pointer items-center gap-2">
+                  <Checkbox
+                    checked={segmentos.includes(s.nome)}
+                    onCheckedChange={() => toggleSegmento(s.nome)}
+                  />
+                  <span className="text-sm">{s.nome}</span>
+                </label>
+              ))}
+              {seguimentosDisp.length === 0 && (
+                <span className="text-muted-foreground text-xs">Nenhum segmento cadastrado.</span>
+              )}
+            </div>
           </div>
           <div className="flex flex-col gap-2">
             <Label>UF de Execução *</Label>

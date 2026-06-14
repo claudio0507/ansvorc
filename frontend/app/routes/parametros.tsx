@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "~/components/ui/table"
 import { Label } from "~/components/ui/label"
+import { Textarea } from "~/components/ui/textarea"
 import { configApi, orcamentistaApi, parametroApi, unidadeApi } from "~/lib/api"
 
 interface ListaSimplesProps {
@@ -146,30 +147,60 @@ function CrudSimples({ load, create, update, del, campos, colunas }: ListaSimple
   )
 }
 
+// Campos do ConfigSistema editáveis na aba Empresa (espelham ConfigSistemaUpdate).
+const CAMPOS_EMPRESA = [
+  "nome_empresa", "cnpj",
+  "diretor_nome", "diretor_funcao", "diretor_cpf", "diretor_telefone", "diretor_email",
+  "contato_comercial_nome", "contato_comercial_funcao", "contato_comercial_fone", "contato_comercial_email",
+  "banco", "agencia", "conta_corrente",
+  "declaracoes_padrao", "clausula_tributaria_padrao", "reajustamento_padrao",
+  "garantia_retencao_padrao_pct", "garantia_devolucao_padrao_dias",
+]
+
+// Monta o estado do formulário a partir da config (campos null viram "").
+function formDaConfig(c: any): Record<string, string> {
+  const init: Record<string, string> = {}
+  for (const k of CAMPOS_EMPRESA) init[k] = c[k] != null ? String(c[k]) : ""
+  return init
+}
+
 function EmpresaConfig() {
   const [cfg, setCfg] = useState<any>(null)
-  const [nome, setNome] = useState("")
+  const [f, setF] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
 
-  async function load() {
-    try {
-      const c = await configApi.get()
-      setCfg(c)
-      setNome(c.nome_empresa ?? "")
-    } catch (e: any) {
-      toast.error(e.message)
-    }
-  }
   useEffect(() => {
-    load()
+    configApi
+      .get()
+      .then((c) => {
+        setCfg(c)
+        setF(formDaConfig(c))
+      })
+      .catch((e: any) => toast.error(e.message))
   }, [])
 
-  async function salvarNome() {
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setF((s) => ({ ...s, [k]: e.target.value }))
+
+  async function salvar() {
+    if (!f.nome_empresa?.trim()) {
+      toast.error("Nome da empresa é obrigatório.")
+      return
+    }
     setSaving(true)
     try {
-      const c = await configApi.update({ nome_empresa: nome })
+      const payload: Record<string, any> = {}
+      for (const k of CAMPOS_EMPRESA) {
+        const v = f[k]?.trim() ?? ""
+        if (k === "nome_empresa") payload[k] = v
+        else if (k === "garantia_retencao_padrao_pct") payload[k] = v === "" ? null : v
+        else if (k === "garantia_devolucao_padrao_dias") payload[k] = v === "" ? null : Number(v)
+        else payload[k] = v === "" ? null : v
+      }
+      const c = await configApi.update(payload)
       setCfg(c)
-      toast.success("Nome da empresa atualizado")
+      setF(formDaConfig(c)) // re-sincroniza com o que o backend gravou (normalizações)
+      toast.success("Configurações da empresa atualizadas")
     } catch (e: any) {
       toast.error(`Erro: ${e.message}`)
     } finally {
@@ -187,34 +218,81 @@ function EmpresaConfig() {
     }
   }
 
+  const campoT = (k: string, label: string, ph?: string) => (
+    <div className="flex flex-col gap-1.5">
+      <Label className="text-muted-foreground text-xs uppercase">{label}</Label>
+      <Input value={f[k] ?? ""} onChange={set(k)} placeholder={ph} />
+    </div>
+  )
+  const campoArea = (k: string, label: string) => (
+    <div className="flex flex-col gap-1.5">
+      <Label className="text-muted-foreground text-xs uppercase">{label}</Label>
+      <Textarea value={f[k] ?? ""} onChange={set(k)} rows={4} />
+    </div>
+  )
+
   return (
-    <Card className="max-w-xl space-y-5 p-6">
-      <div className="flex flex-col gap-2">
-        <Label>Nome da Empresa (subtítulo do orcOS)</Label>
-        <div className="flex gap-2">
-          <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="ALTA NOROESTE" />
-          <Button size="sm" onClick={salvarNome} disabled={saving}>
-            Salvar
-          </Button>
-        </div>
+    <div className="max-w-3xl space-y-4">
+      <div className="flex justify-end">
+        <Button size="sm" onClick={salvar} disabled={saving}>
+          {saving ? "Salvando…" : "Salvar"}
+        </Button>
       </div>
 
-      <div className="flex flex-col gap-2 border-t pt-5">
-        <Label>Logotipo (PNG, máx 500KB, ~400×120)</Label>
-        {cfg?.logo_path && (
-          <img src={cfg.logo_path} alt="logo" className="h-12 max-w-[200px] object-contain" />
-        )}
-        <Input
-          type="file"
-          accept="image/png"
-          onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f) enviarLogo(f)
-          }}
-        />
-        <p className="text-muted-foreground text-xs">Exibido na proposta, login e sidebar.</p>
-      </div>
-    </Card>
+      <Card className="space-y-4 p-6">
+        <Label className="text-primary text-xs font-bold uppercase">Dados da Empresa</Label>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {campoT("nome_empresa", "Nome da Empresa", "ALTA NOROESTE")}
+          {campoT("cnpj", "CNPJ", "20.945.724/0001-15")}
+        </div>
+        <div className="flex flex-col gap-2 border-t pt-4">
+          <Label className="text-muted-foreground text-xs uppercase">Logotipo (PNG, máx 500KB)</Label>
+          {cfg?.logo_path && <img src={cfg.logo_path} alt="logo" className="h-12 max-w-[200px] object-contain" />}
+          <Input type="file" accept="image/png" onChange={(e) => { const x = e.target.files?.[0]; if (x) enviarLogo(x) }} />
+        </div>
+      </Card>
+
+      <Card className="space-y-4 p-6">
+        <Label className="text-primary text-xs font-bold uppercase">Representante Legal</Label>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {campoT("diretor_nome", "Nome")}
+          {campoT("diretor_funcao", "Função", "Diretor Comercial")}
+          {campoT("diretor_cpf", "CPF")}
+          {campoT("diretor_telefone", "Telefone")}
+          {campoT("diretor_email", "E-mail")}
+        </div>
+      </Card>
+
+      <Card className="space-y-4 p-6">
+        <Label className="text-primary text-xs font-bold uppercase">Contato Comercial</Label>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {campoT("contato_comercial_nome", "Nome")}
+          {campoT("contato_comercial_funcao", "Função", "Comercial")}
+          {campoT("contato_comercial_fone", "Fone")}
+          {campoT("contato_comercial_email", "E-mail")}
+        </div>
+      </Card>
+
+      <Card className="space-y-4 p-6">
+        <Label className="text-primary text-xs font-bold uppercase">Dados Bancários</Label>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {campoT("banco", "Banco", "Bradesco")}
+          {campoT("agencia", "Agência", "0110")}
+          {campoT("conta_corrente", "Conta Corrente", "0287852-6")}
+        </div>
+      </Card>
+
+      <Card className="space-y-4 p-6">
+        <Label className="text-primary text-xs font-bold uppercase">Textos Padrão</Label>
+        {campoArea("declaracoes_padrao", "Declarações padrão (bullets legais)")}
+        {campoArea("clausula_tributaria_padrao", "Cláusula tributária padrão (IBS/CBS)")}
+        {campoArea("reajustamento_padrao", "Reajustamento padrão (IPCA/IGPM)")}
+        <div className="grid grid-cols-2 gap-3">
+          {campoT("garantia_retencao_padrao_pct", "Retenção padrão (%)", "5")}
+          {campoT("garantia_devolucao_padrao_dias", "Devolução padrão (dias)", "60")}
+        </div>
+      </Card>
+    </div>
   )
 }
 

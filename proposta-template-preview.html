@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>orcOS — Preview Template Proposta Comercial (FOR 077)</title>
+<style>
+  /* ═══ Design System orcOS — Discord Dark ═══ */
+  :root {
+    --bg:       #111214;
+    --surface:  #1e1f22;
+    --card:     #2b2d31;
+    --elevated: #313338;
+    --input:    #383a40;
+    --border:   #3f4147;
+    --accent:   #c32a30;
+    --accent-hover: #d83a40;
+    --fg:       #e3e5e8;
+    --muted:    #b5bac1;
+    --dimmed:   #80848e;
+    --success:  #23a55a;
+    --radius:   8px;
+    --font:     'gg sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font); background: var(--bg); color: var(--fg); line-height: 1.6; }
+
+  /* ═══ Layout ═══ */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); padding: 20px 16px; overflow-y: auto; }
+  .main { flex: 1; padding: 24px 32px; overflow-y: auto; max-width: 1000px; margin: 0 auto; }
+
+  /* ═══ Sidebar ═══ */
+  .sidebar h2 { font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--dimmed); letter-spacing: 0.5px; margin-bottom: 8px; }
+  .sidebar .section { margin-bottom: 20px; }
+  .section-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: var(--radius); color: var(--muted); font-size: 14px; cursor: pointer; transition: .15s; }
+  .section-item:hover { background: var(--elevated); color: var(--fg); }
+  .section-item.active { background: var(--accent); color: #fff; }
+  .section-item .badge { font-size: 10px; background: var(--elevated); color: var(--muted); padding: 2px 6px; border-radius: 4px; margin-left: auto; }
+  .section-item.active .badge { background: rgba(255,255,255,.2); color: #fff; }
+
+  /* ═══ Heading ═══ */
+  .page-title { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .page-subtitle { font-size: 13px; color: var(--dimmed); margin-bottom: 24px; }
+
+  /* ═══ Cards / Sections ═══ */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--accent); letter-spacing: 0.8px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .card-row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .card-row:last-child { margin-bottom: 0; }
+
+  /* ═══ Form Fields ═══ */
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field.col-1 { flex: 1; min-width: 100%; }
+  .field.col-2 { flex: 1; min-width: 200px; }
+  .field.col-3 { flex: 1; min-width: 140px; }
+  .field.col-half { flex: 0 0 calc(50% - 6px); }
+  label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--dimmed); letter-spacing: 0.5px; }
+  .val { background: var(--elevated); border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; font-size: 14px; color: var(--fg); min-height: 36px; }
+  .val.empty { color: var(--dimmed); font-style: italic; }
+  .val.big { min-height: 80px; }
+  .val.accent { border-color: var(--accent); }
+
+  /* ═══ Tags ═══ */
+  .tag { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; letter-spacing: .5px; }
+  .tag-new { background: var(--accent); color: #fff; }
+  .tag-existing { background: var(--elevated); color: var(--muted); }
+  .tag-system { background: var(--success); color: #fff; }
+
+  /* ═══ Table ═══ */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-weight: 600; text-transform: uppercase; font-size: 10px; color: var(--dimmed); letter-spacing: .5px; padding: 8px 10px; border-bottom: 2px solid var(--border); }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  .text-right { text-align: right; }
+  .text-center { text-align: center; }
+
+  /* ═══ Dividers ═══ */
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+  /* ═══ Legend ═══ */
+  .legend { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+
+  /* ═══ Responsive ═══ */
+  @media (max-width: 768px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; max-height: 200px; border-right: none; border-bottom: 1px solid var(--border); }
+    .main { padding: 16px; }
+    .field.col-half { flex: 1; min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR — Navegação por seções ═══ -->
+  <div class="sidebar">
+    <h2>📋 Seções da Proposta</h2>
+    <div class="section">
+      <div class="section-item active" onclick="scrollTo('sec-cabecalho')">1. Cabeçalho <span class="badge">sistema</span></div>
+      <div class="section-item" onclick="scrollTo('sec-cliente')">2. Destinatário <span class="badge">existente</span></div>
+      <div class="section-item" onclick="scrollTo('sec-objeto')">3. Objeto <span class="badge">existente</span></div>
+      <div class="section-item" onclick="scrollTo('sec-declaracoes')">4. Declarações <span class="badge">existente</span></div>
+      <div class="section-item" onclick="scrollTo('sec-escopo')">5. Escopo <span class="badge">novo</span></div>
+      <div class="section-item" onclick="scrollTo('sec-modalidade')">6. Modalidade <span class="badge">novo</span></div>
+      <div class="section-item" onclick="scrollTo('sec-preco')">7. Preço <span class="badge">sistema</span></div>
+      <div class="section-item" onclick="scrollTo('sec-prazo')">8. Prazo + Tributária <span class="badge">novo</span></div>
+      <div class="section-item" onclick="scrollTo('sec-faturamento')">9. Faturamento <span class="badge">novo</span></div>
+      <div class="section-item" onclick="scrollTo('sec-medishow('>10. Medição <span class="badge">novo</span></div>
+      <div class="section-item" onclick="scrollTo('sec-bancarios')">11. Dados Bancários <span class="badge">novo</span></div>
+      <div class="section-item" onclick="scrollTo('sec-representante')">12. Representante <span class="badge">existente</span></div>
+      <div class="section-item" onclick="scrollTo('sec-testemunha')">13. Testemunha <span class="badge">novo</span></div>
+      <div class="section-item" onclick="scrollTo('sec-reajuste')">14. Reajustamento <span class="badge">novo</span></div>
+      <div class="section-item" onclick="scrollTo('sec-garantia')">15. Garantia <span class="badge">novo</span></div>
+      <div class="section-item" onclick="scrollTo('sec-asbuilt')">16. As Built <span class="badge">novo</span></div>
+      <div class="section-item" onclick="scrollTo('sec-validade')">17. Validade <span class="badge">existente</span></div>
+      <div class="section-item" onclick="scrollTo('sec-obs')">18. Observação <span class="badge">existente</span></div>
+      <div class="section-item" onclick="scrollTo('sec-contato')">19. Contato Comercial <span class="badge">novo</span></div>
+    </div>
+
+    <h2>⚙️ Configuração</h2>
+    <div class="section">
+      <div class="section-item" onclick="scrollTo('sec-config')">Dados da Empresa <span class="badge">novo</span></div>
+      <div class="section-item" onclick="scrollTo('sec-textos-padrao')">Textos Padrão <span class="badge">novo</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ CONTEÚDO PRINCIPAL ═══ -->
+  <div class="main">
+
+    <div class="page-title">Template de Proposta Comercial</div>
+    <div class="page-subtitle">Mapeamento FOR 077 → campos orcOS · 24 tópicos · 13 campos novos no Orcamento + 12 no ConfigSistema</div>
+
+    <div class="legend">
+      <div class="legend-item"><span class="tag tag-new">NOVO</span> Campo adicionado neste ciclo</div>
+      <div class="legend-item"><span class="tag tag-existing">EXISTENTE</span> Campo já existia</div>
+      <div class="legend-item"><span class="tag tag-system">SISTEMA</span> Calculado automaticamente</div>
+    </div>
+
+    <!-- 1. CABEÇALHO -->
+    <div class="card" id="sec-cabecalho">
+      <div class="card-title">1. Cabeçalho <span class="tag tag-system">sistema</span></div>
+      <div class="card-row">
+        <div class="field col-3">
+          <label>N° Proposta</label>
+          <div class="val">149_26</div>
+        </div>
+        <div class="field col-3">
+          <label>Versão</label>
+          <div class="val">00</div>
+        </div>
+        <div class="field col-3">
+          <label>Data</label>
+          <div class="val">03/06/2026</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>Cidade / UF</label>
+          <div class="val">Araçatuba/SP &nbsp; <span class="tag tag-existing">← uf_execucao</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. DESTINATÁRIO -->
+    <div class="card" id="sec-cliente">
+      <div class="card-title">2. À (Destinatário) <span class="tag tag-existing">existente</span></div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>Cliente</label>
+          <div class="val">Austravias Rota Dourada &nbsp; <span class="tag tag-existing">← cliente.nome</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. OBJETO -->
+    <div class="card" id="sec-objeto">
+      <div class="card-title">3. Objeto <span class="tag tag-existing">existente</span></div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>obra</label>
+          <div class="val accent">Contratação de serviços de manutenção da sinalização horizontal ao longo das rodovias MT-170 e MT-220…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. DECLARAÇÕES -->
+    <div class="card" id="sec-declaracoes">
+      <div class="card-title">4. Declarações (preâmbulo legal) <span class="tag tag-existing">existente</span> → <code>texto_topo_proposta</code></div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>texto_topo_proposta — Texto editável por proposta</label>
+          <div class="val big">Que respeita integralmente as condições estabelecidas na TR.ENG.XXX.XXXX.XXXX.<br>
+Que possui conhecimento das Políticas de Meio Ambiente…<br>
+Que possui conhecimento e que cumpre a legislação anticorrupção…<br>
+… (12 bullets legais)</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>Textos padrão → ConfigSistema.declaracoes_padrao <span class="tag tag-new">NOVO</span></label>
+          <div class="val empty">Se texto_topo_proposta estiver vazio, usa este padrão</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. ESCOPO -->
+    <div class="card" id="sec-escopo">
+      <div class="card-title">5. Escopo <span class="tag tag-new">NOVO</span> → <code>escopo</code></div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>escopo — Descrição detalhada do escopo</label>
+          <div class="val big">Faz parte do escopo deste processo, manutenção de sinalização horizontal ao longo de todas as rodovias, vias marginais, alças e acessos das rodovias MT-170 e MT-220, nos trechos sob concessão da concessionária Rota Dourada S.A.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. MODALIDADE -->
+    <div class="card" id="sec-modalidade">
+      <div class="card-title">6. Modalidade <span class="tag tag-new">NOVO</span> → <code>modalidade</code></div>
+      <div class="card-row">
+        <div class="field col-2">
+          <label>modalidade</label>
+          <div class="val">Preço Unitário</div>
+        </div>
+        <div class="field col-2">
+          <label>Sugestões: Preço Unitário · Preço Global · Empreitada</label>
+          <div class="val empty">dropdown ou texto livre</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. PREÇO -->
+    <div class="card" id="sec-preco">
+      <div class="card-title">7. Preço <span class="tag tag-system">sistema</span></div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>Planilha por seguimento (calculada automaticamente)</label>
+          <table>
+            <thead>
+              <tr><th>Item</th><th>Descrição</th><th>Un</th><th class="text-right">Qtd</th><th class="text-right">Preço Unit.</th><th class="text-right">Preço Total</th></tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="6" style="color: var(--accent); font-weight:600; padding-top:12px;">EPS</td></tr>
+              <tr><td>1</td><td>Pintura faixa central</td><td class="text-center">m</td><td class="text-right">5.000</td><td class="text-right">R$ 12,50</td><td class="text-right">R$ 62.500,00</td></tr>
+              <tr><td colspan="6" style="color: var(--accent); font-weight:600; padding-top:12px;">HORIZONTAL</td></tr>
+              <tr><td>2</td><td>Pintada faixa de pedestre</td><td class="text-center">m²</td><td class="text-right">3.200</td><td class="text-right">R$ 8,90</td><td class="text-right">R$ 28.480,00</td></tr>
+              <tr><td colspan="6" style="color: var(--accent); font-weight:600; padding-top:12px;">VERTICAL</td></tr>
+              <tr><td>3</td><td>Instalação placa PARE</td><td class="text-center">un</td><td class="text-right">12</td><td class="text-right">R$ 480,00</td><td class="text-right">R$ 5.760,00</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="card-row">
+        <div class="field col-2">
+          <label>Sem REIDI</label>
+          <div class="val accent" style="font-size:18px; font-weight:700;">R$ 4.584.137,05</div>
+        </div>
+        <div class="field col-2">
+          <label>beneficio_reidi</label>
+          <div class="val">☐ Aplicar REIDI (zera PIS/COFINS)</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="field col-2">
+          <label>Alíquotas — ISS</label>
+          <div class="val">5% &nbsp; <span class="tag tag-existing">← bd_BDI.issqn</span></div>
+        </div>
+        <div class="field col-half">
+          <label>PIS (c/ REIDI)</label>
+          <div class="val">0,65%</div>
+        </div>
+        <div class="field col-half">
+          <label>COFINS (c/ REIDI)</label>
+          <div class="val">3,00%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. PRAZO + CLÁUSULA -->
+    <div class="card" id="sec-prazo">
+      <div class="card-title">8. Prazo + Cláusula Tributária <span class="tag tag-new">NOVO</span></div>
+      <div class="card-row">
+        <div class="field col-2">
+          <label>prazo_entrega <span class="tag tag-existing">existente</span></label>
+          <div class="val">90 (noventa) dias, contados a partir da assinatura do contrato</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>clausula_tributaria <span class="tag tag-new">NOVO</span> — Texto sobre IBS/CBS</label>
+          <div class="val big">Os preços apresentados nesta proposta contemplam a carga tributária atual exigida pela legislação pertinente. Eventuais contratos com execuções ou vigência posterior a 31/12/2026 estarão sujeitos a revisão e renegociação obrigatória, visando o repasse dos impactos tributários causados pela transição da Reforma Tributária (IBS/CBS).</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>Padrão → ConfigSistema.clausula_tributaria_padrao <span class="tag tag-new">NOVO</span></label>
+          <div class="val empty">Se clausula_tributaria vazio, usa este</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. FATURAMENTO -->
+    <div class="card" id="sec-faturamento">
+      <div class="card-title">9. Faturamento Direto <span class="tag tag-new">NOVO</span> → <code>faturamento_direto</code></div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>faturamento_direto</label>
+          <div class="val">Não aplicável.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10. MEDIÇÃO -->
+    <div class="card" id="sec-medicão">
+      <div class="card-title">10. Medição e Pagamento <span class="tag tag-new">NOVO</span> → <code>medicao_pagamento</code></div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>medicao_pagamento</label>
+          <div class="val big">Todos os serviços prestados através do objeto deste contrato serão aferidos mensalmente, via medição pactuada entre as partes, gerando validação do valor á ser faturado junto à CONTRATANTE.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 11. DADOS BANCÁRIOS -->
+    <div class="card" id="sec-bancarios">
+      <div class="card-title">11. Dados Bancários <span class="tag tag-new">NOVO</span> → <code>ConfigSistema</code></div>
+      <div class="card-row">
+        <div class="field col-2">
+          <label>banco</label>
+          <div class="val">Bradesco</div>
+        </div>
+        <div class="field col-3">
+          <label>agencia</label>
+          <div class="val">0110</div>
+        </div>
+        <div class="field col-3">
+          <label>conta_corrente</label>
+          <div class="val">0287852-6</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 12. REPRESENTANTE -->
+    <div class="card" id="sec-representante">
+      <div class="card-title">12. Representante Legal <span class="tag tag-existing">existente</span> + <span class="tag tag-new">NOVO</span></div>
+      <div class="card-row">
+        <div class="field col-2">
+          <label>diretor_nome</label>
+          <div class="val">Daniester Fiorussi Moreira</div>
+        </div>
+        <div class="field col-3">
+          <label>diretor_funcao</label>
+          <div class="val">Representante Legal</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="field col-2">
+          <label>diretor_email</label>
+          <div class="val">moreira@altanoroeste.com.br</div>
+        </div>
+        <div class="field col-2">
+          <label>diretor_cpf <span class="tag tag-new">NOVO</span></label>
+          <div class="val">277.540.838-92</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="field col-half">
+          <label>cnpj <span class="tag tag-new">NOVO</span></label>
+          <div class="val">20.945.724/0001-15</div>
+        </div>
+        <div class="field col-half">
+          <label>nome_empresa</label>
+          <div class="val">ALTA NOROESTE</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 13. TESTEMUNHA -->
+    <div class="card" id="sec-testemunha">
+      <div class="card-title">13. Testemunha <span class="tag tag-new">NOVO</span></div>
+      <div class="card-row">
+        <div class="field col-2">
+          <label>testemunha_nome</label>
+          <div class="val">Ariel Silvestri</div>
+        </div>
+        <div class="field col-2">
+          <label>testemunha_email</label>
+          <div class="val">ariel.silvestri@altanoroeste.com.br</div>
+        </div>
+        <div class="field col-3">
+          <label>testemunha_cpf</label>
+          <div class="val">446.576.038-84</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 14. REAJUSTAMENTO -->
+    <div class="card" id="sec-reajuste">
+      <div class="card-title">14. Reajustamento <span class="tag tag-new">NOVO</span> → <code>reajustamento</code></div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>reajustamento</label>
+          <div class="val big">Os preços poderão ser atualizados anualmente, mediante aplicação do índice de menor variação acumulada no período entre o Índice Nacional de Preços ao Consumidor Amplo – IPCA ou o Índice Geral de Preços do Mercado – IGPM. A data-base para fins de reajuste será a data de assinatura do contrato.</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>Padrão → ConfigSistema.reajustamento_padrao <span class="tag tag-new">NOVO</span></label>
+          <div class="val empty">Se reajustamento vazio, usa este</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 15. GARANTIA -->
+    <div class="card" id="sec-garantia">
+      <div class="card-title">15. Garantia Contratual <span class="tag tag-new">NOVO</span></div>
+      <div class="card-row">
+        <div class="field col-3">
+          <label>garantia_retencao_pct (%)</label>
+          <div class="val accent" style="text-align:center; font-size:18px;">5%</div>
+        </div>
+        <div class="field col-3">
+          <label>garantia_devolucao_dias</label>
+          <div class="val" style="text-align:center; font-size:18px;">60 dias</div>
+        </div>
+        <div class="field col-3">
+          <label>Texto gerado automaticamente</label>
+          <div class="val">Retenção de <strong>5%</strong>, com devolução em <strong>60</strong> dias após o termo de encerramento.</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="field col-2">
+          <label>Padrão → ConfigSistema.garantia_retencao_padrao_pct</label>
+          <div class="val empty">5 (se campo vazio)</div>
+        </div>
+        <div class="field col-2">
+          <label>Padrão → ConfigSistema.garantia_devolucao_padrao_dias</label>
+          <div class="val empty">60 (se campo vazio)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 16. AS BUILT -->
+    <div class="card" id="sec-asbuilt">
+      <div class="card-title">16. Entrega de As Built <span class="tag tag-new">NOVO</span> → <code>entrega_as_built</code></div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>entrega_as_built</label>
+          <div class="val">Não aplicável.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 17. VALIDADE -->
+    <div class="card" id="sec-validade">
+      <div class="card-title">17. Validade da Proposta <span class="tag tag-existing">existente</span></div>
+      <div class="card-row">
+        <div class="field col-2">
+          <label>validade_proposta</label>
+          <div class="val">90 (noventa) dias, contados a partir da emissão da mesma.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 18. OBSERVAÇÃO -->
+    <div class="card" id="sec-obs">
+      <div class="card-title">18. Observação <span class="tag tag-existing">existente</span></div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>texto_livre_proposta</label>
+          <div class="val big">Indicamos que o regime tributário ao qual a empresa está submetida é o de Lucro Real.<br>Para viabilizar os acionamentos, é necessário um volume mínimo de serviços que ao menos cubra o custo operacional diário da equipe, estimado em aproximadamente R$ 8.000,00 por dia.<br>Estabelece-se, portanto, um valor mínimo de mobilização para início dos serviços de R$ 8.000,00 mil reais/por mobilização.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 19. CONTATO COMERCIAL -->
+    <div class="card" id="sec-contato">
+      <div class="card-title">19. Contato Comercial <span class="tag tag-new">NOVO</span> → <code>ConfigSistema</code></div>
+      <div class="card-row">
+        <div class="field col-2">
+          <label>contato_comercial_nome</label>
+          <div class="val">Milaini Carvalho Miranda</div>
+        </div>
+        <div class="field col-2">
+          <label>contato_comercial_funcao</label>
+          <div class="val">Comercial</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="field col-2">
+          <label>contato_comercial_fone</label>
+          <div class="val">(18) 99683-6472</div>
+        </div>
+        <div class="field col-2">
+          <label>contato_comercial_email</label>
+          <div class="val">comercial@altanoroeste.com.br</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- CONFIG SISTEMA -->
+    <div class="card" id="sec-config">
+      <div class="card-title">⚙️ ConfigSistema — Dados da Empresa (Parâmetros) <span class="tag tag-new">NOVO</span></div>
+      <p style="font-size:13px; color: var(--muted); margin-bottom:16px;">Estes campos ficam na aba "Empresa" dos Parâmetros. São os valores padrão usados quando o orçamento não preenche o campo correspondente.</p>
+
+      <table>
+        <thead>
+          <tr><th>Campo ConfigSistema</th><th>Usado em</th><th>Fallback de</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>cnpj</td><td>Declarações</td><td>—</td></tr>
+          <tr><td>banco / agencia / conta_corrente</td><td>Seção 11: Dados Bancários</td><td>—</td></tr>
+          <tr><td>diretor_nome / funcao / email / cpf</td><td>Seção 12: Representante Legal</td><td>—</td></tr>
+          <tr><td>contato_comercial_*</td><td>Seção 19: Contato Comercial</td><td>—</td></tr>
+          <tr><td>declaracoes_padrao</td><td>Seção 4: Declarações</td><td>texto_topo_proposta</td></tr>
+          <tr><td>clausula_tributaria_padrao</td><td>Seção 8: Prazo</td><td>clausula_tributaria</td></tr>
+          <tr><td>reajustamento_padrao</td><td>Seção 14: Reajustamento</td><td>reajustamento</td></tr>
+          <tr><td>garantia_retencao_padrao_pct</td><td>Seção 15: Garantia</td><td>garantia_retencao_pct</td></tr>
+          <tr><td>garantia_devolucao_padrao_dias</td><td>Seção 15: Garantia</td><td>garantia_devolucao_dias</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" id="sec-textos-padrao">
+      <div class="card-title">📝 Textos Padrão (configuráveis em Parâmetros)</div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>declaracoes_padrao — Bullets legais</label>
+          <div class="val big" style="font-size:12px;">Que respeita integralmente as condições estabelecidas na TR.ENG.{numero}.<br>Que possui conhecimento das Políticas de Meio Ambiente…<br>… (12 bullets editáveis)</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>clausula_tributaria_padrao</label>
+          <div class="val big" style="font-size:12px;">Os preços apresentados nesta proposta contemplam a carga tributária atual… (IBS/CBS)</div>
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="field col-1">
+          <label>reajustamento_padrao</label>
+          <div class="val big" style="font-size:12px;">Os preços poderão ser atualizados anualmente… (IPCA/IGPM)</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function scrollTo(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Update active state
+  document.querySelectorAll('.section-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+</script>
+</body>
+</html>

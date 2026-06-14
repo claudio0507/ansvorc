@@ -12,8 +12,10 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models.bd_models import BdBDI, BdEstrutura
+from backend.models.extra_models import HistoricoDesconto, OrcamentoSegmento
 from backend.models.ficha_models import FichaProduto, FichaServico
 from backend.models.orcamento_models import Cliente, Orcamento, OrcamentoItem
+from backend.models.param_models import ParametroSeguimento
 from backend.schemas.orcamento_schemas import (
     ClienteCreate,
     ClienteRead,
@@ -21,6 +23,7 @@ from backend.schemas.orcamento_schemas import (
     ItemCalculadoRead,
     OrcamentoCreate,
     OrcamentoItemCreate,
+    OrcamentoItemDescricaoPatch,
     OrcamentoItemRead,
     OrcamentoItemUpdate,
     OrcamentoRead,
@@ -58,20 +61,70 @@ def _get_or_404(db: Session, model, pk: int):
     return obj
 
 
+_EDITAVEIS = frozenset({"rascunho", "reprovado"})
+
+
 def _guard_rascunho(orc: Orcamento) -> None:
-    if orc.status != "rascunho":
+    """Itens só editam em status editável (rascunho/reprovado). Demais congelam."""
+    if orc.status not in _EDITAVEIS:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Orçamento com status '{orc.status}' não pode ser editado. "
-            "Apenas orçamentos em 'rascunho' permitem alterações.",
+            detail=f"Orçamento com status '{orc.status}' está congelado e não "
+            "permite alterações de itens.",
         )
+
+
+def _aplicar_segmentos(db: Session, orc: Orcamento, segmentos: list[str]) -> None:
+    """Substitui em bloco os segmentos do orçamento. Valida contra ParametroSeguimento."""
+    if len(segmentos) != len(set(segmentos)):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Lista de segmentos contém duplicatas.",
+        )
+    validos = {
+        s.nome
+        for s in db.query(ParametroSeguimento)
+        .filter(ParametroSeguimento.ativo.is_(True))
+        .all()
+    }
+    for seg in segmentos:
+        if seg not in validos:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Segmento inválido: '{seg}'. Cadastre em Parâmetros.",
+            )
+    orc.segmentos.clear()  # delete-orphan remove os antigos
+    db.flush()
+    for seg in segmentos:
+        orc.segmentos.append(OrcamentoSegmento(seguimento=seg))
+
+
+def _gravar_historico_desconto(db: Session, orc: Orcamento) -> None:
+    """BLOCO 1.3 — grava o desconto concedido nesta versão ao aprovar."""
+    itens = db.query(OrcamentoItem).filter(OrcamentoItem.orcamento_id == orc.id).all()
+    subtotal_fat = sum(
+        (Decimal(i.preco_venda_total) for i in itens if i.bloco in FATURAVEIS),
+        Decimal("0"),
+    )
+    desc_frac = Decimal(orc.desconto_percentual or 0) / Decimal("100")
+    db.add(
+        HistoricoDesconto(
+            orcamento_id=orc.id,
+            versao=orc.versao,
+            desconto_percentual=orc.desconto_percentual,
+            subtotal_faturavel=_q4(subtotal_fat),
+            desconto_total=_q4(subtotal_fat * desc_frac),
+        )
+    )
 
 
 _TRANSICOES_STATUS: dict[str, frozenset[str]] = {
     "rascunho": frozenset({"enviado"}),
-    "enviado": frozenset({"aprovado", "rejeitado"}),
-    "aprovado": frozenset(),
-    "rejeitado": frozenset({"rascunho"}),
+    "enviado": frozenset({"aprovado", "reprovado", "perdida"}),
+    "aprovado": frozenset({"fechado", "perdida"}),
+    "reprovado": frozenset({"rascunho"}),
+    "perdida": frozenset(),
+    "fechado": frozenset(),
 }
 
 
@@ -193,8 +246,12 @@ def listar_orcamentos(
 )
 def criar_orcamento(body: OrcamentoCreate, db: Session = Depends(get_db)):
     _get_or_404(db, Cliente, body.cliente_id)
-    obj = Orcamento(**body.model_dump())
+    dados = body.model_dump()
+    segmentos = dados.pop("segmentos", [])
+    obj = Orcamento(**dados)
     db.add(obj)
+    db.flush()
+    _aplicar_segmentos(db, obj, segmentos)
     db.commit()
     db.refresh(obj)
     return obj
@@ -205,10 +262,72 @@ def obter_orcamento(id: int, db: Session = Depends(get_db)):
     return _get_or_404(db, Orcamento, id)
 
 
+@router.get("/orcamentos/{id}/proposta", tags=["orcamentos"])
+def obter_proposta(id: int, db: Session = Depends(get_db)) -> dict:
+    """FOR-077 — monta a proposta resolvendo fallback ConfigSistema.
+
+    Fonte única consumida por F2 (editor) e F3 (documento/PDF).
+    """
+    from backend.models.extra_models import ConfigSistema
+    from backend.schemas.extra_schemas import ConfigSistemaRead
+    from backend.services.proposta_fallback import montar_proposta
+
+    orc = _get_or_404(db, Orcamento, id)
+    config = db.query(ConfigSistema).order_by(ConfigSistema.id).first()
+    itens = (
+        db.query(OrcamentoItem).filter(OrcamentoItem.orcamento_id == id).all()
+    )
+    cliente = db.get(Cliente, orc.cliente_id)
+    if config is not None:
+        resolvidos = montar_proposta(orc, config)
+    else:
+        # Sem config no banco: ainda assim resolvemos os defaults literais do helper.
+        from types import SimpleNamespace
+        _config_stub = SimpleNamespace(
+            declaracoes_padrao=None,
+            clausula_tributaria_padrao=None,
+            reajustamento_padrao=None,
+            garantia_retencao_padrao_pct=None,
+            garantia_devolucao_padrao_dias=None,
+        )
+        resolvidos = montar_proposta(orc, _config_stub)
+    if resolvidos:
+        # Normaliza o percentual para o texto cliente: 5.00 → "5", 7.50 → "7.5".
+        pct = resolvidos["garantia_retencao_pct"]
+        pct_txt = f"{pct.normalize():f}" if isinstance(pct, Decimal) else str(pct)
+        garantia_texto = (
+            f"Retenção de {pct_txt}%, com devolução em "
+            f"{resolvidos['garantia_devolucao_dias']} dias após o termo de "
+            "encerramento."
+        )
+    else:
+        garantia_texto = ""
+    return {
+        "orcamento": OrcamentoRead.model_validate(orc).model_dump(mode="json"),
+        "config": (
+            ConfigSistemaRead.model_validate(config).model_dump(mode="json")
+            if config
+            else None
+        ),
+        "cliente": (
+            ClienteRead.model_validate(cliente).model_dump(mode="json")
+            if cliente
+            else None
+        ),
+        "itens": [
+            OrcamentoItemRead.model_validate(i).model_dump(mode="json") for i in itens
+        ],
+        "resolvidos": resolvidos,
+        "garantia_texto": garantia_texto,
+    }
+
+
 @router.put("/orcamentos/{id}", response_model=OrcamentoRead, tags=["orcamentos"])
 def atualizar_orcamento(id: int, body: OrcamentoUpdate, db: Session = Depends(get_db)):
     obj = _get_or_404(db, Orcamento, id)
     dados = body.model_dump(exclude_none=True)
+
+    segmentos = dados.pop("segmentos", None)
 
     if "status" in dados:
         novo = dados.pop("status")
@@ -216,65 +335,20 @@ def atualizar_orcamento(id: int, body: OrcamentoUpdate, db: Session = Depends(ge
         obj.status = novo
         if novo == "aprovado":
             obj.aprovado_em = datetime.now(timezone.utc)
+            _gravar_historico_desconto(db, obj)
 
     if dados:
         _guard_rascunho(obj)
         for k, v in dados.items():
             setattr(obj, k, v)
 
+    if segmentos is not None:
+        _guard_rascunho(obj)
+        _aplicar_segmentos(db, obj, segmentos)
+
     db.commit()
     db.refresh(obj)
     return obj
-
-
-@router.post(
-    "/orcamentos/{id}/aprovar",
-    response_model=OrcamentoRead,
-    tags=["orcamentos"],
-)
-def aprovar_orcamento(id: int, body: dict, db: Session = Depends(get_db)):
-    """BLOCO 1.4 — aprova exigindo observações internas; BLOCO 1.3 grava histórico de desconto.
-
-    Transição rascunho→enviado→aprovado em uma chamada. Congela o orçamento.
-    """
-    from backend.models.extra_models import HistoricoDesconto
-
-    orc = _get_or_404(db, Orcamento, id)
-    obs = (body or {}).get("observacoes_internas", "")
-    if not isinstance(obs, str) or not obs.strip():
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Observações internas são obrigatórias para aprovar.",
-        )
-    if orc.status not in ("rascunho", "enviado"):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Orçamento em '{orc.status}' não pode ser aprovado.",
-        )
-
-    # Histórico do desconto concedido nesta versão (BLOCO 1.3)
-    itens = db.query(OrcamentoItem).filter(OrcamentoItem.orcamento_id == id).all()
-    subtotal_fat = sum(
-        (Decimal(i.preco_venda_total) for i in itens if i.bloco in FATURAVEIS),
-        Decimal("0"),
-    )
-    desc_frac = Decimal(orc.desconto_percentual) / Decimal("100")
-    db.add(
-        HistoricoDesconto(
-            orcamento_id=orc.id,
-            versao=orc.versao,
-            desconto_percentual=orc.desconto_percentual,
-            subtotal_faturavel=_q4(subtotal_fat),
-            desconto_total=_q4(subtotal_fat * desc_frac),
-        )
-    )
-
-    orc.observacoes_internas = obs.strip()
-    orc.status = "aprovado"
-    orc.aprovado_em = datetime.now(timezone.utc)
-    db.commit()
-    db.refresh(orc)
-    return orc
 
 
 @router.get(
@@ -341,9 +415,14 @@ def reabrir_orcamento(id: int, db: Session = Depends(get_db)):
         versao=origem.versao + 1,
         orcamento_origem_id=origem.id,
         created_by=origem.created_by,
+        data_limite=origem.data_limite,
     )
     db.add(nova)
     db.flush()
+
+    # Segmentos (classificação) acompanham a nova versão.
+    for seg in origem.segmentos:
+        nova.segmentos.append(OrcamentoSegmento(seguimento=seg.seguimento))
 
     for it in origem.itens:
         db.add(
@@ -423,13 +502,27 @@ def _custo_e_unidade_da_ficha(db: Session, body: OrcamentoItemCreate) -> tuple:
                 unidade = um.sigla
         return custo, unidade, "produto"
     if body.ficha_produto_id:
+        from backend.models.param_models import UnidadeMedida
+        from backend.models.produto_models import ItemFicha, Produto
+
         f = _get_or_404(db, FichaProduto, body.ficha_produto_id)
         if not f.possui_ficha:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Produto sem ficha (possui_ficha=False) não pode ser orçado.",
             )
-        return Decimal(f.custo_total), f.unidade, "produto"
+        unidade = f.unidade
+        prod_vinc = (
+            db.query(Produto)
+            .join(ItemFicha, ItemFicha.produto_id == Produto.id)
+            .filter(ItemFicha.ficha_produto_id == f.id)
+            .first()
+        )
+        if prod_vinc and prod_vinc.unidade_id:
+            um = db.get(UnidadeMedida, prod_vinc.unidade_id)
+            if um:
+                unidade = um.sigla
+        return Decimal(f.custo_total), unidade, "produto"
     if body.bloco == "operacional":
         # Custo do bd_ESTRUTURA_OPERACIONAL pela descrição (item)
         est = (
@@ -515,6 +608,38 @@ def atualizar_item(
         dados.pop("custo_direto_unitario")
     for k, v in dados.items():
         setattr(item, k, v)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.patch(
+    "/orcamentos/{id}/itens/{item_id}",
+    response_model=OrcamentoItemRead,
+    tags=["orcamentos"],
+)
+def patch_descricao_item(
+    id: int,
+    item_id: int,
+    payload: OrcamentoItemDescricaoPatch,
+    db: Session = Depends(get_db),
+):
+    """FOR-077 — edita a descrição exibida ao cliente (descricao_cliente).
+
+    Preserva `descricao` (composição). Só em status editável (rascunho/reprovado).
+    """
+    orc = _get_or_404(db, Orcamento, id)
+    _guard_rascunho(orc)
+    item = (
+        db.query(OrcamentoItem)
+        .filter(OrcamentoItem.id == item_id, OrcamentoItem.orcamento_id == id)
+        .first()
+    )
+    if not item:
+        raise HTTPException(
+            status_code=404, detail="Item não encontrado neste orçamento"
+        )
+    item.descricao_cliente = payload.descricao
     db.commit()
     db.refresh(item)
     return item

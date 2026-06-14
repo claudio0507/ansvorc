@@ -4,12 +4,11 @@ import { toast } from "sonner"
 import {
   ArrowLeftIcon,
   CalculatorIcon,
-  CheckIcon,
   ArrowsClockwiseIcon,
   TrashIcon,
   PlusIcon,
   FileTextIcon,
-  XIcon,
+  PencilSimpleIcon,
 } from "@phosphor-icons/react"
 
 import { AddItemModal } from "~/components/add-item-modal"
@@ -17,15 +16,7 @@ import { StatusBadge } from "~/components/status-badge"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "~/components/ui/dialog"
 import { Input } from "~/components/ui/input"
-import { Label } from "~/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -33,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select"
-import { Textarea } from "~/components/ui/textarea"
 import {
   Table,
   TableBody,
@@ -86,6 +76,24 @@ const BLOCOS: {
 ]
 const MOD_FAT_OPTS = ["BDI-MAT+MO", "BDI-MO", "BDI+ICMS", "FAT DIR SIMP"]
 
+// Máquina de transição de status (6 estados).
+const TRANSICOES: Record<string, string[]> = {
+  rascunho: ["enviado"],
+  enviado: ["aprovado", "reprovado", "perdida"],
+  aprovado: ["fechado", "perdida"],
+  reprovado: ["rascunho"],
+  perdida: [],
+  fechado: [],
+}
+const STATUS_LABEL: Record<string, string> = {
+  rascunho: "Rascunho",
+  enviado: "Enviado",
+  aprovado: "Aprovado",
+  reprovado: "Reprovado",
+  perdida: "Perdida",
+  fechado: "Fechado",
+}
+
 export default function OrcamentoEditor() {
   const { id } = useParams()
   const orcId = Number(id)
@@ -99,11 +107,9 @@ export default function OrcamentoEditor() {
   const [addBloco, setAddBloco] = useState<string | null>(null)
   const [calculando, setCalculando] = useState(false)
   const [desconto, setDesconto] = useState("0")
-  const [aprovarOpen, setAprovarOpen] = useState(false)
-  const [obsAprovacao, setObsAprovacao] = useState("")
   const [historico, setHistorico] = useState<any[]>([])
 
-  const readonly = orc && orc.status !== "rascunho"
+  const readonly = orc && !["rascunho", "reprovado"].includes(orc.status)
 
   const carregar = useCallback(async () => {
     setCarregando(true)
@@ -180,18 +186,13 @@ export default function OrcamentoEditor() {
     }
   }
 
-  async function confirmarAprovacao() {
-    if (!obsAprovacao.trim()) {
-      toast.error("Observações internas são obrigatórias para aprovar.")
-      return
-    }
+  async function mudarStatus(novo: string) {
     try {
-      const atualizado = await orcamentoApi.aprovar(orcId, obsAprovacao.trim())
+      const atualizado = await orcamentoApi.update(orcId, { status: novo })
       setOrc(atualizado)
-      setAprovarOpen(false)
-      toast.success("Orçamento aprovado e congelado")
-    } catch (err: any) {
-      toast.error(`Erro: ${err.message}`)
+      toast.success(`Status: ${STATUS_LABEL[novo] ?? novo}`)
+    } catch (e: any) {
+      toast.error(`Erro: ${e.message}`)
     }
   }
 
@@ -200,17 +201,6 @@ export default function OrcamentoEditor() {
       const nova = await orcamentoApi.reabrir(orcId)
       toast.success(`Nova versão (v${nova.versao}) criada`)
       navigate(`/orcamentos/${nova.id}`)
-    } catch (err: any) {
-      toast.error(`Erro: ${err.message}`)
-    }
-  }
-
-  async function rejeitar() {
-    if (!confirm("Rejeitar este orçamento? Ele será marcado como rejeitado e poderá voltar a rascunho.")) return
-    try {
-      await orcamentoApi.update(orcId, { status: "rejeitado" })
-      toast.success("Orçamento rejeitado")
-      carregar()
     } catch (err: any) {
       toast.error(`Erro: ${err.message}`)
     }
@@ -260,22 +250,32 @@ export default function OrcamentoEditor() {
               <FileTextIcon className="size-4" /> Proposta
             </Link>
           </Button>
-          {!readonly ? (
-            <>
-              <Button size="sm" onClick={calcular} disabled={calculando}>
-                <CalculatorIcon className="size-4" /> {calculando ? "Calculando…" : "Calcular"}
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => setAprovarOpen(true)}>
-                <CheckIcon className="size-4" /> Aprovar
-              </Button>
-              <Button size="sm" variant="ghost" className="text-destructive" onClick={rejeitar}>
-                <XIcon className="size-4" /> Rejeitar
-              </Button>
-            </>
-          ) : (
+          <Button asChild size="sm" variant="ghost">
+            <Link to={`/orcamentos/${orcId}/proposta/editar`}>
+              <PencilSimpleIcon className="size-4" /> Editar Proposta
+            </Link>
+          </Button>
+          {!readonly && (
+            <Button size="sm" onClick={calcular} disabled={calculando}>
+              <CalculatorIcon className="size-4" /> {calculando ? "Calculando…" : "Calcular"}
+            </Button>
+          )}
+          {readonly && (
             <Button size="sm" variant="secondary" onClick={novaVersao}>
               <ArrowsClockwiseIcon className="size-4" /> Nova Versão
             </Button>
+          )}
+          {TRANSICOES[orc.status]?.length > 0 && (
+            <Select value="" onValueChange={mudarStatus}>
+              <SelectTrigger className="h-8 w-auto gap-2">
+                <SelectValue placeholder="Mudar status…" />
+              </SelectTrigger>
+              <SelectContent>
+                {TRANSICOES[orc.status].map((s) => (
+                  <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         </div>
       </div>
@@ -347,6 +347,7 @@ export default function OrcamentoEditor() {
                                     step="any"
                                     className="h-7 w-24 text-right text-[0.6875rem] tabular-nums"
                                     onBlur={(e) => salvarQuantidade(it.id, e.target.value, it.quantidade)}
+                                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); (e.target as HTMLInputElement).blur(); calcular() } }}
                                   />
                                 )}
                               </TableCell>
@@ -364,6 +365,7 @@ export default function OrcamentoEditor() {
                                         step="0.1"
                                         className="h-7 w-14 text-right text-[0.6875rem] tabular-nums"
                                         onBlur={(e) => salvarCampo(it.id, "margem_lucro", e.target.value, Number(it.margem_lucro))}
+                                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); (e.target as HTMLInputElement).blur(); calcular() } }}
                                       />
                                       <span className="text-muted-foreground">%</span>
                                     </div>
@@ -390,7 +392,7 @@ export default function OrcamentoEditor() {
                               <TableCell className="px-2 py-0.5 text-right">{fmtBRL(it.custo_direto_unitario)}</TableCell>
                               <TableCell className="px-2 py-0.5 text-right">
                                 {hasPrices ? (
-                                  <span className="font-medium">{fmtBRL(it.preco_venda_unitario)}</span>
+                                  <span className="font-medium">{fmtBRL(it.preco_venda_unitario_final || it.preco_venda_unitario)}</span>
                                 ) : (
                                   <span className="text-muted-foreground">—</span>
                                 )}
@@ -437,6 +439,7 @@ export default function OrcamentoEditor() {
                   step="0.01"
                   value={desconto}
                   onChange={(e) => setDesconto(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); salvarDesconto().then(calcular) } }}
                   className="h-8"
                 />
                 <Button size="sm" variant="secondary" onClick={salvarDesconto}>OK</Button>
@@ -511,33 +514,6 @@ export default function OrcamentoEditor() {
           setAddBloco(null)
         }}
       />
-
-      {/* BLOCO 1.4 — modal de aprovação com observações internas obrigatórias */}
-      <Dialog open={aprovarOpen} onOpenChange={setAprovarOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Aprovar Orçamento</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label>Observações Internas *</Label>
-            <Textarea
-              rows={4}
-              placeholder="Registre o motivo do desconto/margem para rastreabilidade interna…"
-              value={obsAprovacao}
-              onChange={(e) => setObsAprovacao(e.target.value)}
-            />
-            <p className="text-muted-foreground text-xs">
-              Não aparece na proposta enviada ao cliente. Ao aprovar, os valores são congelados.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setAprovarOpen(false)}>Cancelar</Button>
-            <Button onClick={confirmarAprovacao} disabled={!obsAprovacao.trim()}>
-              Aprovar e congelar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   )
 }

@@ -4,10 +4,10 @@ margem_lucro é PERCENTUAL (10 = 10%, DECIMAL(5,2)). Custos de itens faturáveis
 da ficha (não enviados pelo cliente); apenas itens manuais informam custo.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from backend.schemas.validators import normalizar_texto, normalizar_uf
 
@@ -82,7 +82,9 @@ _UF_VALIDAS = {
     "SE",
     "AC",
 }
-_STATUS_VALIDOS = {"rascunho", "enviado", "aprovado", "rejeitado"}
+_STATUS_VALIDOS = {
+    "rascunho", "enviado", "aprovado", "reprovado", "perdida", "fechado",
+}
 _MOD_FAT_VALIDAS = {"BDI-MO", "BDI-MAT+MO", "BDI+ICMS", "FAT DIR SIMP", "-"}
 _BLOCOS_VALIDOS = {"servicos", "produtos", "operacional", "excepcionais"}
 _TIPO_ORIGEM_VALIDOS = {"servico", "produto", "operacional", "manual"}
@@ -105,6 +107,8 @@ class OrcamentoCreate(BaseModel):
     beneficio_reidi: bool = False
     desconto_percentual: Decimal = Decimal("0")
     orcamentista_id: int | None = None  # BLOCO 2.4
+    data_limite: date | None = None
+    segmentos: list[str] = []
 
     _norm_obra = field_validator("obra")(normalizar_texto)
     _valida_uf = field_validator("uf_execucao")(_check_uf)
@@ -128,7 +132,23 @@ class OrcamentoUpdate(BaseModel):
     prazo_entrega: str | None = None
     tipo_frete: str | None = None
     condicoes_pagamento: str | None = None
+    texto_topo_proposta: str | None = None
     texto_livre_proposta: str | None = None
+    data_limite: date | None = None
+    # BLOCO 2.5 — campos da proposta comercial (FOR 077)
+    escopo: str | None = None
+    modalidade: str | None = None
+    faturamento_direto: str | None = None
+    medicao_pagamento: str | None = None
+    clausula_tributaria: str | None = None
+    reajustamento: str | None = None
+    garantia_retencao_pct: Decimal | None = None
+    garantia_devolucao_dias: int | None = None
+    entrega_as_built: str | None = None
+    testemunha_nome: str | None = None
+    testemunha_email: str | None = None
+    testemunha_cpf: str | None = None
+    segmentos: list[str] | None = None
 
     _norm_obra = field_validator("obra")(normalizar_texto)
     _valida_uf = field_validator("uf_execucao")(_check_uf)
@@ -170,7 +190,32 @@ class OrcamentoRead(BaseModel):
     prazo_entrega: str | None = None
     tipo_frete: str | None = None
     condicoes_pagamento: str | None = None
+    texto_topo_proposta: str | None = None
     texto_livre_proposta: str | None = None
+    data_limite: date | None = None
+    # BLOCO 2.5 — campos da proposta comercial (FOR 077)
+    escopo: str | None = None
+    modalidade: str | None = None
+    faturamento_direto: str | None = None
+    medicao_pagamento: str | None = None
+    clausula_tributaria: str | None = None
+    reajustamento: str | None = None
+    garantia_retencao_pct: Decimal | None = None
+    garantia_devolucao_dias: int | None = None
+    entrega_as_built: str | None = None
+    testemunha_nome: str | None = None
+    testemunha_email: str | None = None
+    testemunha_cpf: str | None = None
+    segmentos: list[str] = []
+
+    @field_validator("segmentos", mode="before")
+    @classmethod
+    def _serializa_segmentos(cls, v):
+        # Aceita relationship (list[OrcamentoSegmento]) ou list[str] já pronta.
+        if v and not isinstance(v[0], str):
+            return [s.seguimento for s in v]
+        return v or []
+
     total_custo_direto: Decimal
     total_proposta: Decimal
     margem_liquida_real: Decimal
@@ -267,6 +312,12 @@ class OrcamentoItemUpdate(BaseModel):
         if v is not None and (v < Decimal("0") or v >= Decimal("100")):
             raise ValueError("margem_lucro deve estar entre 0 e 100 (percentual)")
         return v
+
+
+class OrcamentoItemDescricaoPatch(BaseModel):
+    """PATCH da descrição exibida ao cliente. extra='forbid' → 422 em campo estranho."""
+    model_config = ConfigDict(extra="forbid")
+    descricao: str = Field(min_length=1)
 
 
 class OrcamentoItemRead(BaseModel):

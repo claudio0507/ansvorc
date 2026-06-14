@@ -58,7 +58,7 @@ router = APIRouter()
 
 def _get_or_404(db: Session, model, id: int):
     obj = db.get(model, id)
-    if not obj:
+    if not obj or not getattr(obj, "ativo", True):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Não encontrado"
         )
@@ -70,7 +70,7 @@ def _get_or_404(db: Session, model, id: int):
 
 @router.get("/bd-bdi", response_model=list[BdBDIRead], tags=["bd_BDI"])
 def listar_bdi(uf: str | None = None, db: Session = Depends(get_db)):
-    q = db.query(BdBDI)
+    q = db.query(BdBDI).filter(BdBDI.ativo == True)
     if uf:
         q = q.filter(BdBDI.uf == uf.strip().upper())
     return q.all()
@@ -125,7 +125,7 @@ def deletar_bdi(id: int, db: Session = Depends(get_db)):
 
 @router.get("/bd-rh", response_model=list[BdRHRead], tags=["bd_RH"])
 def listar_rh(db: Session = Depends(get_db)):
-    return db.query(BdRH).all()
+    return db.query(BdRH).filter(BdRH.ativo == True).all()
 
 
 @router.post(
@@ -172,7 +172,7 @@ def deletar_rh(id: int, db: Session = Depends(get_db)):
 
 @router.get("/bd-epi", response_model=list[BdEPIRead], tags=["bd_EPI"])
 def listar_epi(db: Session = Depends(get_db)):
-    return db.query(BdEPI).all()
+    return db.query(BdEPI).filter(BdEPI.ativo == True).all()
 
 
 @router.post(
@@ -221,7 +221,7 @@ def deletar_epi(id: int, db: Session = Depends(get_db)):
     "/bd-ferramental", response_model=list[BdFerramentalRead], tags=["bd_FERRAMENTAL"]
 )
 def listar_ferramental(seguimento: str | None = None, db: Session = Depends(get_db)):
-    q = db.query(BdFerramental)
+    q = db.query(BdFerramental).filter(BdFerramental.ativo == True)
     if seguimento:
         q = q.filter(BdFerramental.seguimento == seguimento.strip().upper())
     return q.all()
@@ -281,7 +281,7 @@ def deletar_ferramental(id: int, db: Session = Depends(get_db)):
 
 @router.get("/bd-frotas", response_model=list[BdFrotasRead], tags=["bd_FROTAS"])
 def listar_frotas(seguimento: str | None = None, db: Session = Depends(get_db)):
-    q = db.query(BdFrotas)
+    q = db.query(BdFrotas).filter(BdFrotas.ativo == True)
     if seguimento:
         q = q.filter(BdFrotas.seguimento == seguimento.strip().upper())
     return q.all()
@@ -335,7 +335,7 @@ def deletar_frotas(id: int, db: Session = Depends(get_db)):
     "/bd-materiais", response_model=list[BdMateriaisRead], tags=["bd_MATERIAIS"]
 )
 def listar_materiais(db: Session = Depends(get_db)):
-    return db.query(BdMateriais).all()
+    return db.query(BdMateriais).filter(BdMateriais.ativo == True).all()
 
 
 @router.post(
@@ -390,7 +390,7 @@ def deletar_materiais(id: int, db: Session = Depends(get_db)):
     tags=["bd_ESTRUTURA_OPERACIONAL"],
 )
 def listar_estrutura(db: Session = Depends(get_db)):
-    return db.query(BdEstrutura).all()
+    return db.query(BdEstrutura).filter(BdEstrutura.ativo == True).all()
 
 
 @router.post(
@@ -451,7 +451,7 @@ def deletar_estrutura(id: int, db: Session = Depends(get_db)):
 
 @router.get("/bd-despesas", response_model=list[BdDespesasRead], tags=["bd_DESPESAS"])
 def listar_despesas(seguimento: str | None = None, db: Session = Depends(get_db)):
-    q = db.query(BdDespesas)
+    q = db.query(BdDespesas).filter(BdDespesas.ativo == True)
     if seguimento:
         q = q.filter(BdDespesas.seguimento == seguimento.strip().upper())
     return q.all()

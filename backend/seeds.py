@@ -287,11 +287,80 @@ def seed_parametros(db):
     )
 
 
+_FOR077_CLAUSULA_TRIBUTARIA = (
+    "Os preços apresentados nesta proposta contemplam a carga tributária atual "
+    "exigida pela legislação pertinente. Eventuais contratos com execuções ou "
+    "vigência posterior a 31/12/2026 estarão sujeitos a revisão e renegociação "
+    "obrigatória, visando o repasse dos impactos tributários causados pela "
+    "transição da Reforma Tributária (IBS/CBS)."
+)
+
+_FOR077_REAJUSTAMENTO = (
+    "Os preços poderão ser atualizados anualmente, mediante aplicação do índice de "
+    "menor variação acumulada no período entre o Índice Nacional de Preços ao "
+    "Consumidor Amplo – IPCA ou o Índice Geral de Preços do Mercado – IGPM. A "
+    "data-base para fins de reajuste será a data de assinatura do contrato."
+)
+
+_FOR077_DECLARACOES = "\n".join(
+    [
+        "Que respeita integralmente as condições estabelecidas na TR.ENG.{numero}.",
+        "Que possui conhecimento das Políticas de Meio Ambiente, corporativa sobre "
+        "Mudanças Climáticas e de Responsabilidade Social.",
+        "Que possui conhecimento e que cumpre a legislação anticorrupção e, em "
+        "especial a Lei 12.846/13;",
+        "Que executará os serviços de acordo com o projeto e suas modificações, ordem "
+        "de serviço, e de acordo com as normas e especificações técnicas;",
+        "Que se obriga a dispor, para emprego imediato, de todos os recursos "
+        "necessários para a execução dos serviços contratados, no prazo estipulado, "
+        "sem custos adicionais;",
+        "Que tem pleno conhecimento das condições locais necessárias para a formação "
+        "dos preços;",
+        "Que não possui em seu quadro de empregados, menor de 18 anos em trabalho "
+        "noturno, insalubre ou perigoso, e, ainda, não possuir empregado menor de 16 "
+        "anos;",
+        "Que a proponente não mantém qualquer relação ou vínculo de qualquer natureza "
+        "com a Contratante ou empresas do mesmo Conglomerado econômico a qual "
+        "pertence;",
+        "Que conhece o Código de Ética e Integridade, constantes nos documentos "
+        "recebidos.",
+        "Se comprometer a estar instalado e pronto para o início dos serviços no prazo "
+        "imposto no termo de referência;",
+        "Que em seu preço estão inclusas todas as despesas com a prestação dos "
+        "serviços, equipamentos, mão-de-obra, tributos, encargos, impostos, lucro, e "
+        "as demais despesas diretas e indiretas que possam recair sobre a presente "
+        "prestação de serviços;",
+        "Que executará todos os serviços de acordo com o preço e o prazo, estipulados "
+        "nesta carta;",
+        "Que tem pleno conhecimento sobre a retenção de X% das medições sobre o valor "
+        "bruto da medição a título de caução.",
+    ]
+)
+
+
 def seed_extra(db):
     """Config do sistema + orçamentista exemplo (v2)."""
     from backend.models.extra_models import ConfigSistema, UsuarioOrcamentista
 
-    db.add(ConfigSistema(nome_empresa="ALTA NOROESTE"))
+    db.add(
+        ConfigSistema(
+            nome_empresa="ALTA NOROESTE",
+            cnpj="20.945.724/0001-15",
+            banco="Bradesco",
+            agencia="0110",
+            conta_corrente="0287852-6",
+            diretor_cpf="277.540.838-92",
+            contato_comercial_nome="Milaini Carvalho Miranda",
+            contato_comercial_funcao="Comercial",
+            contato_comercial_fone="(18) 99683-6472",
+            contato_comercial_email="comercial@altanoroeste.com.br",
+            garantia_retencao_padrao_pct=Decimal("5"),
+            garantia_devolucao_padrao_dias=60,
+            clausula_tributaria_padrao=_FOR077_CLAUSULA_TRIBUTARIA,
+            reajustamento_padrao=_FOR077_REAJUSTAMENTO,
+            declaracoes_padrao=_FOR077_DECLARACOES,
+        )
+    )
     db.add(
         UsuarioOrcamentista(
             nome_completo="Cláudio Rodrigo",

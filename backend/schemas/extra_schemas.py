@@ -1,5 +1,7 @@
 """Schemas: orçamentistas, config do sistema (nome empresa / logo)."""
 
+from decimal import Decimal
+
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from backend.schemas.validators import normalizar_texto
@@ -39,7 +41,45 @@ class ConfigSistemaRead(BaseModel):
     id: int
     nome_empresa: str
     logo_path: str | None
+    diretor_nome: str | None = None
+    diretor_funcao: str | None = None
+    diretor_telefone: str | None = None
+    diretor_email: str | None = None
+    diretor_cpf: str | None = None
+    banco: str | None = None
+    agencia: str | None = None
+    conta_corrente: str | None = None
+    cnpj: str | None = None
+    contato_comercial_nome: str | None = None
+    contato_comercial_funcao: str | None = None
+    contato_comercial_fone: str | None = None
+    contato_comercial_email: str | None = None
+    clausula_tributaria_padrao: str | None = None
+    reajustamento_padrao: str | None = None
+    garantia_retencao_padrao_pct: Decimal | None = None
+    garantia_devolucao_padrao_dias: int | None = None
+    declaracoes_padrao: str | None = None
 
 
 class ConfigSistemaUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     nome_empresa: str | None = None
+    diretor_nome: str | None = None
+    diretor_funcao: str | None = None
+    diretor_telefone: str | None = None
+    diretor_email: str | None = None
+    diretor_cpf: str | None = None
+    banco: str | None = None
+    agencia: str | None = None
+    conta_corrente: str | None = None
+    cnpj: str | None = None
+    contato_comercial_nome: str | None = None
+    contato_comercial_funcao: str | None = None
+    contato_comercial_fone: str | None = None
+    contato_comercial_email: str | None = None
+    clausula_tributaria_padrao: str | None = None
+    reajustamento_padrao: str | None = None
+    garantia_retencao_padrao_pct: Decimal | None = None
+    garantia_devolucao_padrao_dias: int | None = None
+    declaracoes_padrao: str | None = None

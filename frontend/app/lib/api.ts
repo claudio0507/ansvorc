@@ -210,8 +210,6 @@ export const orcamentoApi = {
   update: (id: number, b: unknown) => api.put<any>(`/orcamentos/${id}`, b),
   delete: (id: number) => api.delete(`/orcamentos/${id}`),
   reabrir: (id: number) => api.post<any>(`/orcamentos/${id}/reabrir`),
-  aprovar: (id: number, observacoes_internas: string) =>
-    api.post<any>(`/orcamentos/${id}/aprovar`, { observacoes_internas }),
   historicoDescontos: (id: number) =>
     api.get<any[]>(`/orcamentos/${id}/historico-descontos`),
   listItens: (id: number) => api.get<any[]>(`/orcamentos/${id}/itens`),
@@ -220,6 +218,9 @@ export const orcamentoApi = {
     api.put<any>(`/orcamentos/${id}/itens/${iid}`, b),
   deleteItem: (id: number, iid: number) => api.delete(`/orcamentos/${id}/itens/${iid}`),
   calcular: (id: number) => api.post<any>(`/orcamentos/${id}/calcular`),
+  getProposta: (id: number) => api.get<any>(`/orcamentos/${id}/proposta`),
+  patchDescricaoItem: (id: number, iid: number, descricao: string) =>
+    api.patch<any>(`/orcamentos/${id}/itens/${iid}`, { descricao }),
 }
 
 export const fichaApi = {
@@ -343,7 +344,7 @@ export const biApi = {
   async precos(tipo: string, itemId: number, meses: number) {
     const token = auth.getAccessToken()
     const resp = await fetch(
-      `${BASE}/api/v1/bi/precos?tipo=${tipo}&item_id=${itemId}&meses=${meses}`,
+      `${BASE_URL}/bi/precos?tipo=${tipo}&item_id=${itemId}&meses=${meses}`,
       { headers: token ? { Authorization: `Bearer ${token}` } : {} },
     )
     if (!resp.ok) {
@@ -352,4 +353,13 @@ export const biApi = {
     }
     return resp.json()
   },
+}
+
+export const notificacaoApi = {
+  list: () => api.get<{ total: number; notificacoes: any[] }>("/notificacoes"),
+}
+
+export const prazoApi = {
+  list: (mes?: string) =>
+    api.get<any[]>(`/prazos${mes ? `?mes=${encodeURIComponent(mes)}` : ""}`),
 }

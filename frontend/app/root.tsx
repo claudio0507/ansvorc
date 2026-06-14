@@ -10,7 +10,7 @@ import { applyStoredTheme } from "~/lib/theme"
 applyStoredTheme()
 
 const FAVICON =
-  "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23c32a30' d='M12 2L2 7l10 5 10-5-10-5zm0 10L2 7v10l10 5 10-5V7l-10 5z'/></svg>"
+  "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23c32a30' d='M12 3 A9 9 0 1 1 4 8 L12 12 Z'/><path fill='%23c32a30' d='M12 12 L4 8 A9 9 0 0 1 12 3 Z' transform='translate(1.5 -1.5)'/></svg>"
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (

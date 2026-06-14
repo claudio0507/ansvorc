@@ -49,7 +49,7 @@ router = APIRouter()
 
 def _get_or_404(db: Session, model, id: int):
     obj = db.get(model, id)
-    if not obj:
+    if not obj or not getattr(obj, "ativo", True):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Não encontrado"
         )
@@ -67,7 +67,7 @@ def _422(detail: str):
     "/fichas-equipe", response_model=list[FichaEquipeRead], tags=["fichas_equipe"]
 )
 def listar_fichas_equipe(seguimento: str | None = None, db: Session = Depends(get_db)):
-    q = db.query(FichaEquipe)
+    q = db.query(FichaEquipe).filter(FichaEquipe.ativo == True)
     if seguimento:
         q = q.filter(FichaEquipe.seguimento == seguimento.strip().upper())
     return q.all()
@@ -194,7 +194,7 @@ def remover_item_equipe(ficha_id: int, item_id: int, db: Session = Depends(get_d
     "/fichas-produto", response_model=list[FichaProdutoRead], tags=["fichas_produto"]
 )
 def listar_fichas_produto(db: Session = Depends(get_db)):
-    return db.query(FichaProduto).all()
+    return db.query(FichaProduto).filter(FichaProduto.ativo == True).all()
 
 
 @router.post(
@@ -322,7 +322,7 @@ def remover_item_produto(ficha_id: int, item_id: int, db: Session = Depends(get_
     "/fichas-servico", response_model=list[FichaServicoRead], tags=["fichas_servico"]
 )
 def listar_fichas_servico(seguimento: str | None = None, db: Session = Depends(get_db)):
-    q = db.query(FichaServico)
+    q = db.query(FichaServico).filter(FichaServico.ativo == True)
     if seguimento:
         q = q.filter(FichaServico.seguimento == seguimento.strip().upper())
     return q.all()

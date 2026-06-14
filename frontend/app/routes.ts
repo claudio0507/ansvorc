@@ -11,6 +11,7 @@ export default [
     route("orcamentos/novo", "routes/orcamentos.novo.tsx"),
     route("orcamentos/:id", "routes/orcamentos.$id.tsx"),
     route("orcamentos/:id/proposta", "routes/proposta.tsx"),
+    route("orcamentos/:id/proposta/editar", "routes/proposta.editar.$id.tsx"),
     route("clientes", "routes/clientes.tsx"),
     route("produtos-componentes", "routes/produtos-componentes.tsx"),
     route("parametros", "routes/parametros.tsx"),

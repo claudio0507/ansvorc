@@ -4,13 +4,15 @@ Regras: snapshot imutável pós-aprovado; versionamento via orcamento_origem_id;
 desconto sobre o total rateado nas linhas; produtos orçáveis sem serviço.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     DECIMAL,
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Integer,
@@ -21,6 +23,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.database import Base
+
+if TYPE_CHECKING:
+    from backend.models.extra_models import OrcamentoSegmento
 
 
 class Cliente(Base):
@@ -61,7 +66,7 @@ class Orcamento(Base):
         DECIMAL(5, 2), nullable=False, default=Decimal("0")
     )
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="rascunho")
-    # rascunho | enviado | aprovado | rejeitado
+    # rascunho | enviado | aprovado | reprovado | perdida | fechado
     versao: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     orcamento_origem_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("orcamentos.id"), nullable=True
@@ -82,10 +87,25 @@ class Orcamento(Base):
     )
     # BLOCO 2.1/2.3 — textos parametrizáveis da proposta
     validade_proposta: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    data_limite: Mapped[date | None] = mapped_column(Date, nullable=True)
     prazo_entrega: Mapped[str | None] = mapped_column(String(50), nullable=True)
     tipo_frete: Mapped[str | None] = mapped_column(String(30), nullable=True)
     condicoes_pagamento: Mapped[str | None] = mapped_column(Text, nullable=True)
+    texto_topo_proposta: Mapped[str | None] = mapped_column(Text, nullable=True)
     texto_livre_proposta: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # BLOCO 2.5 — campos da proposta comercial (FOR 077)
+    escopo: Mapped[str | None] = mapped_column(Text, nullable=True)
+    modalidade: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    faturamento_direto: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    medicao_pagamento: Mapped[str | None] = mapped_column(Text, nullable=True)
+    clausula_tributaria: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reajustamento: Mapped[str | None] = mapped_column(Text, nullable=True)
+    garantia_retencao_pct: Mapped[Decimal | None] = mapped_column(DECIMAL(5, 2), nullable=True)
+    garantia_devolucao_dias: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    entrega_as_built: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    testemunha_nome: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    testemunha_email: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    testemunha_cpf: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Totais de leitura rápida (preenchidos pelo /calcular)
     total_custo_direto: Mapped[Decimal] = mapped_column(
@@ -103,6 +123,11 @@ class Orcamento(Base):
     )
     itens: Mapped[list["OrcamentoItem"]] = relationship(
         "OrcamentoItem", back_populates="orcamento", cascade="all, delete-orphan"
+    )
+    segmentos: Mapped[list["OrcamentoSegmento"]] = relationship(
+        "OrcamentoSegmento",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
 
