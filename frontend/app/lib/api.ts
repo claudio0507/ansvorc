@@ -344,7 +344,7 @@ export const biApi = {
   async precos(tipo: string, itemId: number, meses: number) {
     const token = auth.getAccessToken()
     const resp = await fetch(
-      `${BASE}/api/v1/bi/precos?tipo=${tipo}&item_id=${itemId}&meses=${meses}`,
+      `${BASE_URL}/bi/precos?tipo=${tipo}&item_id=${itemId}&meses=${meses}`,
       { headers: token ? { Authorization: `Bearer ${token}` } : {} },
     )
     if (!resp.ok) {
