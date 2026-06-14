@@ -8,6 +8,7 @@ import {
   TrashIcon,
   PlusIcon,
   FileTextIcon,
+  PencilSimpleIcon,
 } from "@phosphor-icons/react"
 
 import { AddItemModal } from "~/components/add-item-modal"
@@ -247,6 +248,11 @@ export default function OrcamentoEditor() {
           <Button asChild size="sm" variant="ghost">
             <Link to={`/orcamentos/${orcId}/proposta`}>
               <FileTextIcon className="size-4" /> Proposta
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="ghost">
+            <Link to={`/orcamentos/${orcId}/proposta/editar`}>
+              <PencilSimpleIcon className="size-4" /> Editar Proposta
             </Link>
           </Button>
           {!readonly && (
