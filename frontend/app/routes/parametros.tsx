@@ -147,34 +147,36 @@ function CrudSimples({ load, create, update, del, campos, colunas }: ListaSimple
   )
 }
 
+// Campos do ConfigSistema editáveis na aba Empresa (espelham ConfigSistemaUpdate).
+const CAMPOS_EMPRESA = [
+  "nome_empresa", "cnpj",
+  "diretor_nome", "diretor_funcao", "diretor_cpf", "diretor_telefone", "diretor_email",
+  "contato_comercial_nome", "contato_comercial_funcao", "contato_comercial_fone", "contato_comercial_email",
+  "banco", "agencia", "conta_corrente",
+  "declaracoes_padrao", "clausula_tributaria_padrao", "reajustamento_padrao",
+  "garantia_retencao_padrao_pct", "garantia_devolucao_padrao_dias",
+]
+
+// Monta o estado do formulário a partir da config (campos null viram "").
+function formDaConfig(c: any): Record<string, string> {
+  const init: Record<string, string> = {}
+  for (const k of CAMPOS_EMPRESA) init[k] = c[k] != null ? String(c[k]) : ""
+  return init
+}
+
 function EmpresaConfig() {
   const [cfg, setCfg] = useState<any>(null)
   const [f, setF] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
 
-  const CAMPOS_TEXTO = [
-    "nome_empresa", "cnpj",
-    "diretor_nome", "diretor_funcao", "diretor_cpf", "diretor_telefone", "diretor_email",
-    "contato_comercial_nome", "contato_comercial_funcao", "contato_comercial_fone", "contato_comercial_email",
-    "banco", "agencia", "conta_corrente",
-    "declaracoes_padrao", "clausula_tributaria_padrao", "reajustamento_padrao",
-    "garantia_retencao_padrao_pct", "garantia_devolucao_padrao_dias",
-  ]
-
-  async function load() {
-    try {
-      const c = await configApi.get()
-      setCfg(c)
-      const init: Record<string, string> = {}
-      for (const k of CAMPOS_TEXTO) init[k] = c[k] != null ? String(c[k]) : ""
-      setF(init)
-    } catch (e: any) {
-      toast.error(e.message)
-    }
-  }
   useEffect(() => {
-    load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    configApi
+      .get()
+      .then((c) => {
+        setCfg(c)
+        setF(formDaConfig(c))
+      })
+      .catch((e: any) => toast.error(e.message))
   }, [])
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -188,7 +190,7 @@ function EmpresaConfig() {
     setSaving(true)
     try {
       const payload: Record<string, any> = {}
-      for (const k of CAMPOS_TEXTO) {
+      for (const k of CAMPOS_EMPRESA) {
         const v = f[k]?.trim() ?? ""
         if (k === "nome_empresa") payload[k] = v
         else if (k === "garantia_retencao_padrao_pct") payload[k] = v === "" ? null : v
@@ -197,6 +199,7 @@ function EmpresaConfig() {
       }
       const c = await configApi.update(payload)
       setCfg(c)
+      setF(formDaConfig(c)) // re-sincroniza com o que o backend gravou (normalizações)
       toast.success("Configurações da empresa atualizadas")
     } catch (e: any) {
       toast.error(`Erro: ${e.message}`)
