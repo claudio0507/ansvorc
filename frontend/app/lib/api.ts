@@ -218,6 +218,9 @@ export const orcamentoApi = {
     api.put<any>(`/orcamentos/${id}/itens/${iid}`, b),
   deleteItem: (id: number, iid: number) => api.delete(`/orcamentos/${id}/itens/${iid}`),
   calcular: (id: number) => api.post<any>(`/orcamentos/${id}/calcular`),
+  getProposta: (id: number) => api.get<any>(`/orcamentos/${id}/proposta`),
+  patchDescricaoItem: (id: number, iid: number, descricao: string) =>
+    api.patch<any>(`/orcamentos/${id}/itens/${iid}`, { descricao }),
 }
 
 export const fichaApi = {
