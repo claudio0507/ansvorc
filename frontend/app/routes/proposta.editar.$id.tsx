@@ -199,7 +199,8 @@ export default function PropostaEditor() {
                             defaultValue={it.descricao_cliente ?? it.descricao}
                             onBlur={(e) => {
                               const nv = e.target.value
-                              if (nv !== (it.descricao_cliente ?? it.descricao)) salvarDescricaoItem(it.id, nv)
+                              // descricao tem min_length=1 no backend; não envia vazio.
+                              if (nv.trim() && nv !== (it.descricao_cliente ?? it.descricao)) salvarDescricaoItem(it.id, nv)
                             }}
                             className="border-primary w-full rounded border bg-transparent px-1.5 py-0.5"
                           />
