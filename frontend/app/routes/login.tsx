@@ -10,7 +10,8 @@ import { api, auth, type ApiError } from "~/lib/api"
 function LogoMark() {
   return (
     <svg viewBox="0 0 24 24" className="size-7 fill-current">
-      <path d="M12 2L2 7l10 5 10-5-10-5zm0 10L2 7v10l10 5 10-5V7l-10 5z" />
+      <path d="M12 3 A9 9 0 1 1 4 8 L12 12 Z" />
+      <path d="M12 12 L4 8 A9 9 0 0 1 12 3 Z" transform="translate(1.5, -1.5)" />
     </svg>
   )
 }
