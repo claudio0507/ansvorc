@@ -10,8 +10,8 @@ Tarefa: implementar o template de proposta comercial FOR-077 (ver `PROMPT_PROPOS
 Decomposto em **3 fases sequenciais**, cada uma com ciclo spec → plan → execução (subagent-driven) → review → commit/push:
 
 - **F1 — Backend gaps** ✅ CONCLUÍDA (subagent-driven, 11 commits fce0bff..44c3215, 179 testes verdes).
-- **F2 — Editor** ← PRÓXIMA (tela `proposta.$id.tsx` + aba Empresa nos Parâmetros). A brainstormar.
-- **F3 — Documento + PDF** (redesenhar `proposta.tsx` cliente + atualizar `export_pdf.py` WeasyPrint pro layout FOR-077; PDF funcional). A brainstormar.
+- **F2 — Editor** ✅ CONCLUÍDA (subagent-driven, build limpo, review final opus "READY TO MERGE"). Falta só a verificação manual no browser pelo usuário.
+- **F3 — Documento + PDF** ← PRÓXIMA (redesenhar `proposta.tsx` cliente + atualizar `export_pdf.py` WeasyPrint pro layout FOR-077; PDF funcional). A brainstormar.
 
 ## F1 — o que foi entregue
 
@@ -30,9 +30,24 @@ Plano: `docs/superpowers/plans/2026-06-13-proposta-for077-fase1-backend.md`. Tud
 - `garantia_texto` é montado no router; se F3/PDF reconstruir a frase, mover p/ camada pura (`proposta_fallback`) p/ evitar drift.
 - Sem teste de RBAC dedicado p/ /proposta (coberto pelo middleware testado em outro lugar).
 
+## F2 — o que foi entregue
+
+Spec: `docs/superpowers/specs/2026-06-13-proposta-for077-fase2-editor-design.md`. Plano: `docs/superpowers/plans/2026-06-13-proposta-for077-fase2-editor.md`. Subagent-driven, review spec+qualidade por task + review final (opus: READY TO MERGE).
+
+- **Editor** `frontend/app/routes/proposta.editar.$id.tsx` (rota `/orcamentos/:id/proposta/editar`) — 19 seções FOR-077, layout de cards + índice interno, auto-save onBlur. Consome `GET /orcamentos/:id/proposta`. Read-only quando status ∉ {rascunho, reprovado}. Seção 7: só descrição-cliente editável (PATCH); qtd/preços read-only. Fallback `*_padrao` como placeholder. Seções 11/12/19 (config) read-only com link p/ Parâmetros.
+- **Componentes** `components/secao-card.tsx` (SecaoCard) + `components/campo-proposta.tsx` (CampoTexto/CampoTextarea com onBlur, useId/label a11y, sync de value).
+- **Botão "Editar Proposta"** em `orcamentos.$id.tsx`.
+- **Aba Empresa** em `parametros.tsx` expandida p/ 19 campos do ConfigSistema (5 cards), save único, "" → null (exceto nome_empresa), re-sync pós-save.
+- **API** `orcamentoApi.getProposta` + `patchDescricaoItem` em `lib/api.ts`. Também corrigido bug pré-existente `BASE`→`BASE_URL` em `biApi.precos`.
+- **Sem testes de front** (projeto não tem suíte): validado por `npm run build`/`typecheck` (limpo, exceto 2 erros pré-existentes em `bi-precos.tsx`, fora de escopo) + verificação manual no browser.
+
+### Pendência (não bloqueia)
+
+- **Verificação manual no browser** pendente do usuário (subir backend + `npm run dev`, abrir `/orcamentos/:id/proposta/editar` e a aba Empresa). `npm install` FALHA no Google Drive (EBADF); rodar build/typecheck exige copiar `frontend/` p/ um dir temporário fora do Drive e instalar lá.
+
 ## Próximo passo concreto
 
-F2 (editor) → **`superpowers:brainstorming`** primeiro (decidir UX da tela `proposta.$id.tsx` por seções + aba Empresa em `parametros.tsx`), depois spec → writing-plans → subagent-driven. F2 consome o GET `/proposta` como fonte de dados.
+F3 (documento + PDF) → **`superpowers:brainstorming`** primeiro (redesenhar `proposta.tsx` cliente com as 19 seções FOR-077 + atualizar `export_pdf.py` WeasyPrint; garantir PDF funcional), depois spec → writing-plans → subagent-driven. Consome o GET `/proposta`. Retomar débitos deferidos da F1 (response_model tipado, garantia_texto na camada pura) e o finding #2 (desconto escondido mas subtraído).
 
 ## Decisões já travadas (não reabrir)
 
